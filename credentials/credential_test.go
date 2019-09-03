@@ -1,0 +1,158 @@
+package credentials
+
+import (
+	"os"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+)
+
+func Test_NewCredential(t *testing.T) {
+	originAccessKey := os.Getenv(EnvVarAccessKeyID)
+	originAccessSecret := os.Getenv(EnvVarAccessKeySecret)
+	os.Setenv(EnvVarAccessKeyID, "accesskey")
+	os.Setenv(EnvVarAccessKeySecret, "accesssecret")
+	defer func() {
+		os.Setenv(EnvVarAccessKeyID, originAccessKey)
+		os.Setenv(EnvVarAccessKeySecret, originAccessSecret)
+	}()
+	cred, err := NewCredential(nil)
+	assert.Nil(t, err)
+	assert.NotNil(t, cred)
+	os.Unsetenv(EnvVarAccessKeyID)
+	os.Unsetenv(EnvVarAccessKeySecret)
+	cred, err = NewCredential(nil)
+	assert.NotNil(t, err)
+	assert.Equal(t, "No credential found.", err.Error())
+	assert.Nil(t, cred)
+
+	config := &Configuration{
+		Type: "access_key",
+	}
+	cred, err = NewCredential(config)
+	assert.NotNil(t, err)
+	assert.Equal(t, "AccessKeyId cannot be empty.", err.Error())
+	assert.Nil(t, cred)
+
+	config.AccessKeyId = "AccessKeyId"
+	cred, err = NewCredential(config)
+	assert.NotNil(t, err)
+	assert.Equal(t, "AccessKeySecret cannot be empty.", err.Error())
+	assert.Nil(t, cred)
+
+	config.Type = "sts"
+	cred, err = NewCredential(config)
+	assert.NotNil(t, err)
+	assert.Equal(t, "AccessKeySecret cannot be empty.", err.Error())
+	assert.Nil(t, cred)
+
+	config.AccessKeySecret = "AccessKeySecret"
+	cred, err = NewCredential(config)
+	assert.NotNil(t, err)
+	assert.Equal(t, "SecurityToken cannot be empty.", err.Error())
+	assert.Nil(t, cred)
+
+	config.AccessKeyId = ""
+	cred, err = NewCredential(config)
+	assert.NotNil(t, err)
+	assert.Equal(t, "AccessKeyId cannot be empty.", err.Error())
+	assert.Nil(t, cred)
+
+	config.Type = "ecs_ram_role"
+	cred, err = NewCredential(config)
+	assert.NotNil(t, err)
+	assert.Equal(t, "RoleName cannot be empty.", err.Error())
+	assert.Nil(t, cred)
+
+	config.Type = "rsa_key_pair"
+	cred, err = NewCredential(config)
+	assert.NotNil(t, err)
+	assert.Equal(t, "PrivateKeyFile cannot be empty.", err.Error())
+	assert.Nil(t, cred)
+
+	config.PrivateKeyFile = "test"
+	cred, err = NewCredential(config)
+	assert.NotNil(t, err)
+	assert.Equal(t, "PublicKeyId cannot be empty.", err.Error())
+	assert.Nil(t, cred)
+
+	config.Type = "ram_role_arn"
+	config.AccessKeySecret = ""
+	cred, err = NewCredential(config)
+	assert.NotNil(t, err)
+	assert.Equal(t, "AccessKeySecret cannot be empty.", err.Error())
+	assert.Nil(t, cred)
+
+	config.AccessKeySecret = "AccessKeySecret"
+	cred, err = NewCredential(config)
+	assert.NotNil(t, err)
+	assert.Equal(t, "RoleArn cannot be empty.", err.Error())
+	assert.Nil(t, cred)
+
+	config.RoleArn = "RoleArn"
+	cred, err = NewCredential(config)
+	assert.NotNil(t, err)
+	assert.Equal(t, "RoleSessionName cannot be empty.", err.Error())
+	assert.Nil(t, cred)
+
+	config.RoleSessionName = "RoleSessionName"
+	config.AccessKeyId = ""
+	cred, err = NewCredential(config)
+	assert.NotNil(t, err)
+	assert.Equal(t, "AccessKeyId cannot be empty.", err.Error())
+	assert.Nil(t, cred)
+
+	config.Type = "bearer"
+	cred, err = NewCredential(config)
+	assert.NotNil(t, err)
+	assert.Equal(t, "BearerToken cannot be empty.", err.Error())
+	assert.Nil(t, cred)
+
+	config.Type = "sdk"
+	cred, err = NewCredential(config)
+	assert.NotNil(t, err)
+	assert.Equal(t, "Invalid type option, support: access_key, sts, ecs_ram_role, ram_role_arn, rsa_key_pair.", err.Error())
+	assert.Nil(t, cred)
+
+	config.Type = "sts"
+	config.AccessKeyId = "AccessKeyId"
+	config.AccessKeySecret = "AccessKeySecret"
+	config.SecurityToken = "SecurityToken"
+	cred, err = NewCredential(config)
+	assert.Nil(t, err)
+	assert.NotNil(t, cred)
+
+	config.Type = "ecs_ram_role"
+	config.RoleName = "AccessKeyId"
+	cred, err = NewCredential(config)
+	assert.Nil(t, err)
+	assert.NotNil(t, cred)
+
+	config.Type = "ram_role_arn"
+	config.RoleArn = "roleArn"
+	config.RoleSessionName = "RoleSessionName"
+	cred, err = NewCredential(config)
+	assert.Nil(t, err)
+	assert.NotNil(t, cred)
+
+	config.Type = "bearer"
+	config.BearerToken = "BearerToken"
+	cred, err = NewCredential(config)
+	assert.Nil(t, err)
+	assert.NotNil(t, cred)
+
+	config.Type = "rsa_key_pair"
+	config.PublicKeyId = "resource"
+	config.PrivateKeyFile = "nofile"
+	cred, err = NewCredential(config)
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "InvalidPath: Can not open PrivateKeyFile, err is open nofile:")
+	assert.Nil(t, cred)
+
+	config.Type = "rsa_key_pair"
+	config.PublicKeyId = "resource"
+	config.PrivateKeyFile = "./encyptfile"
+	cred, err = NewCredential(config)
+	assert.Nil(t, err)
+	assert.NotNil(t, cred)
+}

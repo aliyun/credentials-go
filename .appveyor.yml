@@ -1,0 +1,26 @@
+build: off
+
+clone_folder: c:\gopath\src\github.com\aliyun\credentials-go
+
+environment:
+  GOPATH: c:\gopath
+  matrix:
+    - go: 1.10.x
+    - go: 1.11.x
+    - go: 1.12.x
+
+platform:
+  - x64
+
+install:
+  - set PATH=%GOPATH%\bin;c:\go\bin;%PATH%
+  - go get -u github.com/golang/dep/cmd/dep
+  - dep ensure
+
+test_script:
+  - go vet ./credentials/...
+  - go test -race -coverprofile=coverage.txt -covermode=atomic ./credentials/...
+  - IF DEFINED SUB_ALICLOUD_ACCESS_KEY (go test -v -timeout 120s ./integration/...)
+
+after_test:
+  - bash <(curl -s https://codecov.io/bash)
