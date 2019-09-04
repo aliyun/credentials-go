@@ -4,6 +4,10 @@ import (
 	"os"
 	"testing"
 
+	"github.com/aliyun/credentials-go/credentials/utils"
+
+	"github.com/aliyun/credentials-go/credentials/request"
+
 	"github.com/stretchr/testify/assert"
 )
 
@@ -155,4 +159,22 @@ func Test_NewCredential(t *testing.T) {
 	cred, err = NewCredential(config)
 	assert.Nil(t, err)
 	assert.NotNil(t, cred)
+}
+
+func Test_doaction(t *testing.T) {
+	request := request.NewCommonRequest()
+	request.Method = "credential test"
+	content, err := doAction(request, nil)
+	assert.NotNil(t, err)
+	assert.Equal(t, `net/http: invalid method "credential test"`, err.Error())
+	assert.Nil(t, content)
+	request.Method = "GET"
+	request.Url = "http://www.aliyun.com"
+	runtime := &utils.Runtime{
+		Proxy: "# #%gfdf",
+	}
+	content, err = doAction(request, runtime)
+	assert.Equal(t, `parse # #%gfdf: invalid URL escape "%gf"`, err.Error())
+	assert.NotNil(t, err)
+	assert.Nil(t, content)
 }
