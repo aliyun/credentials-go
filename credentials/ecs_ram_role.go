@@ -7,7 +7,6 @@ import (
 
 	"github.com/aliyun/credentials-go/credentials/request"
 	"github.com/aliyun/credentials-go/credentials/utils"
-	jmespath "github.com/jmespath/go-jmespath"
 )
 
 var securityCredURL = "http://100.100.100.200/latest/meta-data/ram/security-credentials/"
@@ -17,6 +16,14 @@ type EcsRamRoleCredential struct {
 	RoleName          string
 	sessionCredential *SessionCredential
 	runtime           *utils.Runtime
+}
+
+type EcsRamRoleResponse struct {
+	Code            string `json:"Code" xml:"Code"`
+	AccessKeyId     string `json:"AccessKeyId" xml:"AccessKeyId"`
+	AccessKeySecret string `json:"AccessKeySecret" xml:"AccessKeySecret"`
+	SecurityToken   string `json:"SecurityToken" xml:"SecurityToken"`
+	Expiration      string `json:"Expiration" xml:"Expiration"`
 }
 
 func newEcsRamRoleCredential(roleName string, runtime *utils.Runtime) *EcsRamRoleCredential {
@@ -76,45 +83,25 @@ func (e *EcsRamRoleCredential) UpdateCredential() (err error) {
 	if err != nil {
 		return fmt.Errorf("refresh Ecs sts token err: %s", err.Error())
 	}
-	var data interface{}
-	err = json.Unmarshal(content, &data)
+	var resp *EcsRamRoleResponse
+	err = json.Unmarshal(content, &resp)
 	if err != nil {
-		return fmt.Errorf("refresh Ecs sts token err: Json.Unmarshal fail: %s", err.Error())
+		return fmt.Errorf("refresh Ecs sts token err: Json Unmarshal fail: %s", err.Error())
 	}
-	code, err := jmespath.Search("Code", data)
-	if err != nil {
-		return fmt.Errorf("refresh Ecs sts token err: Fail to get Code: %s", err.Error())
-	}
-	if code.(string) != "Success" {
+	if resp.Code != "Success" {
 		return fmt.Errorf("refresh Ecs sts token err: Code is not Success")
 	}
-	accessKeyId, err := jmespath.Search("AccessKeyId", data)
-	if err != nil {
-		return fmt.Errorf("refresh Ecs sts token err: Fail to get AccessKeyId: %s", err.Error())
-	}
-	accessKeySecret, err := jmespath.Search("AccessKeySecret", data)
-	if err != nil {
-		return fmt.Errorf("refresh Ecs sts token err: Fail to get AccessKeySecret: %s", err.Error())
-	}
-	securityToken, err := jmespath.Search("SecurityToken", data)
-	if err != nil {
-		return fmt.Errorf("refresh Ecs sts token err: Fail to get SecurityToken: %s", err.Error())
-	}
-	expiration, err := jmespath.Search("Expiration", data)
-	if err != nil {
-		return fmt.Errorf("refresh Ecs sts token err: Fail to get Expiration: %s", err.Error())
-	}
-	if accessKeyId == nil || accessKeySecret == nil || securityToken == nil || expiration == nil {
-		return fmt.Errorf("refresh Ecs sts token err: AccessKeyId: %v, AccessKeySecret: %v, SecurityToken: %v, Expiration: %v", accessKeyId, accessKeySecret, securityToken, expiration)
+	if resp.AccessKeyId == "" || resp.AccessKeySecret == "" || resp.SecurityToken == "" || resp.Expiration == "" {
+		return fmt.Errorf("refresh Ecs sts token err: AccessKeyId: %s, AccessKeySecret: %s, SecurityToken: %s, Expiration: %s", resp.AccessKeyId, resp.AccessKeySecret, resp.SecurityToken, resp.Expiration)
 	}
 
-	expirationTime, err := time.Parse("2006-01-02T15:04:05Z", expiration.(string))
+	expirationTime, err := time.Parse("2006-01-02T15:04:05Z", resp.Expiration)
 	e.lastUpdateTimestamp = time.Now().Unix()
 	e.credentialExpiration = int(expirationTime.Unix() - time.Now().Unix())
 	e.sessionCredential = &SessionCredential{
-		AccessKeyId:     accessKeyId.(string),
-		AccessKeySecret: accessKeySecret.(string),
-		SecurityToken:   securityToken.(string),
+		AccessKeyId:     resp.AccessKeyId,
+		AccessKeySecret: resp.AccessKeySecret,
+		SecurityToken:   resp.SecurityToken,
 	}
 
 	return

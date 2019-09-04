@@ -80,7 +80,7 @@ vftlY0Hs1vNXcaBgEA==`
 	}
 	accesskeyId, err = auth.GetAccessKeyId()
 	assert.NotNil(t, err)
-	assert.Equal(t, "refresh KeyPair err: Json.Unmarshal fail: invalid character ':' after top-level value", err.Error())
+	assert.Equal(t, "refresh KeyPair err: Json Unmarshal fail: invalid character ':' after top-level value", err.Error())
 	assert.Equal(t, "", accesskeyId)
 
 	hookDo = func(fn func(req *http.Request) (*http.Response, error)) func(req *http.Request) (*http.Response, error) {
@@ -90,7 +90,17 @@ vftlY0Hs1vNXcaBgEA==`
 	}
 	accesskeyId, err = auth.GetAccessKeyId()
 	assert.NotNil(t, err)
-	assert.Equal(t, "refresh KeyPair err: SessionAccessKeyId: <nil>, SessionAccessKeySecret: accessKeySecret, Expiration: expiration", err.Error())
+	assert.Equal(t, "refresh KeyPair err: SessionAccessKeyId: , SessionAccessKeySecret: accessKeySecret, Expiration: expiration", err.Error())
+	assert.Equal(t, "", accesskeyId)
+
+	hookDo = func(fn func(req *http.Request) (*http.Response, error)) func(req *http.Request) (*http.Response, error) {
+		return func(req *http.Request) (*http.Response, error) {
+			return mockResponse(200, `{}`, nil)
+		}
+	}
+	accesskeyId, err = auth.GetAccessKeyId()
+	assert.NotNil(t, err)
+	assert.Equal(t, "refresh KeyPair err: SessionAccessKey is empty.", err.Error())
 	assert.Equal(t, "", accesskeyId)
 
 	hookDo = func(fn func(req *http.Request) (*http.Response, error)) func(req *http.Request) (*http.Response, error) {

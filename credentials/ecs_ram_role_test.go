@@ -49,12 +49,12 @@ func Test_EcsRAmRoleCredential(t *testing.T) {
 
 	hookDo = func(fn func(req *http.Request) (*http.Response, error)) func(req *http.Request) (*http.Response, error) {
 		return func(req *http.Request) (*http.Response, error) {
-			return mockResponse(200, `"AccessKeyId":"accessKeyId","AccessKeySecret":"accessKeySecret","SecurityToken":"securitytoken","Expiration":"expiration"}`, nil)
+			return mockResponse(200, `"AccessKeyId":"accessKeyId","AccessKeySecret":"accessKeySecret","SecurityToken":"securitytoken","Expiration":"expiration"`, nil)
 		}
 	}
 	accesskeyId, err = auth.GetAccessKeyId()
 	assert.NotNil(t, err)
-	assert.Equal(t, "refresh Ecs sts token err: Json.Unmarshal fail: invalid character ':' after top-level value", err.Error())
+	assert.Equal(t, "refresh Ecs sts token err: Json Unmarshal fail: invalid character ':' after top-level value", err.Error())
 	assert.Equal(t, "", accesskeyId)
 
 	hookDo = func(fn func(req *http.Request) (*http.Response, error)) func(req *http.Request) (*http.Response, error) {
@@ -74,7 +74,7 @@ func Test_EcsRAmRoleCredential(t *testing.T) {
 	}
 	accesskeyId, err = auth.GetAccessKeyId()
 	assert.NotNil(t, err)
-	assert.Equal(t, "refresh Ecs sts token err: AccessKeyId: <nil>, AccessKeySecret: accessKeySecret, SecurityToken: securitytoken, Expiration: expiration", err.Error())
+	assert.Equal(t, "refresh Ecs sts token err: AccessKeyId: , AccessKeySecret: accessKeySecret, SecurityToken: securitytoken, Expiration: expiration", err.Error())
 	assert.Equal(t, "", accesskeyId)
 
 	hookDo = func(fn func(req *http.Request) (*http.Response, error)) func(req *http.Request) (*http.Response, error) {
