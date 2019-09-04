@@ -9,7 +9,6 @@ import (
 
 	"github.com/aliyun/credentials-go/credentials/request"
 	"github.com/aliyun/credentials-go/credentials/utils"
-	jmespath "github.com/jmespath/go-jmespath"
 )
 
 type RsaKeyPairCredential struct {
@@ -19,6 +18,16 @@ type RsaKeyPairCredential struct {
 	SessionExpiration int
 	sessionCredential *SessionCredential
 	runtime           *utils.Runtime
+}
+
+type RsaKeyPairResponse struct {
+	SessionAccessKey *SessionAccessKey `json:"SessionAccessKey" xml:"SessionAccessKey"`
+}
+
+type SessionAccessKey struct {
+	SessionAccessKeyId     string `json:"SessionAccessKeyId" xml:"SessionAccessKeyId"`
+	SessionAccessKeySecret string `json:"SessionAccessKeySecret" xml:"SessionAccessKeySecret"`
+	Expiration             string `json:"Expiration" xml:"Expiration"`
 }
 
 func newRsaKeyPairCredential(privateKey, publicKeyId string, sessionExpiration int, runtime *utils.Runtime) *RsaKeyPairCredential {
@@ -102,33 +111,25 @@ func (r *RsaKeyPairCredential) UpdateCredential() (err error) {
 	if err != nil {
 		return fmt.Errorf("refresh KeyPair err: %s", err.Error())
 	}
-	var data interface{}
-	err = json.Unmarshal(content, &data)
+	var resp *RsaKeyPairResponse
+	err = json.Unmarshal(content, &resp)
 	if err != nil {
-		return fmt.Errorf("refresh KeyPair err: Json.Unmarshal fail: %s", err.Error())
+		return fmt.Errorf("refresh KeyPair err: Json Unmarshal fail: %s", err.Error())
 	}
-	accessKeyId, err := jmespath.Search("SessionAccessKey.SessionAccessKeyId", data)
-	if err != nil {
-		return fmt.Errorf("refresh KeyPair err: Fail to get SessionAccessKeyId: %s", err.Error())
+	if resp == nil || resp.SessionAccessKey == nil {
+		return fmt.Errorf("refresh KeyPair err: SessionAccessKey is empty.")
 	}
-	accessKeySecret, err := jmespath.Search("SessionAccessKey.SessionAccessKeySecret", data)
-	if err != nil {
-		return fmt.Errorf("refresh KeyPair err: Fail to get SessionAccessKeySecret: %s", err.Error())
-	}
-	expiration, err := jmespath.Search("SessionAccessKey.Expiration", data)
-	if err != nil {
-		return fmt.Errorf("refresh KeyPair err: Fail to get Expiration: %s", err.Error())
-	}
-	if accessKeyId == nil || accessKeySecret == nil || expiration == nil {
-		return fmt.Errorf("refresh KeyPair err: SessionAccessKeyId: %v, SessionAccessKeySecret: %v, Expiration: %v", accessKeyId, accessKeySecret, expiration)
+	sessionAccessKey := resp.SessionAccessKey
+	if sessionAccessKey.SessionAccessKeyId == "" || sessionAccessKey.SessionAccessKeySecret == "" || sessionAccessKey.Expiration == "" {
+		return fmt.Errorf("refresh KeyPair err: SessionAccessKeyId: %v, SessionAccessKeySecret: %v, Expiration: %v", sessionAccessKey.SessionAccessKeyId, sessionAccessKey.SessionAccessKeySecret, sessionAccessKey.Expiration)
 	}
 
-	expirationTime, err := time.Parse("2006-01-02T15:04:05Z", expiration.(string))
+	expirationTime, err := time.Parse("2006-01-02T15:04:05Z", sessionAccessKey.Expiration)
 	r.lastUpdateTimestamp = time.Now().Unix()
 	r.credentialExpiration = int(expirationTime.Unix() - time.Now().Unix())
 	r.sessionCredential = &SessionCredential{
-		AccessKeyId:     accessKeyId.(string),
-		AccessKeySecret: accessKeySecret.(string),
+		AccessKeyId:     sessionAccessKey.SessionAccessKeyId,
+		AccessKeySecret: sessionAccessKey.SessionAccessKeySecret,
 	}
 
 	return

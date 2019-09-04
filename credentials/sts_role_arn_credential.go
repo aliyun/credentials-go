@@ -9,7 +9,6 @@ import (
 
 	"github.com/aliyun/credentials-go/credentials/request"
 	"github.com/aliyun/credentials-go/credentials/utils"
-	jmespath "github.com/jmespath/go-jmespath"
 )
 
 const defaultDurationSeconds = 3600
@@ -24,6 +23,17 @@ type RamRoleArnCredential struct {
 	Policy                string
 	sessionCredential     *SessionCredential
 	runtime               *utils.Runtime
+}
+
+type RamRoleArnResponse struct {
+	Credentials *CredentialsInResponse `json:"Credentials" xml:"Credentials"`
+}
+
+type CredentialsInResponse struct {
+	AccessKeyId     string `json:"AccessKeyId" xml:"AccessKeyId"`
+	AccessKeySecret string `json:"AccessKeySecret" xml:"AccessKeySecret"`
+	SecurityToken   string `json:"SecurityToken" xml:"SecurityToken"`
+	Expiration      string `json:"Expiration" xml:"Expiration"`
 }
 
 func newRamRoleArnCredential(accessKeyId, accessKeySecret, roleArn, roleSessionName, policy string, roleSessionExpiration int, runtime *utils.Runtime) *RamRoleArnCredential {
@@ -117,38 +127,26 @@ func (r *RamRoleArnCredential) UpdateCredential() (err error) {
 	if err != nil {
 		return fmt.Errorf("refresh RoleArn sts token err: %s", err.Error())
 	}
-	var data interface{}
-	err = json.Unmarshal(content, &data)
+	var resp *RamRoleArnResponse
+	err = json.Unmarshal(content, &resp)
 	if err != nil {
 		return fmt.Errorf("refresh RoleArn sts token err: Json.Unmarshal fail: %s", err.Error())
 	}
-	accessKeyId, err := jmespath.Search("Credentials.AccessKeyId", data)
-	if err != nil {
-		return fmt.Errorf("refresh RoleArn sts token err: Fail to get AccessKeyId: %s", err.Error())
+	if resp == nil || resp.Credentials == nil {
+		return fmt.Errorf("refresh RoleArn sts token err: Credentials is empty.")
 	}
-	accessKeySecret, err := jmespath.Search("Credentials.AccessKeySecret", data)
-	if err != nil {
-		return fmt.Errorf("refresh RoleArn sts token err: Fail to get AccessKeySecret: %s", err.Error())
-	}
-	securityToken, err := jmespath.Search("Credentials.SecurityToken", data)
-	if err != nil {
-		return fmt.Errorf("refresh RoleArn sts token err: Fail to get SecurityToken: %s", err.Error())
-	}
-	expiration, err := jmespath.Search("Credentials.Expiration", data)
-	if err != nil {
-		return fmt.Errorf("refresh RoleArn sts token err: Fail to get Expiration: %s", err.Error())
-	}
-	if accessKeyId == nil || accessKeySecret == nil || securityToken == nil || expiration == nil {
-		return fmt.Errorf("refresh RoleArn sts token err: AccessKeyId: %v, AccessKeySecret: %v, SecurityToken: %v, Expiration: %v", accessKeyId, accessKeySecret, securityToken, expiration)
+	respCredentials := resp.Credentials
+	if respCredentials.AccessKeyId == "" || respCredentials.AccessKeySecret == "" || respCredentials.SecurityToken == "" || respCredentials.Expiration == "" {
+		return fmt.Errorf("refresh RoleArn sts token err: AccessKeyId: %s, AccessKeySecret: %s, SecurityToken: %s, Expiration: %s", respCredentials.AccessKeyId, respCredentials.AccessKeySecret, respCredentials.SecurityToken, respCredentials.Expiration)
 	}
 
-	expirationTime, err := time.Parse("2006-01-02T15:04:05Z", expiration.(string))
+	expirationTime, err := time.Parse("2006-01-02T15:04:05Z", respCredentials.Expiration)
 	r.lastUpdateTimestamp = time.Now().Unix()
 	r.credentialExpiration = int(expirationTime.Unix() - time.Now().Unix())
 	r.sessionCredential = &SessionCredential{
-		AccessKeyId:     accessKeyId.(string),
-		AccessKeySecret: accessKeySecret.(string),
-		SecurityToken:   securityToken.(string),
+		AccessKeyId:     respCredentials.AccessKeyId,
+		AccessKeySecret: respCredentials.AccessKeySecret,
+		SecurityToken:   respCredentials.SecurityToken,
 	}
 
 	return

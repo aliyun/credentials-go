@@ -91,7 +91,17 @@ func Test_RoleArnCredential(t *testing.T) {
 	}
 	accesskeyId, err = auth.GetAccessKeyId()
 	assert.NotNil(t, err)
-	assert.Equal(t, "refresh RoleArn sts token err: AccessKeyId: <nil>, AccessKeySecret: accessKeySecret, SecurityToken: securitytoken, Expiration: expiration", err.Error())
+	assert.Equal(t, "refresh RoleArn sts token err: AccessKeyId: , AccessKeySecret: accessKeySecret, SecurityToken: securitytoken, Expiration: expiration", err.Error())
+	assert.Equal(t, "", accesskeyId)
+
+	hookDo = func(fn func(req *http.Request) (*http.Response, error)) func(req *http.Request) (*http.Response, error) {
+		return func(req *http.Request) (*http.Response, error) {
+			return mockResponse(200, `{}`, nil)
+		}
+	}
+	accesskeyId, err = auth.GetAccessKeyId()
+	assert.NotNil(t, err)
+	assert.Equal(t, "refresh RoleArn sts token err: Credentials is empty.", err.Error())
 	assert.Equal(t, "", accesskeyId)
 
 	hookDo = func(fn func(req *http.Request) (*http.Response, error)) func(req *http.Request) (*http.Response, error) {
