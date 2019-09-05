@@ -1,33 +1,38 @@
 package credentials
 
 type AccessKeyCredential struct {
-	AccessKeyId     string
+	AccessKeyID     string
 	AccessKeySecret string
 }
 
-func newAccessKeyCredential(accessKeyId, accessKeySecret string) *AccessKeyCredential {
+func newAccessKeyCredential(accessKeyID, accessKeySecret string) *AccessKeyCredential {
 	return &AccessKeyCredential{
-		AccessKeyId:     accessKeyId,
+		AccessKeyID:     accessKeyID,
 		AccessKeySecret: accessKeySecret,
 	}
 }
 
-func (a *AccessKeyCredential) GetAccessKeyId() (string, error) {
-	return a.AccessKeyId, nil
+// GetAccessKeyID reutrns  AccessKeyCreential's AccessKeyID
+func (a *AccessKeyCredential) GetAccessKeyID() (string, error) {
+	return a.AccessKeyID, nil
 }
 
+// GetAccessSecret reutrns  AccessKeyCreential's AccessKeySecret
 func (a *AccessKeyCredential) GetAccessSecret() (string, error) {
 	return a.AccessKeySecret, nil
 }
 
+// GetSecurityToken is useless for AccessKeyCreential
 func (a *AccessKeyCredential) GetSecurityToken() (string, error) {
 	return "", nil
 }
 
+// GetBearerToken is useless for AccessKeyCreential
 func (a *AccessKeyCredential) GetBearerToken() string {
 	return ""
 }
 
+// GetType reutrns  AccessKeyCreential's type
 func (a *AccessKeyCredential) GetType() string {
 	return "access_key"
 }

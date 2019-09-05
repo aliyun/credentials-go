@@ -7,6 +7,7 @@
 [![License](https://poser.pugx.org/alibabacloud/credentials/license)](https://packagist.org/packages/alibabacloud/credentials)
 [![Travis Build Status](https://travis-ci.org/aliyun/credentials-go.svg?branch=master)](https://travis-ci.org/aliyun/credentials-go)
 [![Appveyor Build Status](https://ci.appveyor.com/api/projects/status/6sxnwbriw1gwehx8/branch/master?svg=true)](https://ci.appveyor.com/project/aliyun/credentials-go)
+[![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/aliyun/credentials-go/badges/quality-score.png?b=master)](https://scrutinizer-ci.com/g/aliyun/credentials-go/?branch=master)
 
 ![](https://aliyunsdk-pages.alicdn.com/icons/AlibabaCloud.svg)
 
@@ -35,7 +36,7 @@ $ dep ensure -add  github.com/aliyun/credentials-go
 
 ### 凭证类型
 
-#### access_key
+#### AccessKey
 通过[用户信息管理][ak]设置 access_key，它们具有该账户完全的权限，请妥善保管。有时出于安全考虑，您不能把具有完全访问权限的主账户 AccessKey 交于一个项目的开发者使用，您可以[创建RAM子账户][ram]并为子账户[授权][permissions]，使用RAM子用户的 AccessKey 来进行API调用。
 ```go
 import (
@@ -45,20 +46,20 @@ import (
 func main(){
 	config := &credentials.Configuration{
 		Type:                  "access_key",       // 凭证类型
-		AccessKeyId:           "AccessKeyId",      // AccessKeyId
+		AccessKeyID:           "AccessKeyID",      // AccessKeyID
 		AccessKeySecret:       "AccessKeySecret",  // AccessKeySecret
     }
 	akCredential, err := credentials.NewCredential(config)
 	if err != nil {
 		return err
 	}
-	accessKeyId, err := akCredential.GetAccessKeyId()
+	accessKeyID, err := akCredential.GetAccessKeyID()
 	accessSecret, err := akCredential.GetAccessSecret()
 	credentialType := akCredential.GetType()
 }
 ```
 
-#### sts
+#### STS
 通过安全令牌服务（Security Token Service，简称 STS），申请临时安全凭证（Temporary Security Credentials，简称 TSC），创建临时安全凭证。
 ```go
 import (
@@ -68,7 +69,7 @@ import (
 func main(){
 	config := &credentials.Configuration{
 		Type:                  "sts",              // 凭证类型
-		AccessKeyId:           "AccessKeyId",      // AccessKeyId
+		AccessKeyID:           "AccessKeyID",      // AccessKeyID
 		AccessKeySecret:       "AccessKeySecret",  // AccessKeySecret
 		SecurityToken:         "SecurityToken",    // STS Token
     }
@@ -76,14 +77,14 @@ func main(){
 	if err != nil {
 		return err
 	}
-	accessKeyId, err := stsCredential.GetAccessKeyId()
+	accessKeyID, err := stsCredential.GetAccessKeyID()
 	accessSecret, err := stsCredential.GetAccessSecret()
 	securityToken, err := stsCredential.GetSecurityToken()
 	credentialType := stsCredential.GetType()
 }
 ```
 
-#### ram_role_arn
+#### RamRoleArn
 通过指定[RAM角色][RAM Role]，让凭证自动申请维护 STS Token。你可以通过为 `Policy` 赋值来限制获取到的 STS Token 的权限。
 ```go
 import (
@@ -93,7 +94,7 @@ import (
 func main(){
 	config := &credentialsConfiguration{
 		Type:                   "ram_role_arn",     // 凭证类型
-		AccessKeyId:            "AccessKeyId",      // AccessKeyId
+		AccessKeyID:            "AccessKeyID",      // AccessKeyID
 		AccessKeySecret:        "AccessKeySecret",  // AccessKeySecret
 		RoleArn:                "RoleArn",          // 格式: acs:ram::用户ID:role/角色名
 		RoleSessionName:        "RoleSessionName",  // 角色会话名称
@@ -104,14 +105,14 @@ func main(){
 	if err != nil {
 		return err
 	}
-	accessKeyId, err := arnCredential.GetAccessKeyId()
+	accessKeyID, err := arnCredential.GetAccessKeyID()
 	accessSecret, err := arnCredential.GetAccessSecret()
 	securityToken, err := arnCredential.GetSecurityToken()
 	credentialType := arnCredential.GetType()
 }
 ```
 
-#### ecs_ram_role
+#### EcsRamRole
 通过指定角色名称，让凭证自动申请维护 STS Token
 ```go
 import (
@@ -127,14 +128,14 @@ func main(){
 	if err != nil {
 		return err
 	}
-	accessKeyId, err := ecsCredential.GetAccessKeyId()
+	accessKeyID, err := ecsCredential.GetAccessKeyID()
 	accessSecret, err := ecsCredential.GetAccessSecret()
 	securityToken, err := ecsCredential.GetSecurityToken()
 	credentialType := ecsCredential.GetType()
 }
 ```
 
-#### rsa_key_pair
+#### RsaKeyPair
 通过指定公钥ID和私钥文件，让凭证自动申请维护 AccessKey。仅支持日本站。 
 By specifying the public key ID and the private key file, the credential will be able to automatically request maintenance of the AccessKey before sending the request. Only Japan station is supported. 
 ```go
@@ -146,20 +147,20 @@ func main(){
 	config := &credentialsConfiguration{
 		Type:                   "rsa_key_pair",       // Which type of credential you want
 		PrivateKeyFile:         "PrivateKeyFile",     // The file path to store the PrivateKey
-		PublicKeyId:            "PublicKeyId",        // PublicKeyId of your account
+		PublicKeyID:            "PublicKeyID",        // PublicKeyID of your account
     }
 	rsaCredential, err := credentials.NewCredential(config)
 	if err != nil {
 		return err
 	}
-	accessKeyId, err := rsaCredential.GetAccessKeyId()
+	accessKeyID, err := rsaCredential.GetAccessKeyID()
 	accessSecret, err := rsaCredential.GetAccessSecret()
 	securityToken, err := rsaCredential.GetSecurityToken()
 	credentialType := rsaCredential.GetType()
 }
 ```
 
-#### bearer
+#### Bearer Token
 如呼叫中心(CCC)需用此凭证，请自行申请维护 Bearer Token。
 ```go
 import (

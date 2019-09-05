@@ -25,14 +25,14 @@ func (p *EnvProvider) Resolve() (*Configuration, error) {
 		return nil, nil
 	}
 	if accessKeyID == "" {
-		return nil, errors.New(EnvVarAccessKeyID + " cannot be empty.")
+		return nil, errors.New(EnvVarAccessKeyID + " cannot be empty")
 	}
 	if accessKeySecret == "" {
-		return nil, errors.New(EnvVarAccessKeySecret + " cannot be empty.")
+		return nil, errors.New(EnvVarAccessKeySecret + " cannot be empty")
 	}
 	config := &Configuration{
 		Type:            "access_key",
-		AccessKeyId:     accessKeyID,
+		AccessKeyID:     accessKeyID,
 		AccessKeySecret: accessKeySecret,
 	}
 	return config, nil

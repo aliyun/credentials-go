@@ -1,35 +1,40 @@
 package credentials
 
 type StsTokenCredential struct {
-	AccessKeyId     string
+	AccessKeyID     string
 	AccessKeySecret string
 	SecurityToken   string
 }
 
-func newStsTokenCredential(accessKeyId, accessKeySecret, securityToken string) *StsTokenCredential {
+func newStsTokenCredential(accessKeyID, accessKeySecret, securityToken string) *StsTokenCredential {
 	return &StsTokenCredential{
-		AccessKeyId:     accessKeyId,
+		AccessKeyID:     accessKeyID,
 		AccessKeySecret: accessKeySecret,
 		SecurityToken:   securityToken,
 	}
 }
 
-func (s *StsTokenCredential) GetAccessKeyId() (string, error) {
-	return s.AccessKeyId, nil
+// GetAccessKeyID reutrns  StsTokenCredential's AccessKeyID
+func (s *StsTokenCredential) GetAccessKeyID() (string, error) {
+	return s.AccessKeyID, nil
 }
 
+// GetAccessSecret reutrns  StsTokenCredential's AccessKeySecret
 func (s *StsTokenCredential) GetAccessSecret() (string, error) {
 	return s.AccessKeySecret, nil
 }
 
+// GetSecurityToken reutrns  StsTokenCredential's SecurityToken
 func (s *StsTokenCredential) GetSecurityToken() (string, error) {
 	return s.SecurityToken, nil
 }
 
+// GetBearerToken is useless StsTokenCredential
 func (s *StsTokenCredential) GetBearerToken() string {
 	return ""
 }
 
+// GetType reutrns  StsTokenCredential's type
 func (s *StsTokenCredential) GetType() string {
 	return "sts"
 }

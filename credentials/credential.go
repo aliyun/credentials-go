@@ -19,7 +19,7 @@ import (
 var debuglog = debug.Init("credential")
 
 type Credential interface {
-	GetAccessKeyId() (string, error)
+	GetAccessKeyID() (string, error)
 	GetAccessSecret() (string, error)
 	GetSecurityToken() (string, error)
 	GetBearerToken() string
@@ -28,11 +28,11 @@ type Credential interface {
 
 type Configuration struct {
 	Type                  string `json:"type"`
-	AccessKeyId           string `json:"access_key_id"`
+	AccessKeyID           string `json:"access_key_id"`
 	AccessKeySecret       string `json:"access_key_secret"`
 	RoleArn               string `json:"role_arn"`
 	RoleSessionName       string `json:"role_session_name"`
-	PublicKeyId           string `json:"public_key_id"`
+	PublicKeyID           string `json:"public_key_id"`
 	RoleName              string `json:"role_name"`
 	SessionExpiration     int    `json:"session_expiration"`
 	PrivateKeyFile        string `json:"private_key_file"`
@@ -56,32 +56,32 @@ func NewCredential(config *Configuration) (credential Credential, err error) {
 	}
 	switch config.Type {
 	case "access_key":
-		if config.AccessKeyId == "" {
-			err = errors.New("AccessKeyId cannot be empty.")
+		if config.AccessKeyID == "" {
+			err = errors.New("AccessKeyID cannot be empty")
 			return
 		}
 		if config.AccessKeySecret == "" {
-			err = errors.New("AccessKeySecret cannot be empty.")
+			err = errors.New("AccessKeySecret cannot be empty")
 			return
 		}
-		credential = newAccessKeyCredential(config.AccessKeyId, config.AccessKeySecret)
+		credential = newAccessKeyCredential(config.AccessKeyID, config.AccessKeySecret)
 	case "sts":
-		if config.AccessKeyId == "" {
-			err = errors.New("AccessKeyId cannot be empty.")
+		if config.AccessKeyID == "" {
+			err = errors.New("AccessKeyID cannot be empty")
 			return
 		}
 		if config.AccessKeySecret == "" {
-			err = errors.New("AccessKeySecret cannot be empty.")
+			err = errors.New("AccessKeySecret cannot be empty")
 			return
 		}
 		if config.SecurityToken == "" {
-			err = errors.New("SecurityToken cannot be empty.")
+			err = errors.New("SecurityToken cannot be empty")
 			return
 		}
-		credential = newStsTokenCredential(config.AccessKeyId, config.AccessKeySecret, config.SecurityToken)
+		credential = newStsTokenCredential(config.AccessKeyID, config.AccessKeySecret, config.SecurityToken)
 	case "ecs_ram_role":
 		if config.RoleName == "" {
-			err = errors.New("RoleName cannot be empty.")
+			err = errors.New("RoleName cannot be empty")
 			return
 		}
 		runtime := &utils.Runtime{
@@ -93,19 +93,19 @@ func NewCredential(config *Configuration) (credential Credential, err error) {
 		credential = newEcsRamRoleCredential(config.RoleName, runtime)
 	case "ram_role_arn":
 		if config.AccessKeySecret == "" {
-			err = errors.New("AccessKeySecret cannot be empty.")
+			err = errors.New("AccessKeySecret cannot be empty")
 			return
 		}
 		if config.RoleArn == "" {
-			err = errors.New("RoleArn cannot be empty.")
+			err = errors.New("RoleArn cannot be empty")
 			return
 		}
 		if config.RoleSessionName == "" {
-			err = errors.New("RoleSessionName cannot be empty.")
+			err = errors.New("RoleSessionName cannot be empty")
 			return
 		}
-		if config.AccessKeyId == "" {
-			err = errors.New("AccessKeyId cannot be empty.")
+		if config.AccessKeyID == "" {
+			err = errors.New("AccessKeyID cannot be empty")
 			return
 		}
 		runtime := &utils.Runtime{
@@ -114,14 +114,14 @@ func NewCredential(config *Configuration) (credential Credential, err error) {
 			ReadTimeout:    config.Timeout,
 			ConnectTimeout: config.ConnectTimeout,
 		}
-		credential = newRamRoleArnCredential(config.AccessKeyId, config.AccessKeySecret, config.RoleArn, config.RoleSessionName, config.Policy, config.RoleSessionExpiration, runtime)
+		credential = newRamRoleArnCredential(config.AccessKeyID, config.AccessKeySecret, config.RoleArn, config.RoleSessionName, config.Policy, config.RoleSessionExpiration, runtime)
 	case "rsa_key_pair":
 		if config.PrivateKeyFile == "" {
-			err = errors.New("PrivateKeyFile cannot be empty.")
+			err = errors.New("PrivateKeyFile cannot be empty")
 			return
 		}
-		if config.PublicKeyId == "" {
-			err = errors.New("PublicKeyId cannot be empty.")
+		if config.PublicKeyID == "" {
+			err = errors.New("PublicKeyID cannot be empty")
 			return
 		}
 		file, err1 := os.Open(config.PrivateKeyFile)
@@ -144,15 +144,15 @@ func NewCredential(config *Configuration) (credential Credential, err error) {
 			ReadTimeout:    config.Timeout,
 			ConnectTimeout: config.ConnectTimeout,
 		}
-		credential = newRsaKeyPairCredential(privateKey, config.PublicKeyId, config.SessionExpiration, runtime)
+		credential = newRsaKeyPairCredential(privateKey, config.PublicKeyID, config.SessionExpiration, runtime)
 	case "bearer":
 		if config.BearerToken == "" {
-			err = errors.New("BearerToken cannot be empty.")
+			err = errors.New("BearerToken cannot be empty")
 			return
 		}
 		credential = newBearerTokenCredential(config.BearerToken)
 	default:
-		err = errors.New("Invalid type option, support: access_key, sts, ecs_ram_role, ram_role_arn, rsa_key_pair.")
+		err = errors.New("Invalid type option, support: access_key, sts, ecs_ram_role, ram_role_arn, rsa_key_pair")
 		return
 	}
 	return credential, nil

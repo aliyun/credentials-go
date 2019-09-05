@@ -14,9 +14,9 @@ import (
 type RsaKeyPairCredential struct {
 	*credentialUpdater
 	PrivateKey        string
-	PublicKeyId       string
+	PublicKeyID       string
 	SessionExpiration int
-	sessionCredential *SessionCredential
+	sessionCredential *sessionCredential
 	runtime           *utils.Runtime
 }
 
@@ -25,34 +25,38 @@ type RsaKeyPairResponse struct {
 }
 
 type SessionAccessKey struct {
-	SessionAccessKeyId     string `json:"SessionAccessKeyId" xml:"SessionAccessKeyId"`
+	SessionAccessKeyID     string `json:"SessionAccessKeyID" xml:"SessionAccessKeyID"`
 	SessionAccessKeySecret string `json:"SessionAccessKeySecret" xml:"SessionAccessKeySecret"`
 	Expiration             string `json:"Expiration" xml:"Expiration"`
 }
 
-func newRsaKeyPairCredential(privateKey, publicKeyId string, sessionExpiration int, runtime *utils.Runtime) *RsaKeyPairCredential {
+func newRsaKeyPairCredential(privateKey, publicKeyID string, sessionExpiration int, runtime *utils.Runtime) *RsaKeyPairCredential {
 	return &RsaKeyPairCredential{
 		PrivateKey:        privateKey,
-		PublicKeyId:       publicKeyId,
+		PublicKeyID:       publicKeyID,
 		SessionExpiration: sessionExpiration,
 		credentialUpdater: new(credentialUpdater),
 		runtime:           runtime,
 	}
 }
 
-func (r *RsaKeyPairCredential) GetAccessKeyId() (string, error) {
+// GetAccessKeyID reutrns RsaKeyPairCredential's AccessKeyID
+// if AccessKeyID is not exist or out of date, the function will update it.
+func (r *RsaKeyPairCredential) GetAccessKeyID() (string, error) {
 	if r.sessionCredential == nil || r.needUpdateCredential() {
-		err := r.UpdateCredential()
+		err := r.updateCredential()
 		if err != nil {
 			return "", err
 		}
 	}
-	return r.sessionCredential.AccessKeyId, nil
+	return r.sessionCredential.AccessKeyID, nil
 }
 
+// GetAccessSecret reutrns  RsaKeyPairCredential's AccessKeySecret
+// if AccessKeySecret is not exist or out of date, the function will update it.
 func (r *RsaKeyPairCredential) GetAccessSecret() (string, error) {
 	if r.sessionCredential == nil || r.needUpdateCredential() {
-		err := r.UpdateCredential()
+		err := r.updateCredential()
 		if err != nil {
 			return "", err
 		}
@@ -60,19 +64,22 @@ func (r *RsaKeyPairCredential) GetAccessSecret() (string, error) {
 	return r.sessionCredential.AccessKeySecret, nil
 }
 
+// GetSecurityToken is useless  RsaKeyPairCredential
 func (r *RsaKeyPairCredential) GetSecurityToken() (string, error) {
 	return "", nil
 }
 
+// GetBearerToken is useless for  RsaKeyPairCredential
 func (r *RsaKeyPairCredential) GetBearerToken() string {
 	return ""
 }
 
+// GetType reutrns  RsaKeyPairCredential's type
 func (r *RsaKeyPairCredential) GetType() string {
 	return "rsa_key_pair"
 }
 
-func (r *RsaKeyPairCredential) UpdateCredential() (err error) {
+func (r *RsaKeyPairCredential) updateCredential() (err error) {
 	if r.runtime == nil {
 		r.runtime = new(utils.Runtime)
 	}
@@ -83,7 +90,7 @@ func (r *RsaKeyPairCredential) UpdateCredential() (err error) {
 	}
 	request.Scheme = "HTTPS"
 	request.Method = "GET"
-	request.QueryParams["AccessKeyId"] = r.PublicKeyId
+	request.QueryParams["AccessKeyId"] = r.PublicKeyID
 	request.QueryParams["Action"] = "GenerateSessionAccessKey"
 	request.QueryParams["Format"] = "JSON"
 	if r.SessionExpiration > 0 {
@@ -117,18 +124,18 @@ func (r *RsaKeyPairCredential) UpdateCredential() (err error) {
 		return fmt.Errorf("refresh KeyPair err: Json Unmarshal fail: %s", err.Error())
 	}
 	if resp == nil || resp.SessionAccessKey == nil {
-		return fmt.Errorf("refresh KeyPair err: SessionAccessKey is empty.")
+		return fmt.Errorf("refresh KeyPair err: SessionAccessKey is empty")
 	}
 	sessionAccessKey := resp.SessionAccessKey
-	if sessionAccessKey.SessionAccessKeyId == "" || sessionAccessKey.SessionAccessKeySecret == "" || sessionAccessKey.Expiration == "" {
-		return fmt.Errorf("refresh KeyPair err: SessionAccessKeyId: %v, SessionAccessKeySecret: %v, Expiration: %v", sessionAccessKey.SessionAccessKeyId, sessionAccessKey.SessionAccessKeySecret, sessionAccessKey.Expiration)
+	if sessionAccessKey.SessionAccessKeyID == "" || sessionAccessKey.SessionAccessKeySecret == "" || sessionAccessKey.Expiration == "" {
+		return fmt.Errorf("refresh KeyPair err: SessionAccessKeyID: %v, SessionAccessKeySecret: %v, Expiration: %v", sessionAccessKey.SessionAccessKeyID, sessionAccessKey.SessionAccessKeySecret, sessionAccessKey.Expiration)
 	}
 
 	expirationTime, err := time.Parse("2006-01-02T15:04:05Z", sessionAccessKey.Expiration)
 	r.lastUpdateTimestamp = time.Now().Unix()
 	r.credentialExpiration = int(expirationTime.Unix() - time.Now().Unix())
-	r.sessionCredential = &SessionCredential{
-		AccessKeyId:     sessionAccessKey.SessionAccessKeyId,
+	r.sessionCredential = &sessionCredential{
+		AccessKeyID:     sessionAccessKey.SessionAccessKeyID,
 		AccessKeySecret: sessionAccessKey.SessionAccessKeySecret,
 	}
 

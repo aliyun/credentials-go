@@ -14,13 +14,13 @@ var securityCredURL = "http://100.100.100.200/latest/meta-data/ram/security-cred
 type EcsRamRoleCredential struct {
 	*credentialUpdater
 	RoleName          string
-	sessionCredential *SessionCredential
+	sessionCredential *sessionCredential
 	runtime           *utils.Runtime
 }
 
 type EcsRamRoleResponse struct {
 	Code            string `json:"Code" xml:"Code"`
-	AccessKeyId     string `json:"AccessKeyId" xml:"AccessKeyId"`
+	AccessKeyID     string `json:"AccessKeyID" xml:"AccessKeyID"`
 	AccessKeySecret string `json:"AccessKeySecret" xml:"AccessKeySecret"`
 	SecurityToken   string `json:"SecurityToken" xml:"SecurityToken"`
 	Expiration      string `json:"Expiration" xml:"Expiration"`
@@ -34,19 +34,23 @@ func newEcsRamRoleCredential(roleName string, runtime *utils.Runtime) *EcsRamRol
 	}
 }
 
-func (e *EcsRamRoleCredential) GetAccessKeyId() (string, error) {
+// GetAccessKeyID reutrns  EcsRamRoleResponse's AccessKeyID
+// if AccessKeyID is not exist or out of date, the function will update it.
+func (e *EcsRamRoleCredential) GetAccessKeyID() (string, error) {
 	if e.sessionCredential == nil || e.needUpdateCredential() {
-		err := e.UpdateCredential()
+		err := e.updateCredential()
 		if err != nil {
 			return "", err
 		}
 	}
-	return e.sessionCredential.AccessKeyId, nil
+	return e.sessionCredential.AccessKeyID, nil
 }
 
+// GetAccessSecret reutrns  EcsRamRoleResponse's AccessKeySecret
+// if AccessKeySecret is not exist or out of date, the function will update it.
 func (e *EcsRamRoleCredential) GetAccessSecret() (string, error) {
 	if e.sessionCredential == nil || e.needUpdateCredential() {
-		err := e.UpdateCredential()
+		err := e.updateCredential()
 		if err != nil {
 			return "", err
 		}
@@ -54,9 +58,11 @@ func (e *EcsRamRoleCredential) GetAccessSecret() (string, error) {
 	return e.sessionCredential.AccessKeySecret, nil
 }
 
+// GetSecurityToken reutrns  EcsRamRoleResponse's SecurityToken
+// if SecurityToken is not exist or out of date, the function will update it.
 func (e *EcsRamRoleCredential) GetSecurityToken() (string, error) {
 	if e.sessionCredential == nil || e.needUpdateCredential() {
-		err := e.UpdateCredential()
+		err := e.updateCredential()
 		if err != nil {
 			return "", err
 		}
@@ -64,15 +70,17 @@ func (e *EcsRamRoleCredential) GetSecurityToken() (string, error) {
 	return e.sessionCredential.SecurityToken, nil
 }
 
+// GetBearerToken is useless for EcsRamRoleCredential
 func (e *EcsRamRoleCredential) GetBearerToken() string {
 	return ""
 }
 
+// GetType reutrns  EcsRamRoleCredential's type
 func (e *EcsRamRoleCredential) GetType() string {
 	return "ecs_ram_role"
 }
 
-func (e *EcsRamRoleCredential) UpdateCredential() (err error) {
+func (e *EcsRamRoleCredential) updateCredential() (err error) {
 	if e.runtime == nil {
 		e.runtime = new(utils.Runtime)
 	}
@@ -91,15 +99,15 @@ func (e *EcsRamRoleCredential) UpdateCredential() (err error) {
 	if resp.Code != "Success" {
 		return fmt.Errorf("refresh Ecs sts token err: Code is not Success")
 	}
-	if resp.AccessKeyId == "" || resp.AccessKeySecret == "" || resp.SecurityToken == "" || resp.Expiration == "" {
-		return fmt.Errorf("refresh Ecs sts token err: AccessKeyId: %s, AccessKeySecret: %s, SecurityToken: %s, Expiration: %s", resp.AccessKeyId, resp.AccessKeySecret, resp.SecurityToken, resp.Expiration)
+	if resp.AccessKeyID == "" || resp.AccessKeySecret == "" || resp.SecurityToken == "" || resp.Expiration == "" {
+		return fmt.Errorf("refresh Ecs sts token err: AccessKeyID: %s, AccessKeySecret: %s, SecurityToken: %s, Expiration: %s", resp.AccessKeyID, resp.AccessKeySecret, resp.SecurityToken, resp.Expiration)
 	}
 
 	expirationTime, err := time.Parse("2006-01-02T15:04:05Z", resp.Expiration)
 	e.lastUpdateTimestamp = time.Now().Unix()
 	e.credentialExpiration = int(expirationTime.Unix() - time.Now().Unix())
-	e.sessionCredential = &SessionCredential{
-		AccessKeyId:     resp.AccessKeyId,
+	e.sessionCredential = &sessionCredential{
+		AccessKeyID:     resp.AccessKeyID,
 		AccessKeySecret: resp.AccessKeySecret,
 		SecurityToken:   resp.SecurityToken,
 	}
