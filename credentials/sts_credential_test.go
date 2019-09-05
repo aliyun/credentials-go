@@ -7,10 +7,10 @@ import (
 )
 
 func Test_StsCredential(t *testing.T) {
-	auth := newStsTokenCredential("accessKeyId", "accessKeySecret", "securityToken")
-	accessKeyId, err := auth.GetAccessKeyId()
+	auth := newStsTokenCredential("accessKeyID", "accessKeySecret", "securityToken")
+	accessKeyID, err := auth.GetAccessKeyID()
 	assert.Nil(t, err)
-	assert.Equal(t, "accessKeyId", accessKeyId)
+	assert.Equal(t, "accessKeyID", accessKeyID)
 
 	accessKeySecret, err := auth.GetAccessSecret()
 	assert.Nil(t, err)

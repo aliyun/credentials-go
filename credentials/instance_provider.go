@@ -19,7 +19,7 @@ func (p *InstanceCredentialsProvider) Resolve() (*Configuration, error) {
 		return nil, nil
 	}
 	if roleName == "" {
-		return nil, errors.New(ENVEcsMetadata + " cannot be empty.")
+		return nil, errors.New(ENVEcsMetadata + " cannot be empty")
 	}
 
 	config := &Configuration{

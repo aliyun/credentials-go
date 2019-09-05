@@ -25,7 +25,7 @@ func Test_Arn(t *testing.T) {
 	}
 	config := &credentials.Configuration{
 		Type:                  "ram_role_arn",
-		AccessKeyId:           os.Getenv(EnvVarSubAccessKeyID),
+		AccessKeyID:           os.Getenv(EnvVarSubAccessKeyID),
 		AccessKeySecret:       os.Getenv(EnvVarSubAccessKeySecret),
 		RoleArn:               os.Getenv(EnvVarRoleArn),
 		RoleSessionName:       os.Getenv(EnvVarRoleSessionName),
@@ -34,7 +34,7 @@ func Test_Arn(t *testing.T) {
 	cred, err := credentials.NewCredential(config)
 	assert.Nil(t, err)
 	assert.NotNil(t, cred)
-	accesskey, err := cred.GetAccessKeyId()
+	accesskey, err := cred.GetAccessKeyID()
 	assert.Nil(t, err)
 	assert.NotNil(t, accesskey)
 }

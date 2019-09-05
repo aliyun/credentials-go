@@ -18,20 +18,20 @@ func Test_EcsRAmRoleCredential(t *testing.T) {
 			return mockResponse(300, ``, errors.New("sdk test"))
 		}
 	}
-	accesskeyId, err := auth.GetAccessKeyId()
+	accesskeyID, err := auth.GetAccessKeyID()
 	assert.NotNil(t, err)
 	assert.Equal(t, "refresh Ecs sts token err: sdk test", err.Error())
-	assert.Equal(t, "", accesskeyId)
+	assert.Equal(t, "", accesskeyID)
 
 	hookDo = func(fn func(req *http.Request) (*http.Response, error)) func(req *http.Request) (*http.Response, error) {
 		return func(req *http.Request) (*http.Response, error) {
 			return mockResponse(300, ``, nil)
 		}
 	}
-	accesskeyId, err = auth.GetAccessKeyId()
+	accesskeyID, err = auth.GetAccessKeyID()
 	assert.NotNil(t, err)
 	assert.Equal(t, "refresh Ecs sts token err: httpStatus: 300, message = ", err.Error())
-	assert.Equal(t, "", accesskeyId)
+	assert.Equal(t, "", accesskeyID)
 
 	accesskeySecret, err := auth.GetAccessSecret()
 	assert.NotNil(t, err)
@@ -49,42 +49,42 @@ func Test_EcsRAmRoleCredential(t *testing.T) {
 
 	hookDo = func(fn func(req *http.Request) (*http.Response, error)) func(req *http.Request) (*http.Response, error) {
 		return func(req *http.Request) (*http.Response, error) {
-			return mockResponse(200, `"AccessKeyId":"accessKeyId","AccessKeySecret":"accessKeySecret","SecurityToken":"securitytoken","Expiration":"expiration"`, nil)
+			return mockResponse(200, `"AccessKeyID":"accessKeyID","AccessKeySecret":"accessKeySecret","SecurityToken":"securitytoken","Expiration":"expiration"`, nil)
 		}
 	}
-	accesskeyId, err = auth.GetAccessKeyId()
+	accesskeyID, err = auth.GetAccessKeyID()
 	assert.NotNil(t, err)
 	assert.Equal(t, "refresh Ecs sts token err: Json Unmarshal fail: invalid character ':' after top-level value", err.Error())
-	assert.Equal(t, "", accesskeyId)
+	assert.Equal(t, "", accesskeyID)
 
 	hookDo = func(fn func(req *http.Request) (*http.Response, error)) func(req *http.Request) (*http.Response, error) {
 		return func(req *http.Request) (*http.Response, error) {
 			return mockResponse(200, `{"AccessKeySecret":"accessKeySecret","SecurityToken":"securitytoken","Expiration":"expiration","Code":"fail"}`, nil)
 		}
 	}
-	accesskeyId, err = auth.GetAccessKeyId()
+	accesskeyID, err = auth.GetAccessKeyID()
 	assert.NotNil(t, err)
 	assert.Equal(t, "refresh Ecs sts token err: Code is not Success", err.Error())
-	assert.Equal(t, "", accesskeyId)
+	assert.Equal(t, "", accesskeyID)
 
 	hookDo = func(fn func(req *http.Request) (*http.Response, error)) func(req *http.Request) (*http.Response, error) {
 		return func(req *http.Request) (*http.Response, error) {
 			return mockResponse(200, `{"AccessKeySecret":"accessKeySecret","SecurityToken":"securitytoken","Expiration":"expiration","Code":"Success"}`, nil)
 		}
 	}
-	accesskeyId, err = auth.GetAccessKeyId()
+	accesskeyID, err = auth.GetAccessKeyID()
 	assert.NotNil(t, err)
-	assert.Equal(t, "refresh Ecs sts token err: AccessKeyId: , AccessKeySecret: accessKeySecret, SecurityToken: securitytoken, Expiration: expiration", err.Error())
-	assert.Equal(t, "", accesskeyId)
+	assert.Equal(t, "refresh Ecs sts token err: AccessKeyID: , AccessKeySecret: accessKeySecret, SecurityToken: securitytoken, Expiration: expiration", err.Error())
+	assert.Equal(t, "", accesskeyID)
 
 	hookDo = func(fn func(req *http.Request) (*http.Response, error)) func(req *http.Request) (*http.Response, error) {
 		return func(req *http.Request) (*http.Response, error) {
-			return mockResponse(200, `{"AccessKeyId":"accessKeyId","AccessKeySecret":"accessKeySecret","SecurityToken":"securitytoken","Expiration":"2020-01-02T15:04:05Z","Code":"Success"}`, nil)
+			return mockResponse(200, `{"AccessKeyID":"accessKeyID","AccessKeySecret":"accessKeySecret","SecurityToken":"securitytoken","Expiration":"2020-01-02T15:04:05Z","Code":"Success"}`, nil)
 		}
 	}
-	accesskeyId, err = auth.GetAccessKeyId()
+	accesskeyID, err = auth.GetAccessKeyID()
 	assert.Nil(t, err)
-	assert.Equal(t, "accessKeyId", accesskeyId)
+	assert.Equal(t, "accessKeyID", accesskeyID)
 
 	accesskeySecret, err = auth.GetAccessSecret()
 	assert.Nil(t, err)

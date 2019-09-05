@@ -181,7 +181,7 @@ bearer_token =
 
 [rsa]                          
 type = rsa_key_pair               
-public_key_id = publicKeyId       
+public_key_id = publicKeyID       
 private_key_file = ./pk.pem
 proxy = www.aliyun.com
 timeout = 10
@@ -190,11 +190,11 @@ host = www.aliyun.com
 
 [norsaprivate]                          
 type = rsa_key_pair               
-public_key_id = publicKeyId       
+public_key_id = publicKeyID       
 
 [emptyrsaprivate]                          
 type = rsa_key_pair               
-public_key_id = publicKeyId       
+public_key_id = publicKeyID       
 private_key_file = 
 
 [norsapublic]                          
@@ -208,25 +208,25 @@ private_key_file = ./pk.pem
 
 [invalidexpirationrsa]                                         
 type = rsa_key_pair               
-public_key_id = publicKeyId       
+public_key_id = publicKeyID       
 private_key_file = ./pk.pem
 session_expiration = a
 
 [invalidTimeoutrsa]                         
 type = rsa_key_pair               
-public_key_id = publicKeyId       
+public_key_id = publicKeyID       
 private_key_file = ./pk.pem
 timeout = a
 
 [invalidConnectTimeoutrsa]                         
 type = rsa_key_pair               
-public_key_id = publicKeyId       
+public_key_id = publicKeyID       
 private_key_file = ./pk.pem
 connect_timeout = a
 
 [error_type]                          
 type = error_type               
-public_key_id = publicKeyId       
+public_key_id = publicKeyID       
 private_key_file = ./pk_error.pem
 `
 var privatekey = `this is privatekey`
@@ -246,7 +246,7 @@ func TestProfileProvider(t *testing.T) {
 	p := NewProfileProvider()
 	c, err := p.Resolve()
 	assert.Nil(t, c)
-	assert.EqualError(t, err, "The default credential file path is invalid.")
+	assert.EqualError(t, err, "The default credential file path is invalid")
 
 	originFilePath := os.Getenv(ENVCredentialFile)
 	os.Setenv(ENVCredentialFile, "")
@@ -311,22 +311,22 @@ func TestProfileProvider(t *testing.T) {
 	p = NewProfileProvider("noak")
 	c, err = p.Resolve()
 	assert.Nil(t, c)
-	assert.Equal(t, "Missing required access_key_id option in profile for access_key.", err.Error())
+	assert.Equal(t, "Missing required access_key_id option in profile for access_key", err.Error())
 	// testcase 9, access_key_id value is empty
 	p = NewProfileProvider("emptyak")
 	c, err = p.Resolve()
 	assert.Nil(t, c)
-	assert.Equal(t, "access_key_id cannot be empty.", err.Error())
+	assert.Equal(t, "access_key_id cannot be empty", err.Error())
 	// testcase 10, access_key_secret key does not exist
 	p = NewProfileProvider("noaksecret")
 	c, err = p.Resolve()
 	assert.Nil(t, c)
-	assert.Equal(t, "Missing required access_key_secret option in profile for access_key.", err.Error())
+	assert.Equal(t, "Missing required access_key_secret option in profile for access_key", err.Error())
 	// testcase 11, access_key_secret value is empty
 	p = NewProfileProvider("emptyaksecret")
 	c, err = p.Resolve()
 	assert.Nil(t, c)
-	assert.Equal(t, "access_key_secret cannot be empty.", err.Error())
+	assert.Equal(t, "access_key_secret cannot be empty", err.Error())
 
 	//testcase 12, normal EcsRamRole
 	p = NewProfileProvider("ecs")
@@ -336,17 +336,17 @@ func TestProfileProvider(t *testing.T) {
 	p = NewProfileProvider("noecs")
 	c, err = p.Resolve()
 	assert.Nil(t, c)
-	assert.Equal(t, "Missing required role_name option in profile for ecs_ram_role.", err.Error())
+	assert.Equal(t, "Missing required role_name option in profile for ecs_ram_role", err.Error())
 	//testcase 14, value is empty
 	p = NewProfileProvider("emptyecs")
 	c, err = p.Resolve()
 	assert.Nil(t, c)
-	assert.Equal(t, "role_name cannot be empty.", err.Error())
+	assert.Equal(t, "role_name cannot be empty", err.Error())
 	//testcase 15, timeout is not int
 	p = NewProfileProvider("invalidRuntimeEcs")
 	c, err = p.Resolve()
 	assert.Nil(t, c)
-	assert.Equal(t, "Please set timeout with an int value.", err.Error())
+	assert.Equal(t, "Please set timeout with an int value", err.Error())
 
 	//testcase 16, normal RamRoleArn
 	p = NewProfileProvider("ram")
@@ -356,52 +356,52 @@ func TestProfileProvider(t *testing.T) {
 	p = NewProfileProvider("noramak")
 	c, err = p.Resolve()
 	assert.Nil(t, c)
-	assert.Equal(t, "Missing required access_key_id option in profile for ram_role_arn.", err.Error())
+	assert.Equal(t, "Missing required access_key_id option in profile for ram_role_arn", err.Error())
 	//testcase 18, access_key_id value is empty
 	p = NewProfileProvider("emptyramak")
 	c, err = p.Resolve()
 	assert.Nil(t, c)
-	assert.Equal(t, "access_key_id cannot be empty.", err.Error())
+	assert.Equal(t, "access_key_id cannot be empty", err.Error())
 	//testcase 19, access_key_secret key does not exist
 	p = NewProfileProvider("noramsecret")
 	c, err = p.Resolve()
 	assert.Nil(t, c)
-	assert.Equal(t, "Missing required access_key_secret option in profile for ram_role_arn.", err.Error())
+	assert.Equal(t, "Missing required access_key_secret option in profile for ram_role_arn", err.Error())
 	//testcase 20, access_key_secret value is empty
 	p = NewProfileProvider("emptyramsecret")
 	c, err = p.Resolve()
 	assert.Nil(t, c)
-	assert.Equal(t, "access_key_secret cannot be empty.", err.Error())
+	assert.Equal(t, "access_key_secret cannot be empty", err.Error())
 	//testcase 21, role_arn key does not exist
 	p = NewProfileProvider("noramarn")
 	c, err = p.Resolve()
 	assert.Nil(t, c)
-	assert.Equal(t, "Missing required role_arn option in profile for ram_role_arn.", err.Error())
+	assert.Equal(t, "Missing required role_arn option in profile for ram_role_arn", err.Error())
 	//testcase 22, role_arn value is empty
 	p = NewProfileProvider("emptyramarn")
 	c, err = p.Resolve()
 	assert.Nil(t, c)
-	assert.Equal(t, "role_arn cannot be empty.", err.Error())
+	assert.Equal(t, "role_arn cannot be empty", err.Error())
 	//testcase 23, role_session_name key does not exist
 	p = NewProfileProvider("noramsessionname")
 	c, err = p.Resolve()
 	assert.Nil(t, c)
-	assert.Equal(t, "Missing required role_session_name option in profile for ram_role_arn.", err.Error())
+	assert.Equal(t, "Missing required role_session_name option in profile for ram_role_arn", err.Error())
 	//testcase 24, role_session_name value is empty
 	p = NewProfileProvider("emptyramsessionname")
 	c, err = p.Resolve()
 	assert.Nil(t, c)
-	assert.Equal(t, "role_session_name cannot be empty.", err.Error())
+	assert.Equal(t, "role_session_name cannot be empty", err.Error())
 	//testcase 25, role_session_expiration is not int
 	p = NewProfileProvider("invalidexpirationram")
 	c, err = p.Resolve()
 	assert.Nil(t, c)
-	assert.Equal(t, "role_session_expiration must be an int.", err.Error())
+	assert.Equal(t, "role_session_expiration must be an int", err.Error())
 	//testcase 26, timeout is not int
 	p = NewProfileProvider("invalidRuntimeram")
 	c, err = p.Resolve()
 	assert.Nil(t, c)
-	assert.Equal(t, "Please set timeout with an int value.", err.Error())
+	assert.Equal(t, "Please set timeout with an int value", err.Error())
 
 	//testase 27, normal RsaKeyPair
 	file, err = os.Create("./pk.pem")
@@ -418,37 +418,37 @@ func TestProfileProvider(t *testing.T) {
 	p = NewProfileProvider("norsaprivate")
 	c, err = p.Resolve()
 	assert.Nil(t, c)
-	assert.Equal(t, "Missing required private_key_file option in profile for rsa_key_pair.", err.Error())
+	assert.Equal(t, "Missing required private_key_file option in profile for rsa_key_pair", err.Error())
 	//testcase 29, private_key_file value is empty
 	p = NewProfileProvider("emptyrsaprivate")
 	c, err = p.Resolve()
 	assert.Nil(t, c)
-	assert.Equal(t, "private_key_file cannot be empty.", err.Error())
+	assert.Equal(t, "private_key_file cannot be empty", err.Error())
 	//testcase 30, public_key_id key does not exist
 	p = NewProfileProvider("norsapublic")
 	c, err = p.Resolve()
 	assert.Nil(t, c)
-	assert.Equal(t, "Missing required public_key_id option in profile for rsa_key_pair.", err.Error())
+	assert.Equal(t, "Missing required public_key_id option in profile for rsa_key_pair", err.Error())
 	//testcase 31, public_key_id value is empty
 	p = NewProfileProvider("emptyrsapublic")
 	c, err = p.Resolve()
 	assert.Nil(t, c)
-	assert.Equal(t, "public_key_id cannot be empty.", err.Error())
+	assert.Equal(t, "public_key_id cannot be empty", err.Error())
 	//testcase 32, session_expiration is not int
 	p = NewProfileProvider("invalidexpirationrsa")
 	c, err = p.Resolve()
 	assert.Nil(t, c)
-	assert.Equal(t, "session_expiration must be an int.", err.Error())
+	assert.Equal(t, "session_expiration must be an int", err.Error())
 	//testcase 33, timeout is not int
 	p = NewProfileProvider("invalidTimeoutrsa")
 	c, err = p.Resolve()
 	assert.Nil(t, c)
-	assert.Equal(t, "Please set timeout with an int value.", err.Error())
+	assert.Equal(t, "Please set timeout with an int value", err.Error())
 	//testcase 34, connect_timeout is not int
 	p = NewProfileProvider("invalidConnectTimeoutrsa")
 	c, err = p.Resolve()
 	assert.Nil(t, c)
-	assert.Equal(t, "Please set connect_timeout with an int value.", err.Error())
+	assert.Equal(t, "Please set connect_timeout with an int value", err.Error())
 
 	//testcase 35, normal RamRoleArn
 	p = NewProfileProvider("sts")
@@ -458,32 +458,32 @@ func TestProfileProvider(t *testing.T) {
 	p = NewProfileProvider("nostskey")
 	c, err = p.Resolve()
 	assert.Nil(t, c)
-	assert.Equal(t, "Missing required access_key_id option in profile for sts.", err.Error())
+	assert.Equal(t, "Missing required access_key_id option in profile for sts", err.Error())
 	//testcase 37, access_key_id value is empty
 	p = NewProfileProvider("emptystskey")
 	c, err = p.Resolve()
 	assert.Nil(t, c)
-	assert.Equal(t, "access_key_id cannot be empty.", err.Error())
+	assert.Equal(t, "access_key_id cannot be empty", err.Error())
 	//testcase 38, access_key_secret key does not exist
 	p = NewProfileProvider("nostssecret")
 	c, err = p.Resolve()
 	assert.Nil(t, c)
-	assert.Equal(t, "Missing required access_key_secret option in profile for sts.", err.Error())
+	assert.Equal(t, "Missing required access_key_secret option in profile for sts", err.Error())
 	//testcase 39, access_key_secret value is empty
 	p = NewProfileProvider("emptystssecret")
 	c, err = p.Resolve()
 	assert.Nil(t, c)
-	assert.Equal(t, "access_key_secret cannot be empty.", err.Error())
+	assert.Equal(t, "access_key_secret cannot be empty", err.Error())
 	//testcase 40, security_token access_key_secretkey does not exist
 	p = NewProfileProvider("noststoken")
 	c, err = p.Resolve()
 	assert.Nil(t, c)
-	assert.Equal(t, "Missing required security_token option in profile for sts.", err.Error())
+	assert.Equal(t, "Missing required security_token option in profile for sts", err.Error())
 	//testcase 41, security_token value is empty
 	p = NewProfileProvider("emptyststoken")
 	c, err = p.Resolve()
 	assert.Nil(t, c)
-	assert.Equal(t, "security_token cannot be empty.", err.Error())
+	assert.Equal(t, "security_token cannot be empty", err.Error())
 
 	//testcase 42, normal RamRoleArn
 	p = NewProfileProvider("bearer")
@@ -493,16 +493,16 @@ func TestProfileProvider(t *testing.T) {
 	p = NewProfileProvider("nobearer")
 	c, err = p.Resolve()
 	assert.Nil(t, c)
-	assert.Equal(t, "Missing required bearer_token option in profile for bearer.", err.Error())
+	assert.Equal(t, "Missing required bearer_token option in profile for bearer", err.Error())
 	//testcase 44, value is empty
 	p = NewProfileProvider("emptybearer")
 	c, err = p.Resolve()
 	assert.Nil(t, c)
-	assert.Equal(t, "bearer_token cannot be empty.", err.Error())
+	assert.Equal(t, "bearer_token cannot be empty", err.Error())
 
 	//testcase 45, credential type is error
 	p = NewProfileProvider("error_type")
 	c, err = p.Resolve()
 	assert.Nil(t, c)
-	assert.Equal(t, "Invalid type option, support: access_key, sts, ecs_ram_role, ram_role_arn, rsa_key_pair.", err.Error())
+	assert.Equal(t, "Invalid type option, support: access_key, sts, ecs_ram_role, ram_role_arn, rsa_key_pair", err.Error())
 }

@@ -26,18 +26,18 @@ Fe0zIJp5e69zK+W2Mvt4bL7OgBROeoECQQDsE+4uLw0gFln0tosmovhmp60NcfX7
 bLbtzL2MbwbXlbOztF7ssgzUWAHgKI6hK3g0LhsqBuo3jzmSVO43giZvAkEA08Nm
 2TI9EvX6DfCVfPOiKZM+Pijh0xLN4Dn8qUgt3Tcew/vfj4WA2ZV6qiJqL01vMsHc
 vftlY0Hs1vNXcaBgEA==`
-	auth := newRsaKeyPairCredential(privatekey, "publicKeyId", 100, &utils.Runtime{Host: "www.aliyun.com", Proxy: "www.aliyuncs.com"})
+	auth := newRsaKeyPairCredential(privatekey, "publicKeyID", 100, &utils.Runtime{Host: "www.aliyun.com", Proxy: "www.aliyuncs.com"})
 	origTestHookDo := hookDo
 	defer func() { hookDo = origTestHookDo }()
 	hookDo = func(fn func(req *http.Request) (*http.Response, error)) func(req *http.Request) (*http.Response, error) {
 		return func(req *http.Request) (*http.Response, error) {
-			return mockResponse(200, `{"Credentials":{"AccessKeyId":"accessKeyId","AccessKeySecret":"accessKeySecret","SecurityToken":"securitytoken","Expiration":"expiration"}}`, errors.New("Internal error"))
+			return mockResponse(200, `{"Credentials":{"AccessKeyID":"accessKeyID","AccessKeySecret":"accessKeySecret","SecurityToken":"securitytoken","Expiration":"expiration"}}`, errors.New("Internal error"))
 		}
 	}
-	accesskeyId, err := auth.GetAccessKeyId()
+	accesskeyID, err := auth.GetAccessKeyID()
 	assert.NotNil(t, err)
 	assert.Equal(t, "[InvalidParam]:Key Pair session duration should be in the range of 15min - 1Hr", err.Error())
-	assert.Equal(t, "", accesskeyId)
+	assert.Equal(t, "", accesskeyID)
 
 	accesskeySecret, err := auth.GetAccessSecret()
 	assert.NotNil(t, err)
@@ -52,65 +52,65 @@ vftlY0Hs1vNXcaBgEA==`
 	assert.Equal(t, "rsa_key_pair", auth.GetType())
 
 	auth.SessionExpiration = 1000
-	accesskeyId, err = auth.GetAccessKeyId()
+	accesskeyID, err = auth.GetAccessKeyID()
 	assert.NotNil(t, err)
 	assert.Equal(t, "refresh KeyPair err: Internal error", err.Error())
-	assert.Equal(t, "", accesskeyId)
+	assert.Equal(t, "", accesskeyID)
 
 	auth.SessionExpiration = 0
-	accesskeyId, err = auth.GetAccessKeyId()
+	accesskeyID, err = auth.GetAccessKeyID()
 	assert.NotNil(t, err)
 	assert.Equal(t, "refresh KeyPair err: Internal error", err.Error())
-	assert.Equal(t, "", accesskeyId)
+	assert.Equal(t, "", accesskeyID)
 
 	hookDo = func(fn func(req *http.Request) (*http.Response, error)) func(req *http.Request) (*http.Response, error) {
 		return func(req *http.Request) (*http.Response, error) {
 			return mockResponse(300, ``, nil)
 		}
 	}
-	accesskeyId, err = auth.GetAccessKeyId()
+	accesskeyID, err = auth.GetAccessKeyID()
 	assert.NotNil(t, err)
 	assert.Equal(t, "refresh KeyPair err: httpStatus: 300, message = ", err.Error())
-	assert.Equal(t, "", accesskeyId)
+	assert.Equal(t, "", accesskeyID)
 
 	hookDo = func(fn func(req *http.Request) (*http.Response, error)) func(req *http.Request) (*http.Response, error) {
 		return func(req *http.Request) (*http.Response, error) {
-			return mockResponse(200, `"SessionAccessKey":{"SessionAccessKeyId":"accessKeyId","SessionAccessKeySecret":"accessKeySecret","Expiration":"expiration"}}`, nil)
+			return mockResponse(200, `"SessionAccessKey":{"SessionAccessKeyID":"accessKeyID","SessionAccessKeySecret":"accessKeySecret","Expiration":"expiration"}}`, nil)
 		}
 	}
-	accesskeyId, err = auth.GetAccessKeyId()
+	accesskeyID, err = auth.GetAccessKeyID()
 	assert.NotNil(t, err)
 	assert.Equal(t, "refresh KeyPair err: Json Unmarshal fail: invalid character ':' after top-level value", err.Error())
-	assert.Equal(t, "", accesskeyId)
+	assert.Equal(t, "", accesskeyID)
 
 	hookDo = func(fn func(req *http.Request) (*http.Response, error)) func(req *http.Request) (*http.Response, error) {
 		return func(req *http.Request) (*http.Response, error) {
 			return mockResponse(200, `{"SessionAccessKey":{"SessionAccessKeySecret":"accessKeySecret","Expiration":"expiration"}}`, nil)
 		}
 	}
-	accesskeyId, err = auth.GetAccessKeyId()
+	accesskeyID, err = auth.GetAccessKeyID()
 	assert.NotNil(t, err)
-	assert.Equal(t, "refresh KeyPair err: SessionAccessKeyId: , SessionAccessKeySecret: accessKeySecret, Expiration: expiration", err.Error())
-	assert.Equal(t, "", accesskeyId)
+	assert.Equal(t, "refresh KeyPair err: SessionAccessKeyID: , SessionAccessKeySecret: accessKeySecret, Expiration: expiration", err.Error())
+	assert.Equal(t, "", accesskeyID)
 
 	hookDo = func(fn func(req *http.Request) (*http.Response, error)) func(req *http.Request) (*http.Response, error) {
 		return func(req *http.Request) (*http.Response, error) {
 			return mockResponse(200, `{}`, nil)
 		}
 	}
-	accesskeyId, err = auth.GetAccessKeyId()
+	accesskeyID, err = auth.GetAccessKeyID()
 	assert.NotNil(t, err)
-	assert.Equal(t, "refresh KeyPair err: SessionAccessKey is empty.", err.Error())
-	assert.Equal(t, "", accesskeyId)
+	assert.Equal(t, "refresh KeyPair err: SessionAccessKey is empty", err.Error())
+	assert.Equal(t, "", accesskeyID)
 
 	hookDo = func(fn func(req *http.Request) (*http.Response, error)) func(req *http.Request) (*http.Response, error) {
 		return func(req *http.Request) (*http.Response, error) {
-			return mockResponse(200, `{"SessionAccessKey":{"SessionAccessKeyId":"accessKeyId","SessionAccessKeySecret":"accessKeySecret","Expiration":"2020-01-02T15:04:05Z"}}`, nil)
+			return mockResponse(200, `{"SessionAccessKey":{"SessionAccessKeyID":"accessKeyID","SessionAccessKeySecret":"accessKeySecret","Expiration":"2020-01-02T15:04:05Z"}}`, nil)
 		}
 	}
-	accesskeyId, err = auth.GetAccessKeyId()
+	accesskeyID, err = auth.GetAccessKeyID()
 	assert.Nil(t, err)
-	assert.Equal(t, "accessKeyId", accesskeyId)
+	assert.Equal(t, "accessKeyID", accesskeyID)
 
 	accesskeySecret, err = auth.GetAccessSecret()
 	assert.Nil(t, err)
@@ -118,7 +118,7 @@ vftlY0Hs1vNXcaBgEA==`
 
 	auth.runtime = nil
 	auth.lastUpdateTimestamp = 0
-	accesskeyId, err = auth.GetAccessKeyId()
+	accesskeyID, err = auth.GetAccessKeyID()
 	assert.Nil(t, err)
-	assert.Equal(t, "accessKeyId", accesskeyId)
+	assert.Equal(t, "accessKeyID", accesskeyID)
 }

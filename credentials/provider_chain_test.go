@@ -24,7 +24,7 @@ func TestProviderChain(t *testing.T) {
 	}()
 	c, err := pc.Resolve()
 	assert.Nil(t, c)
-	assert.EqualError(t, err, "ALIBABA_CLOUD_ACCESS_KEY_ID cannot be empty.")
+	assert.EqualError(t, err, "ALIBABA_CLOUD_ACCESS_KEY_ID cannot be empty")
 
 	os.Setenv(EnvVarAccessKeyID, "AccessKeyID")
 	os.Setenv(EnvVarAccessKeySecret, "AccessKeySecret")
@@ -39,5 +39,5 @@ func TestProviderChain(t *testing.T) {
 
 	c, err = pc.Resolve()
 	assert.Nil(t, c)
-	assert.EqualError(t, err, "No credential found.")
+	assert.EqualError(t, err, "No credential found")
 }

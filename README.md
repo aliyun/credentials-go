@@ -7,6 +7,7 @@ English | [简体中文](README-CN.md)
 [![License](https://poser.pugx.org/alibabacloud/credentials/license)](https://packagist.org/packages/alibabacloud/credentials)
 [![Travis Build Status](https://travis-ci.org/aliyun/credentials-go.svg?branch=master)](https://travis-ci.org/aliyun/credentials-go)
 [![Appveyor Build Status](https://ci.appveyor.com/api/projects/status/6sxnwbriw1gwehx8/branch/master?svg=true)](https://ci.appveyor.com/project/aliyun/credentials-go)
+[![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/aliyun/credentials-go/badges/quality-score.png?b=master)](https://scrutinizer-ci.com/g/aliyun/credentials-go/?branch=master)
 
 ![](https://aliyunsdk-pages.alicdn.com/icons/AlibabaCloud.svg)
 
@@ -35,7 +36,7 @@ Before you begin, you need to sign up for an Alibaba Cloud account and retrieve 
 
 ### Credential Type
 
-#### access_key
+#### AccessKey
 Setup access_key credential through [User Information Management][ak], it have full authority over the account, please keep it safe. Sometimes for security reasons, you cannot hand over a primary account AccessKey with full access to the developer of a project. You may create a sub-account [RAM Sub-account][ram] , grant its [authorization][permissions]，and use the AccessKey of RAM Sub-account.
 ```go
 import (
@@ -45,20 +46,20 @@ import (
 func main(){
 	config := &credentials.Configuration{
 		Type:                  "access_key",       // Which type of credential you want
-		AccessKeyId:           "AccessKeyId",      // AccessKeyId of your account
+		AccessKeyID:           "AccessKeyID",      // AccessKeyID of your account
 		AccessKeySecret:       "AccessKeySecret",  // AccessKeySecret of your account
     }
 	akCredential, err := credentials.NewCredential(config)
 	if err != nil {
 		return err
 	}
-	accessKeyId, err := akCredential.GetAccessKeyId()
+	accessKeyID, err := akCredential.GetAccessKeyID()
 	accessSecret, err := akCredential.GetAccessSecret()
 	credentialType := akCredential.GetType()
 }
 ```
 
-#### sts
+#### STS
 Create a temporary security credential by applying Temporary Security Credentials (TSC) through the Security Token Service (STS).
 ```go
 import (
@@ -68,7 +69,7 @@ import (
 func main(){
 	config := &credentials.Configuration{
 		Type:                  "sts",              // Which type of credential you want
-		AccessKeyId:           "AccessKeyId",      // AccessKeyId of your account
+		AccessKeyID:           "AccessKeyID",      // AccessKeyID of your account
 		AccessKeySecret:       "AccessKeySecret",  // AccessKeySecret of your account
 		SecurityToken:         "SecurityToken",    // Temporary Security Token
     }
@@ -76,14 +77,14 @@ func main(){
 	if err != nil {
 		return err
 	}
-	accessKeyId, err := stsCredential.GetAccessKeyId()
+	accessKeyID, err := stsCredential.GetAccessKeyID()
 	accessSecret, err := stsCredential.GetAccessSecret()
 	securityToken, err := stsCredential.GetSecurityToken()
 	credentialType := stsCredential.GetType()
 }
 ```
 
-#### ram_role_arn
+#### RamRoleArn
 By specifying [RAM Role][RAM Role], the credential will be able to automatically request maintenance of STS Token. If you want to limit the permissions([How to make a policy][policy]) of STS Token, you can assign value for `Policy`.
 ```go
 import (
@@ -93,7 +94,7 @@ import (
 func main(){
 	config := &credentials.Configuration{
 		Type:                   "ram_role_arn",     // Which type of credential you want
-		AccessKeyId:            "AccessKeyId",      // AccessKeyId of your account
+		AccessKeyID:            "AccessKeyID",      // AccessKeyID of your account
 		AccessKeySecret:        "AccessKeySecret",  // AccessKeySecret of your account
 		RoleArn:                "RoleArn",          // Format: acs:ram::USER_ID:role/ROLE_NAME
 		RoleSessionName:        "RoleSessionName",  // Role Session Name
@@ -104,14 +105,14 @@ func main(){
 	if err != nil {
 		return err
 	}
-	accessKeyId, err := arnCredential.GetAccessKeyId()
+	accessKeyID, err := arnCredential.GetAccessKeyID()
 	accessSecret, err := arnCredential.GetAccessSecret()
 	securityToken, err := arnCredential.GetSecurityToken()
 	credentialType := arnCredential.GetType()
 }
 ```
 
-#### ecs_ram_role
+#### EcsRamRole
 By specifying the role name, the credential will be able to automatically request maintenance of STS Token.
 ```go
 import (
@@ -127,14 +128,14 @@ func main(){
 	if err != nil {
 		return err
 	}
-	accessKeyId, err := ecsCredential.GetAccessKeyId()
+	accessKeyID, err := ecsCredential.GetAccessKeyID()
 	accessSecret, err := ecsCredential.GetAccessSecret()
 	securityToken, err := ecsCredential.GetSecurityToken()
 	credentialType := ecsCredential.GetType()
 }
 ```
 
-#### rsa_key_pair
+#### RsaKeyPair
 By specifying the public key ID and the private key file, the credential will be able to automatically request maintenance of the AccessKey before sending the request. Only Japan station is supported. 
 ```go
 import (
@@ -145,20 +146,20 @@ func main(){
 	config := &credentials.Configuration{
 		Type:                   "rsa_key_pair",       // Which type of credential you want
 		PrivateKeyFile:         "PrivateKeyFile",     // The file path to store the PrivateKey
-		PublicKeyId:            "PublicKeyId",        // PublicKeyId of your account
+		PublicKeyID:            "PublicKeyID",        // PublicKeyID of your account
     }
 	rsaCredential, err := credentials.NewCredential(config)
 	if err != nil {
 		return err
 	}
-	accessKeyId, err := rsaCredential.GetAccessKeyId()
+	accessKeyID, err := rsaCredential.GetAccessKeyID()
 	accessSecret, err := rsaCredential.GetAccessSecret()
 	securityToken, err := rsaCredential.GetSecurityToken()
 	credentialType := rsaCredential.GetType()
 }
 ```
 
-#### bearer
+#### Bearer Token
 If credential is required by the Cloud Call Centre (CCC), please apply for Bearer Token maintenance by yourself.
 ```go
 import (

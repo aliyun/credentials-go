@@ -16,7 +16,7 @@ func TestInstanceCredentialsProvider(t *testing.T) {
 	}()
 	c, err := p.Resolve()
 	assert.Nil(t, c)
-	assert.Equal(t, "ALIBABA_CLOUD_ECS_METADATA cannot be empty.", err.Error())
+	assert.Equal(t, "ALIBABA_CLOUD_ECS_METADATA cannot be empty", err.Error())
 
 	os.Setenv(ENVEcsMetadata, "role_name")
 	c, err = p.Resolve()

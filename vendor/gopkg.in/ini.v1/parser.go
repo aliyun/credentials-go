@@ -120,30 +120,30 @@ func readKeyName(delimiters string, in []byte) (string, int, error) {
 	}
 
 	// Get out key name
-	endIdx := -1
+	endIDx := -1
 	if len(keyQuote) > 0 {
-		startIdx := len(keyQuote)
+		startIDx := len(keyQuote)
 		// FIXME: fail case -> """"""name"""=value
-		pos := strings.Index(line[startIdx:], keyQuote)
+		pos := strings.Index(line[startIDx:], keyQuote)
 		if pos == -1 {
 			return "", -1, fmt.Errorf("missing closing key quote: %s", line)
 		}
-		pos += startIdx
+		pos += startIDx
 
 		// Find key-value delimiter
-		i := strings.IndexAny(line[pos+startIdx:], delimiters)
+		i := strings.IndexAny(line[pos+startIDx:], delimiters)
 		if i < 0 {
 			return "", -1, ErrDelimiterNotFound{line}
 		}
-		endIdx = pos + i
-		return strings.TrimSpace(line[startIdx:pos]), endIdx + startIdx + 1, nil
+		endIDx = pos + i
+		return strings.TrimSpace(line[startIDx:pos]), endIDx + startIDx + 1, nil
 	}
 
-	endIdx = strings.IndexAny(line, delimiters)
-	if endIdx < 0 {
+	endIDx = strings.IndexAny(line, delimiters)
+	if endIDx < 0 {
 		return "", -1, ErrDelimiterNotFound{line}
 	}
-	return strings.TrimSpace(line[0:endIdx]), endIdx + 1, nil
+	return strings.TrimSpace(line[0:endIDx]), endIDx + 1, nil
 }
 
 func (p *parser) readMultilines(line, val, valQuote string) (string, error) {
@@ -220,17 +220,17 @@ func (p *parser) readValue(in []byte, bufferSize int) (string, error) {
 	}
 
 	if len(valQuote) > 0 {
-		startIdx := len(valQuote)
-		pos := strings.LastIndex(line[startIdx:], valQuote)
+		startIDx := len(valQuote)
+		pos := strings.LastIndex(line[startIDx:], valQuote)
 		// Check for multi-line value
 		if pos == -1 {
-			return p.readMultilines(line, line[startIdx:], valQuote)
+			return p.readMultilines(line, line[startIDx:], valQuote)
 		}
 
 		if p.options.UnescapeValueDoubleQuotes && valQuote == `"` {
-			return strings.Replace(line[startIdx:pos+startIdx], `\"`, `"`, -1), nil
+			return strings.Replace(line[startIDx:pos+startIDx], `\"`, `"`, -1), nil
 		}
-		return line[startIdx : pos+startIdx], nil
+		return line[startIDx : pos+startIDx], nil
 	}
 
 	lastChar := line[len(line)-1]
@@ -300,8 +300,8 @@ func (p *parser) readPythonMultilines(line string, bufferSize int) (string, erro
 		}
 
 		// NOTE: Return if not a python-ini multi-line value.
-		currentIdentSize := len(peekMatches[1])
-		if currentIdentSize <= 0 {
+		currentIDentSize := len(peekMatches[1])
+		if currentIDentSize <= 0 {
 			return line, nil
 		}
 
@@ -396,18 +396,18 @@ func (f *File) parse(reader io.Reader) (err error) {
 		// Section
 		if line[0] == '[' {
 			// Read to the next ']' (TODO: support quoted strings)
-			closeIdx := bytes.LastIndexByte(line, ']')
-			if closeIdx == -1 {
+			closeIDx := bytes.LastIndexByte(line, ']')
+			if closeIDx == -1 {
 				return fmt.Errorf("unclosed section: %s", line)
 			}
 
-			name := string(line[1:closeIdx])
+			name := string(line[1:closeIDx])
 			section, err = f.NewSection(name)
 			if err != nil {
 				return err
 			}
 
-			comment, has := cleanComment(line[closeIdx+1:])
+			comment, has := cleanComment(line[closeIDx+1:])
 			if has {
 				p.comment.Write(comment)
 			}

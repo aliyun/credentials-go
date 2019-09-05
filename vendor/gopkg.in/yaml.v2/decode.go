@@ -710,11 +710,11 @@ func (d *decoder) mappingStruct(n *node, out reflect.Value) (good bool) {
 		}
 		if info, ok := sinfo.FieldsMap[name.String()]; ok {
 			if d.strict {
-				if doneFields[info.Id] {
+				if doneFields[info.ID] {
 					d.terrors = append(d.terrors, fmt.Sprintf("line %d: field %s already set in type %s", ni.line+1, name.String(), out.Type()))
 					continue
 				}
-				doneFields[info.Id] = true
+				doneFields[info.ID] = true
 			}
 			var field reflect.Value
 			if info.Inline == nil {
