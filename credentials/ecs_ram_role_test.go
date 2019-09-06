@@ -9,7 +9,7 @@ import (
 )
 
 func Test_EcsRAmRoleCredential(t *testing.T) {
-	auth := newEcsRamRoleCredential("go sdk", nil)
+	auth := newEcsRAMRoleCredential("go sdk", nil)
 	origTestHookDo := hookDo
 	defer func() { hookDo = origTestHookDo }()
 

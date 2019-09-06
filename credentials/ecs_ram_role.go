@@ -11,14 +11,15 @@ import (
 
 var securityCredURL = "http://100.100.100.200/latest/meta-data/ram/security-credentials/"
 
-type EcsRamRoleCredential struct {
+// EcsRAMRoleCredential is a kind of credential
+type EcsRAMRoleCredential struct {
 	*credentialUpdater
 	RoleName          string
 	sessionCredential *sessionCredential
 	runtime           *utils.Runtime
 }
 
-type EcsRamRoleResponse struct {
+type ecsRAMRoleResponse struct {
 	Code            string `json:"Code" xml:"Code"`
 	AccessKeyID     string `json:"AccessKeyID" xml:"AccessKeyID"`
 	AccessKeySecret string `json:"AccessKeySecret" xml:"AccessKeySecret"`
@@ -26,17 +27,17 @@ type EcsRamRoleResponse struct {
 	Expiration      string `json:"Expiration" xml:"Expiration"`
 }
 
-func newEcsRamRoleCredential(roleName string, runtime *utils.Runtime) *EcsRamRoleCredential {
-	return &EcsRamRoleCredential{
+func newEcsRAMRoleCredential(roleName string, runtime *utils.Runtime) *EcsRAMRoleCredential {
+	return &EcsRAMRoleCredential{
 		RoleName:          roleName,
 		credentialUpdater: new(credentialUpdater),
 		runtime:           runtime,
 	}
 }
 
-// GetAccessKeyID reutrns  EcsRamRoleResponse's AccessKeyID
+// GetAccessKeyID reutrns  EcsRAMRoleCredential's AccessKeyID
 // if AccessKeyID is not exist or out of date, the function will update it.
-func (e *EcsRamRoleCredential) GetAccessKeyID() (string, error) {
+func (e *EcsRAMRoleCredential) GetAccessKeyID() (string, error) {
 	if e.sessionCredential == nil || e.needUpdateCredential() {
 		err := e.updateCredential()
 		if err != nil {
@@ -46,9 +47,9 @@ func (e *EcsRamRoleCredential) GetAccessKeyID() (string, error) {
 	return e.sessionCredential.AccessKeyID, nil
 }
 
-// GetAccessSecret reutrns  EcsRamRoleResponse's AccessKeySecret
+// GetAccessSecret reutrns  EcsRAMRoleCredential's AccessKeySecret
 // if AccessKeySecret is not exist or out of date, the function will update it.
-func (e *EcsRamRoleCredential) GetAccessSecret() (string, error) {
+func (e *EcsRAMRoleCredential) GetAccessSecret() (string, error) {
 	if e.sessionCredential == nil || e.needUpdateCredential() {
 		err := e.updateCredential()
 		if err != nil {
@@ -58,9 +59,9 @@ func (e *EcsRamRoleCredential) GetAccessSecret() (string, error) {
 	return e.sessionCredential.AccessKeySecret, nil
 }
 
-// GetSecurityToken reutrns  EcsRamRoleResponse's SecurityToken
+// GetSecurityToken reutrns  EcsRAMRoleCredential's SecurityToken
 // if SecurityToken is not exist or out of date, the function will update it.
-func (e *EcsRamRoleCredential) GetSecurityToken() (string, error) {
+func (e *EcsRAMRoleCredential) GetSecurityToken() (string, error) {
 	if e.sessionCredential == nil || e.needUpdateCredential() {
 		err := e.updateCredential()
 		if err != nil {
@@ -70,28 +71,28 @@ func (e *EcsRamRoleCredential) GetSecurityToken() (string, error) {
 	return e.sessionCredential.SecurityToken, nil
 }
 
-// GetBearerToken is useless for EcsRamRoleCredential
-func (e *EcsRamRoleCredential) GetBearerToken() string {
+// GetBearerToken is useless for EcsRAMRoleCredential
+func (e *EcsRAMRoleCredential) GetBearerToken() string {
 	return ""
 }
 
-// GetType reutrns  EcsRamRoleCredential's type
-func (e *EcsRamRoleCredential) GetType() string {
+// GetType reutrns  EcsRAMRoleCredential's type
+func (e *EcsRAMRoleCredential) GetType() string {
 	return "ecs_ram_role"
 }
 
-func (e *EcsRamRoleCredential) updateCredential() (err error) {
+func (e *EcsRAMRoleCredential) updateCredential() (err error) {
 	if e.runtime == nil {
 		e.runtime = new(utils.Runtime)
 	}
 	request := request.NewCommonRequest()
-	request.Url = securityCredURL + e.RoleName
+	request.URL = securityCredURL + e.RoleName
 	request.Method = "GET"
 	content, err := doAction(request, e.runtime)
 	if err != nil {
 		return fmt.Errorf("refresh Ecs sts token err: %s", err.Error())
 	}
-	var resp *EcsRamRoleResponse
+	var resp *ecsRAMRoleResponse
 	err = json.Unmarshal(content, &resp)
 	if err != nil {
 		return fmt.Errorf("refresh Ecs sts token err: Json Unmarshal fail: %s", err.Error())

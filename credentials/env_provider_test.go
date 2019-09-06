@@ -7,9 +7,9 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestEnvResolve(t *testing.T) {
-	p := NewEnvProvider()
-	assert.Equal(t, &EnvProvider{}, p)
+func TestEnvresolve(t *testing.T) {
+	p := newEnvProvider()
+	assert.Equal(t, &envProvider{}, p)
 	originAccessKeyID := os.Getenv(EnvVarAccessKeyID)
 	originAccessKeySecret := os.Getenv(EnvVarAccessKeySecret)
 	os.Setenv(EnvVarAccessKeyID, "")
@@ -18,16 +18,16 @@ func TestEnvResolve(t *testing.T) {
 		os.Setenv(EnvVarAccessKeyID, originAccessKeyID)
 		os.Setenv(EnvVarAccessKeySecret, originAccessKeySecret)
 	}()
-	c, err := p.Resolve()
+	c, err := p.resolve()
 	assert.Nil(t, c)
 	assert.EqualError(t, err, "ALIBABA_CLOUD_ACCESS_KEY_ID cannot be empty")
 
 	os.Setenv(EnvVarAccessKeyID, "AccessKeyID")
-	c, err = p.Resolve()
+	c, err = p.resolve()
 	assert.Nil(t, c)
 	assert.EqualError(t, err, "ALIBABA_CLOUD_ACCESS_KEY_SECRET cannot be empty")
 	os.Setenv(EnvVarAccessKeySecret, "AccessKeySecret")
-	c, err = p.Resolve()
+	c, err = p.resolve()
 	assert.Nil(t, err)
 	assert.Equal(t, "access_key", c.Type)
 	assert.Equal(t, "AccessKeyID", c.AccessKeyID)

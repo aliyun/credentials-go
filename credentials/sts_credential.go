@@ -1,5 +1,6 @@
 package credentials
 
+// StsTokenCredential is a kind of credentials
 type StsTokenCredential struct {
 	AccessKeyID     string
 	AccessKeySecret string

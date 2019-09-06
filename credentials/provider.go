@@ -7,7 +7,7 @@ const (
 	PATHCredentialFile = "~/.alibabacloud/credentials"
 )
 
-// When you want to customize the provider, you only need to implement the method of the interface.
+// Provider will be implemented When you want to customize the provider.
 type Provider interface {
-	Resolve() (*Configuration, error)
+	resolve() (*Configuration, error)
 }

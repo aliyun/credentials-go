@@ -1,5 +1,6 @@
 package credentials
 
+// AccessKeyCredential is a kind of credential
 type AccessKeyCredential struct {
 	AccessKeyID     string
 	AccessKeySecret string

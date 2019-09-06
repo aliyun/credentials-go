@@ -1,5 +1,6 @@
 package credentials
 
+// BearerTokenCredential is a kind of credential
 type BearerTokenCredential struct {
 	BearerToken string
 }

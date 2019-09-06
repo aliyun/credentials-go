@@ -176,7 +176,7 @@ func Test_doaction(t *testing.T) {
 	assert.Equal(t, `net/http: invalid method "credential test"`, err.Error())
 	assert.Nil(t, content)
 	request.Method = "GET"
-	request.Url = "http://www.aliyun.com"
+	request.URL = "http://www.aliyun.com"
 	runtime := &utils.Runtime{
 		Proxy: "# #%gfdf",
 	}

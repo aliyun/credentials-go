@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func Test_ParseFromHttpResponse(t *testing.T) {
+func Test_ParseFromHTTPResponse(t *testing.T) {
 	r := &CommonResponse{}
 	res := &http.Response{
 		Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
@@ -20,11 +20,11 @@ func Test_ParseFromHttpResponse(t *testing.T) {
 		Header:     make(map[string][]string),
 	}
 	res.Header.Add("Server", "GitHub.com")
-	r.ParseFromHttpResponse(res)
-	assert.Equal(t, []byte{}, r.GetHttpContentBytes())
-	assert.Equal(t, "", r.GetHttpContentString())
-	assert.Equal(t, "GitHub.com", r.GetHttpHeaders()["Server"][0])
-	assert.Equal(t, 200, r.GetHttpStatus())
+	r.ParseFromHTTPResponse(res)
+	assert.Equal(t, []byte{}, r.GetHTTPContentBytes())
+	assert.Equal(t, "", r.GetHTTPContentString())
+	assert.Equal(t, "GitHub.com", r.GetHTTPHeaders()["Server"][0])
+	assert.Equal(t, 200, r.GetHTTPStatus())
 }
 
 func TestHookReadAll(t *testing.T) {
@@ -47,6 +47,6 @@ func TestHookReadAll(t *testing.T) {
 	httpResponse := &http.Response{
 		Body: ioutil.NopCloser(strings.NewReader("creadential")),
 	}
-	err = commonResponse.ParseFromHttpResponse(httpResponse)
+	err = commonResponse.ParseFromHTTPResponse(httpResponse)
 	assert.Equal(t, "hookReadAll", err.Error())
 }

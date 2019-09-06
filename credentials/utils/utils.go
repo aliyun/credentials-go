@@ -14,12 +14,10 @@ import (
 	"io"
 	rand2 "math/rand"
 	"net/url"
-	"reflect"
-	"strconv"
 	"time"
 )
 
-type UUID [16]byte
+type uuid [16]byte
 
 const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
@@ -31,12 +29,14 @@ var hookRSA = func(fn func(rand io.Reader, priv *rsa.PrivateKey, hash crypto.Has
 	return fn
 }
 
+// GetUUID returns a uuid
 func GetUUID() (uuidHex string) {
-	uuid := NewUUID()
+	uuid := newUUID()
 	uuidHex = hex.EncodeToString(uuid[:])
 	return
 }
 
+// RandStringBytes returns a rand string
 func RandStringBytes(n int) string {
 	b := make([]byte, n)
 	for i := range b {
@@ -45,6 +45,7 @@ func RandStringBytes(n int) string {
 	return string(b)
 }
 
+// ShaHmac1 return a string which has been hashed
 func ShaHmac1(source, secret string) string {
 	key := []byte(secret)
 	hmac := hmac.New(sha1.New, key)
@@ -54,6 +55,7 @@ func ShaHmac1(source, secret string) string {
 	return signedString
 }
 
+// Sha256WithRsa return a string which has been hashed with Rsa
 func Sha256WithRsa(source, secret string) string {
 	decodeString, err := base64.StdEncoding.DecodeString(secret)
 	if err != nil {
@@ -76,6 +78,7 @@ func Sha256WithRsa(source, secret string) string {
 	return base64.StdEncoding.EncodeToString(signature)
 }
 
+// GetMD5Base64 returns a string which has been base64
 func GetMD5Base64(bytes []byte) (base64Value string) {
 	md5Ctx := md5.New()
 	md5Ctx.Write(bytes)
@@ -84,19 +87,15 @@ func GetMD5Base64(bytes []byte) (base64Value string) {
 	return
 }
 
+// GetTimeInFormatISO8601 returns a time string
 func GetTimeInFormatISO8601() (timeStr string) {
 	gmt := time.FixedZone("GMT", 0)
 
 	return time.Now().In(gmt).Format("2006-01-02T15:04:05Z")
 }
 
-func GetTimeInFormatRFC2616() (timeStr string) {
-	gmt := time.FixedZone("GMT", 0)
-
-	return time.Now().In(gmt).Format("Mon, 02 Jan 2006 15:04:05 GMT")
-}
-
-func GetUrlFormedMap(source map[string]string) (urlEncoded string) {
+// GetURLFormedMap returns a url encoded string
+func GetURLFormedMap(source map[string]string) (urlEncoded string) {
 	urlEncoder := url.Values{}
 	for key, value := range source {
 		urlEncoder.Add(key, value)
@@ -105,33 +104,8 @@ func GetUrlFormedMap(source map[string]string) (urlEncoded string) {
 	return
 }
 
-func InitStructWithDefaultTag(bean interface{}) {
-	configType := reflect.TypeOf(bean)
-	for i := 0; i < configType.Elem().NumField(); i++ {
-		field := configType.Elem().Field(i)
-		defaultValue := field.Tag.Get("default")
-		if defaultValue == "" {
-			continue
-		}
-		setter := reflect.ValueOf(bean).Elem().Field(i)
-		switch field.Type.String() {
-		case "int":
-			intValue, _ := strconv.ParseInt(defaultValue, 10, 64)
-			setter.SetInt(intValue)
-		case "time.Duration":
-			intValue, _ := strconv.ParseInt(defaultValue, 10, 64)
-			setter.SetInt(intValue)
-		case "string":
-			setter.SetString(defaultValue)
-		case "bool":
-			boolValue, _ := strconv.ParseBool(defaultValue)
-			setter.SetBool(boolValue)
-		}
-	}
-}
-
-func NewUUID() UUID {
-	ns := UUID{}
+func newUUID() uuid {
+	ns := uuid{}
 	safeRandom(ns[:])
 	u := newFromHash(md5.New(), ns, RandStringBytes(16))
 	u[6] = (u[6] & 0x0f) | (byte(2) << 4)
@@ -140,8 +114,8 @@ func NewUUID() UUID {
 	return u
 }
 
-func newFromHash(h hash.Hash, ns UUID, name string) UUID {
-	u := UUID{}
+func newFromHash(h hash.Hash, ns uuid, name string) uuid {
+	u := uuid{}
 	h.Write(ns[:])
 	h.Write([]byte(name))
 	copy(u[:], h.Sum(nil))
@@ -155,7 +129,7 @@ func safeRandom(dest []byte) {
 	}
 }
 
-func (u UUID) String() string {
+func (u uuid) String() string {
 	buf := make([]byte, 36)
 
 	hex.Encode(buf[0:8], u[0:4])

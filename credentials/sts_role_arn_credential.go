@@ -13,7 +13,8 @@ import (
 
 const defaultDurationSeconds = 3600
 
-type RamRoleArnCredential struct {
+// RAMRoleArnCredential is a kind of credentials
+type RAMRoleArnCredential struct {
 	*credentialUpdater
 	AccessKeyID           string
 	AccessKeySecret       string
@@ -25,19 +26,19 @@ type RamRoleArnCredential struct {
 	runtime               *utils.Runtime
 }
 
-type RamRoleArnResponse struct {
-	Credentials *CredentialsInResponse `json:"Credentials" xml:"Credentials"`
+type ramRoleArnResponse struct {
+	Credentials *credentialsInResponse `json:"Credentials" xml:"Credentials"`
 }
 
-type CredentialsInResponse struct {
+type credentialsInResponse struct {
 	AccessKeyID     string `json:"AccessKeyID" xml:"AccessKeyID"`
 	AccessKeySecret string `json:"AccessKeySecret" xml:"AccessKeySecret"`
 	SecurityToken   string `json:"SecurityToken" xml:"SecurityToken"`
 	Expiration      string `json:"Expiration" xml:"Expiration"`
 }
 
-func newRamRoleArnCredential(accessKeyID, accessKeySecret, roleArn, roleSessionName, policy string, roleSessionExpiration int, runtime *utils.Runtime) *RamRoleArnCredential {
-	return &RamRoleArnCredential{
+func newRAMRoleArnCredential(accessKeyID, accessKeySecret, roleArn, roleSessionName, policy string, roleSessionExpiration int, runtime *utils.Runtime) *RAMRoleArnCredential {
+	return &RAMRoleArnCredential{
 		AccessKeyID:           accessKeyID,
 		AccessKeySecret:       accessKeySecret,
 		RoleArn:               roleArn,
@@ -51,7 +52,7 @@ func newRamRoleArnCredential(accessKeyID, accessKeySecret, roleArn, roleSessionN
 
 // GetAccessKeyID reutrns RamRoleArnCredential's AccessKeyID
 // if AccessKeyID is not exist or out of date, the function will update it.
-func (r *RamRoleArnCredential) GetAccessKeyID() (string, error) {
+func (r *RAMRoleArnCredential) GetAccessKeyID() (string, error) {
 	if r.sessionCredential == nil || r.needUpdateCredential() {
 		err := r.updateCredential()
 		if err != nil {
@@ -63,7 +64,7 @@ func (r *RamRoleArnCredential) GetAccessKeyID() (string, error) {
 
 // GetAccessSecret reutrns RamRoleArnCredential's AccessKeySecret
 // if AccessKeySecret is not exist or out of date, the function will update it.
-func (r *RamRoleArnCredential) GetAccessSecret() (string, error) {
+func (r *RAMRoleArnCredential) GetAccessSecret() (string, error) {
 	if r.sessionCredential == nil || r.needUpdateCredential() {
 		err := r.updateCredential()
 		if err != nil {
@@ -75,7 +76,7 @@ func (r *RamRoleArnCredential) GetAccessSecret() (string, error) {
 
 // GetSecurityToken reutrns RamRoleArnCredential's SecurityToken
 // if SecurityToken is not exist or out of date, the function will update it.
-func (r *RamRoleArnCredential) GetSecurityToken() (string, error) {
+func (r *RAMRoleArnCredential) GetSecurityToken() (string, error) {
 	if r.sessionCredential == nil || r.needUpdateCredential() {
 		err := r.updateCredential()
 		if err != nil {
@@ -86,16 +87,16 @@ func (r *RamRoleArnCredential) GetSecurityToken() (string, error) {
 }
 
 // GetBearerToken is useless RamRoleArnCredential
-func (r *RamRoleArnCredential) GetBearerToken() string {
+func (r *RAMRoleArnCredential) GetBearerToken() string {
 	return ""
 }
 
 // GetType reutrns RamRoleArnCredential's type
-func (r *RamRoleArnCredential) GetType() string {
+func (r *RAMRoleArnCredential) GetType() string {
 	return "ram_role_arn"
 }
 
-func (r *RamRoleArnCredential) updateCredential() (err error) {
+func (r *RAMRoleArnCredential) updateCredential() (err error) {
 	if r.runtime == nil {
 		r.runtime = new(utils.Runtime)
 	}
@@ -130,12 +131,12 @@ func (r *RamRoleArnCredential) updateCredential() (err error) {
 	request.QueryParams["Signature"] = signature
 	request.Headers["Host"] = request.Domain
 	request.Headers["Accept-Encoding"] = "identity"
-	request.Url = request.BuildUrl()
+	request.URL = request.BuildURL()
 	content, err := doAction(request, r.runtime)
 	if err != nil {
 		return fmt.Errorf("refresh RoleArn sts token err: %s", err.Error())
 	}
-	var resp *RamRoleArnResponse
+	var resp *ramRoleArnResponse
 	err = json.Unmarshal(content, &resp)
 	if err != nil {
 		return fmt.Errorf("refresh RoleArn sts token err: Json.Unmarshal fail: %s", err.Error())

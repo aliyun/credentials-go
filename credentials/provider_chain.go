@@ -4,22 +4,22 @@ import (
 	"errors"
 )
 
-type ProviderChain struct {
+type providerChain struct {
 	Providers []Provider
 }
 
-var defaultproviders = []Provider{ProviderEnv, ProviderProfile, ProviderInstance}
-var DefaultChain = NewProviderChain(defaultproviders)
+var defaultproviders = []Provider{providerEnv, providerProfile, providerInstance}
+var defaultChain = newProviderChain(defaultproviders)
 
-func NewProviderChain(providers []Provider) Provider {
-	return &ProviderChain{
+func newProviderChain(providers []Provider) Provider {
+	return &providerChain{
 		Providers: providers,
 	}
 }
 
-func (p *ProviderChain) Resolve() (*Configuration, error) {
+func (p *providerChain) resolve() (*Configuration, error) {
 	for _, provider := range p.Providers {
-		config, err := provider.Resolve()
+		config, err := provider.resolve()
 		if err != nil {
 			return nil, err
 		} else if config == nil {
