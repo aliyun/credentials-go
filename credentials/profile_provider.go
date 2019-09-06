@@ -16,6 +16,14 @@ type ProfileProvider struct {
 
 var ProviderProfile = NewProfileProvider()
 
+var hookOS = func(goos string) string {
+	return goos
+}
+
+var hookState = func(info os.FileInfo, err error) (os.FileInfo, error) {
+	return info, err
+}
+
 // NewProfileProvider receive zero or more parameters,
 // when length of name is 0, the value of field Profile will be "default",
 // and when there are multiple inputs, the function will take the
@@ -237,7 +245,7 @@ func (p *ProfileProvider) Resolve() (*Configuration, error) {
 // GetHomePath return home directory according to the system.
 // if the environmental virables does not exist, will return empty
 func GetHomePath() string {
-	if runtime.GOOS == "windows" {
+	if hookOS(runtime.GOOS) == "windows" {
 		path, ok := os.LookupEnv("USERPROFILE")
 		if !ok {
 			return ""
@@ -257,7 +265,7 @@ func checkDefaultPath() (path string, err error) {
 		return "", errors.New("The default credential file path is invalid")
 	}
 	path = strings.Replace("~/.alibabacloud/credentials", "~", path, 1)
-	_, err = os.Stat(path)
+	_, err = hookState(os.Stat(path))
 	if err != nil {
 		return "", nil
 	}

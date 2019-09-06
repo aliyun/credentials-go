@@ -79,9 +79,10 @@ func Test_EcsRAmRoleCredential(t *testing.T) {
 
 	hookDo = func(fn func(req *http.Request) (*http.Response, error)) func(req *http.Request) (*http.Response, error) {
 		return func(req *http.Request) (*http.Response, error) {
-			return mockResponse(200, `{"AccessKeyID":"accessKeyID","AccessKeySecret":"accessKeySecret","SecurityToken":"securitytoken","Expiration":"2020-01-02T15:04:05Z","Code":"Success"}`, nil)
+			return mockResponse(200, `{"AccessKeyID":"accessKeyID","AccessKeySecret":"accessKeySecret","SecurityToken":"securitytoken","Expiration":"2018-01-02T15:04:05Z","Code":"Success"}`, nil)
 		}
 	}
+
 	accesskeyID, err = auth.GetAccessKeyID()
 	assert.Nil(t, err)
 	assert.Equal(t, "accessKeyID", accesskeyID)
@@ -93,4 +94,19 @@ func Test_EcsRAmRoleCredential(t *testing.T) {
 	ststoken, err = auth.GetSecurityToken()
 	assert.Nil(t, err)
 	assert.Equal(t, "securitytoken", ststoken)
+
+	err = errors.New("credentials")
+	err = hookParse(err)
+	assert.Equal(t, "credentials", err.Error())
+
+	originHookParse := hookParse
+	hookParse = func(err error) error {
+		return errors.New("error parse")
+	}
+	defer func() {
+		hookParse = originHookParse
+	}()
+	accesskeyID, err = auth.GetAccessKeyID()
+	assert.Equal(t, "refresh Ecs sts token err: error parse", err.Error())
+	assert.Equal(t, "", accesskeyID)
 }

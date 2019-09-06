@@ -18,6 +18,10 @@ import (
 
 var debuglog = debug.Init("credential")
 
+var hookParse = func(err error) error {
+	return err
+}
+
 type Credential interface {
 	GetAccessKeyID() (string, error)
 	GetAccessSecret() (string, error)
@@ -200,7 +204,7 @@ func doAction(request *request.CommonRequest, runtime *utils.Runtime) (content [
 	debuglog("<")
 
 	resp := &response.CommonResponse{}
-	err = resp.ParseFromHttpResponse(httpResponse)
+	err = hookParse(resp.ParseFromHttpResponse(httpResponse))
 	if err != nil {
 		return
 	}

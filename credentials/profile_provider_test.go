@@ -229,7 +229,6 @@ type = error_type
 public_key_id = publicKeyID       
 private_key_file = ./pk_error.pem
 `
-var privatekey = `this is privatekey`
 
 func TestProfileProvider(t *testing.T) {
 	var HOME string
@@ -505,4 +504,44 @@ func TestProfileProvider(t *testing.T) {
 	c, err = p.Resolve()
 	assert.Nil(t, c)
 	assert.Equal(t, "Invalid type option, support: access_key, sts, ecs_ram_role, ram_role_arn, rsa_key_pair", err.Error())
+}
+
+func TestHookOS(t *testing.T) {
+	goos := "windows"
+	goos = hookOS(goos)
+	assert.Equal(t, "windows", goos)
+
+	originHookOs := hookOS
+	originUserProfile := os.Getenv("USERPROFILE")
+	hookOS = func(goos string) string {
+		return "windows"
+	}
+	defer func() {
+		hookOS = originHookOs
+		os.Setenv("USERPROFILE", originUserProfile)
+	}()
+	os.Unsetenv("USERPROFILE")
+	path := GetHomePath()
+	assert.Equal(t, "", path)
+
+	os.Setenv("USERPROFILE", "ok")
+	path = GetHomePath()
+	assert.Equal(t, "ok", path)
+}
+
+func TestHookState(t *testing.T) {
+	info, err := hookState(nil, nil)
+	assert.Nil(t, info)
+	assert.Nil(t, err)
+
+	originHookState := hookState
+	hookState = func(info os.FileInfo, err error) (os.FileInfo, error) {
+		return nil, nil
+	}
+	defer func() {
+		hookState = originHookState
+	}()
+	path, err := checkDefaultPath()
+	assert.Nil(t, err)
+	assert.NotNil(t, path)
 }

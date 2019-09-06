@@ -1,9 +1,14 @@
 package response
 
 import (
+	"io"
 	"io/ioutil"
 	"net/http"
 )
+
+var hookReadAll = func(fn func(r io.Reader) (b []byte, err error)) func(r io.Reader) (b []byte, err error) {
+	return fn
+}
 
 type CommonResponse struct {
 	httpStatus        int
@@ -14,7 +19,7 @@ type CommonResponse struct {
 
 func (resp *CommonResponse) ParseFromHttpResponse(httpResponse *http.Response) (err error) {
 	defer httpResponse.Body.Close()
-	body, err := ioutil.ReadAll(httpResponse.Body)
+	body, err := hookReadAll(ioutil.ReadAll)(httpResponse.Body)
 	if err != nil {
 		return
 	}

@@ -11,6 +11,9 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+var privatekey = `----
+this is privatekey`
+
 func Test_NewCredential(t *testing.T) {
 	originAccessKey := os.Getenv(EnvVarAccessKeyID)
 	originAccessSecret := os.Getenv(EnvVarAccessKeySecret)
@@ -153,9 +156,13 @@ func Test_NewCredential(t *testing.T) {
 	assert.Contains(t, err.Error(), "InvalidPath: Can not open PrivateKeyFile, err is open nofile:")
 	assert.Nil(t, cred)
 
+	file, err := os.Create("./pk.pem")
+	assert.Nil(t, err)
+	file.WriteString(privatekey)
+	file.Close()
 	config.Type = "rsa_key_pair"
 	config.PublicKeyID = "resource"
-	config.PrivateKeyFile = "./encyptfile"
+	config.PrivateKeyFile = "./pk.pem"
 	cred, err = NewCredential(config)
 	assert.Nil(t, err)
 	assert.NotNil(t, cred)
