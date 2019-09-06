@@ -3,7 +3,7 @@ build:
         analysis:
             tests:
                 override: 
-                  - golint-run
+                  - go-scrutinizer-run
 filter:
     excluded_paths:
         - integration/
