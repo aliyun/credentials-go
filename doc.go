@@ -1,2 +1,2 @@
-// This file is created for depping ensure.
+// Package doc is created for depping ensure.
 package doc

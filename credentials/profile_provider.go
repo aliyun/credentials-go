@@ -56,183 +56,43 @@ func (p *profileProvider) resolve() (*Configuration, error) {
 		return nil, errors.New(ENVCredentialFile + " cannot be empty")
 	}
 
-	ini, err := ini.Load(path)
+	value, section, err := getType(path, p.Profile)
 	if err != nil {
-		return nil, errors.New("ERROR: Can not open file " + err.Error())
+		return nil, err
 	}
-
-	section, err := ini.GetSection(p.Profile)
-	if err != nil {
-		return nil, errors.New("ERROR: Can not load section " + err.Error())
-	}
-
-	value, err := section.GetKey("type")
-	if err != nil {
-		return nil, errors.New("Missing required type option " + err.Error())
-	}
-
 	switch value.String() {
 	case "access_key":
-		accesskeyid, err := section.GetKey("access_key_id")
+		config, err := getAccessKey(section)
 		if err != nil {
-			return nil, errors.New("Missing required access_key_id option in profile for access_key")
-		}
-		if accesskeyid.String() == "" {
-			return nil, errors.New("access_key_id cannot be empty")
-		}
-		accessKeySecret, err := section.GetKey("access_key_secret")
-		if err != nil {
-			return nil, errors.New("Missing required access_key_secret option in profile for access_key")
-		}
-		if accessKeySecret.String() == "" {
-			return nil, errors.New("access_key_secret cannot be empty")
-		}
-		config := &Configuration{
-			Type:            "access_key",
-			AccessKeyID:     accesskeyid.String(),
-			AccessKeySecret: accessKeySecret.String(),
+			return nil, err
 		}
 		return config, nil
 	case "sts":
-		accesskeyid, err := section.GetKey("access_key_id")
+		config, err := getSTS(section)
 		if err != nil {
-			return nil, errors.New("Missing required access_key_id option in profile for sts")
-		}
-		if accesskeyid.String() == "" {
-			return nil, errors.New("access_key_id cannot be empty")
-		}
-		accessKeySecret, err := section.GetKey("access_key_secret")
-		if err != nil {
-			return nil, errors.New("Missing required access_key_secret option in profile for sts")
-		}
-		if accessKeySecret.String() == "" {
-			return nil, errors.New("access_key_secret cannot be empty")
-		}
-		securityToken, err := section.GetKey("security_token")
-		if err != nil {
-			return nil, errors.New("Missing required security_token option in profile for sts")
-		}
-		if securityToken.String() == "" {
-			return nil, errors.New("security_token cannot be empty")
-		}
-		config := &Configuration{
-			Type:            "sts",
-			AccessKeyID:     accesskeyid.String(),
-			AccessKeySecret: accessKeySecret.String(),
-			SecurityToken:   securityToken.String(),
+			return nil, err
 		}
 		return config, nil
 	case "bearer":
-		bearerToken, err := section.GetKey("bearer_token")
+		config, err := getBearerToken(section)
 		if err != nil {
-			return nil, errors.New("Missing required bearer_token option in profile for bearer")
+			return nil, err
 		}
-		if bearerToken.String() == "" {
-			return nil, errors.New("bearer_token cannot be empty")
-		}
-		config := &Configuration{
-			Type:        "bearer",
-			BearerToken: bearerToken.String(),
-		}
-
 		return config, nil
 	case "ecs_ram_role":
-		roleName, err := section.GetKey("role_name")
-		if err != nil {
-			return nil, errors.New("Missing required role_name option in profile for ecs_ram_role")
-		}
-		if roleName.String() == "" {
-			return nil, errors.New("role_name cannot be empty")
-		}
-		config := &Configuration{
-			Type:     "ecs_ram_role",
-			RoleName: roleName.String(),
-		}
-		err = setRuntimeToConfig(config, section)
+		config, err := getEcsRAMRole(section)
 		if err != nil {
 			return nil, err
 		}
 		return config, nil
 	case "ram_role_arn":
-		accessKeyID, err := section.GetKey("access_key_id")
-		if err != nil {
-			return nil, errors.New("Missing required access_key_id option in profile for ram_role_arn")
-		}
-		if accessKeyID.String() == "" {
-			return nil, errors.New("access_key_id cannot be empty")
-		}
-		accessKeySecret, err := section.GetKey("access_key_secret")
-		if err != nil {
-			return nil, errors.New("Missing required access_key_secret option in profile for ram_role_arn")
-		}
-		if accessKeySecret.String() == "" {
-			return nil, errors.New("access_key_secret cannot be empty")
-		}
-		roleArn, err := section.GetKey("role_arn")
-		if err != nil {
-			return nil, errors.New("Missing required role_arn option in profile for ram_role_arn")
-		}
-		if roleArn.String() == "" {
-			return nil, errors.New("role_arn cannot be empty")
-		}
-		roleSessionName, err := section.GetKey("role_session_name")
-		if err != nil {
-			return nil, errors.New("Missing required role_session_name option in profile for ram_role_arn")
-		}
-		if roleSessionName.String() == "" {
-			return nil, errors.New("role_session_name cannot be empty")
-		}
-		roleSessionExpiration, _ := section.GetKey("role_session_expiration")
-		expiration := 0
-		if roleSessionExpiration != nil {
-			expiration, err = roleSessionExpiration.Int()
-			if err != nil {
-				return nil, errors.New("role_session_expiration must be an int")
-			}
-		}
-		config := &Configuration{
-			Type:                  "ram_role_arn",
-			AccessKeyID:           accessKeyID.String(),
-			AccessKeySecret:       accessKeySecret.String(),
-			RoleArn:               roleArn.String(),
-			RoleSessionName:       roleSessionName.String(),
-			RoleSessionExpiration: expiration,
-		}
-		err = setRuntimeToConfig(config, section)
+		config, err := getRAMRoleArn(section)
 		if err != nil {
 			return nil, err
 		}
 		return config, nil
 	case "rsa_key_pair":
-		publicKeyID, err := section.GetKey("public_key_id")
-		if err != nil {
-			return nil, errors.New("Missing required public_key_id option in profile for rsa_key_pair")
-		}
-		if publicKeyID.String() == "" {
-			return nil, errors.New("public_key_id cannot be empty")
-		}
-		privateKeyFile, err := section.GetKey("private_key_file")
-		if err != nil {
-			return nil, errors.New("Missing required private_key_file option in profile for rsa_key_pair")
-		}
-		if privateKeyFile.String() == "" {
-			return nil, errors.New("private_key_file cannot be empty")
-		}
-		sessionExpiration, _ := section.GetKey("session_expiration")
-		expiration := 0
-		if sessionExpiration != nil {
-			expiration, err = sessionExpiration.Int()
-			if err != nil {
-				return nil, errors.New("session_expiration must be an int")
-			}
-		}
-		config := &Configuration{
-			Type:              "rsa_key_pair",
-			PublicKeyID:       publicKeyID.String(),
-			PrivateKeyFile:    privateKeyFile.String(),
-			SessionExpiration: expiration,
-		}
-		err = setRuntimeToConfig(config, section)
+		config, err := getRSAKeyPair(section)
 		if err != nil {
 			return nil, err
 		}
@@ -240,6 +100,200 @@ func (p *profileProvider) resolve() (*Configuration, error) {
 	default:
 		return nil, errors.New("Invalid type option, support: access_key, sts, ecs_ram_role, ram_role_arn, rsa_key_pair")
 	}
+}
+
+func getRSAKeyPair(section *ini.Section) (*Configuration, error) {
+	publicKeyID, err := section.GetKey("public_key_id")
+	if err != nil {
+		return nil, errors.New("Missing required public_key_id option in profile for rsa_key_pair")
+	}
+	if publicKeyID.String() == "" {
+		return nil, errors.New("public_key_id cannot be empty")
+	}
+	privateKeyFile, err := section.GetKey("private_key_file")
+	if err != nil {
+		return nil, errors.New("Missing required private_key_file option in profile for rsa_key_pair")
+	}
+	if privateKeyFile.String() == "" {
+		return nil, errors.New("private_key_file cannot be empty")
+	}
+	sessionExpiration, _ := section.GetKey("session_expiration")
+	expiration := 0
+	if sessionExpiration != nil {
+		expiration, err = sessionExpiration.Int()
+		if err != nil {
+			return nil, errors.New("session_expiration must be an int")
+		}
+	}
+	config := &Configuration{
+		Type:              "rsa_key_pair",
+		PublicKeyID:       publicKeyID.String(),
+		PrivateKeyFile:    privateKeyFile.String(),
+		SessionExpiration: expiration,
+	}
+	err = setRuntimeToConfig(config, section)
+	if err != nil {
+		return nil, err
+	}
+	return config, nil
+}
+
+func getRAMRoleArn(section *ini.Section) (*Configuration, error) {
+	accessKeyID, err := section.GetKey("access_key_id")
+	if err != nil {
+		return nil, errors.New("Missing required access_key_id option in profile for ram_role_arn")
+	}
+	if accessKeyID.String() == "" {
+		return nil, errors.New("access_key_id cannot be empty")
+	}
+	accessKeySecret, err := section.GetKey("access_key_secret")
+	if err != nil {
+		return nil, errors.New("Missing required access_key_secret option in profile for ram_role_arn")
+	}
+	if accessKeySecret.String() == "" {
+		return nil, errors.New("access_key_secret cannot be empty")
+	}
+	roleArn, err := section.GetKey("role_arn")
+	if err != nil {
+		return nil, errors.New("Missing required role_arn option in profile for ram_role_arn")
+	}
+	if roleArn.String() == "" {
+		return nil, errors.New("role_arn cannot be empty")
+	}
+	roleSessionName, err := section.GetKey("role_session_name")
+	if err != nil {
+		return nil, errors.New("Missing required role_session_name option in profile for ram_role_arn")
+	}
+	if roleSessionName.String() == "" {
+		return nil, errors.New("role_session_name cannot be empty")
+	}
+	roleSessionExpiration, _ := section.GetKey("role_session_expiration")
+	expiration := 0
+	if roleSessionExpiration != nil {
+		expiration, err = roleSessionExpiration.Int()
+		if err != nil {
+			return nil, errors.New("role_session_expiration must be an int")
+		}
+	}
+	config := &Configuration{
+		Type:                  "ram_role_arn",
+		AccessKeyID:           accessKeyID.String(),
+		AccessKeySecret:       accessKeySecret.String(),
+		RoleArn:               roleArn.String(),
+		RoleSessionName:       roleSessionName.String(),
+		RoleSessionExpiration: expiration,
+	}
+	err = setRuntimeToConfig(config, section)
+	if err != nil {
+		return nil, err
+	}
+	return config, nil
+}
+
+func getEcsRAMRole(section *ini.Section) (*Configuration, error) {
+	roleName, err := section.GetKey("role_name")
+	if err != nil {
+		return nil, errors.New("Missing required role_name option in profile for ecs_ram_role")
+	}
+	if roleName.String() == "" {
+		return nil, errors.New("role_name cannot be empty")
+	}
+	config := &Configuration{
+		Type:     "ecs_ram_role",
+		RoleName: roleName.String(),
+	}
+	err = setRuntimeToConfig(config, section)
+	if err != nil {
+		return nil, err
+	}
+	return config, nil
+}
+
+func getBearerToken(section *ini.Section) (*Configuration, error) {
+	bearerToken, err := section.GetKey("bearer_token")
+	if err != nil {
+		return nil, errors.New("Missing required bearer_token option in profile for bearer")
+	}
+	if bearerToken.String() == "" {
+		return nil, errors.New("bearer_token cannot be empty")
+	}
+	config := &Configuration{
+		Type:        "bearer",
+		BearerToken: bearerToken.String(),
+	}
+	return config, nil
+}
+
+func getSTS(section *ini.Section) (*Configuration, error) {
+	accesskeyid, err := section.GetKey("access_key_id")
+	if err != nil {
+		return nil, errors.New("Missing required access_key_id option in profile for sts")
+	}
+	if accesskeyid.String() == "" {
+		return nil, errors.New("access_key_id cannot be empty")
+	}
+	accessKeySecret, err := section.GetKey("access_key_secret")
+	if err != nil {
+		return nil, errors.New("Missing required access_key_secret option in profile for sts")
+	}
+	if accessKeySecret.String() == "" {
+		return nil, errors.New("access_key_secret cannot be empty")
+	}
+	securityToken, err := section.GetKey("security_token")
+	if err != nil {
+		return nil, errors.New("Missing required security_token option in profile for sts")
+	}
+	if securityToken.String() == "" {
+		return nil, errors.New("security_token cannot be empty")
+	}
+	config := &Configuration{
+		Type:            "sts",
+		AccessKeyID:     accesskeyid.String(),
+		AccessKeySecret: accessKeySecret.String(),
+		SecurityToken:   securityToken.String(),
+	}
+	return config, nil
+}
+
+func getAccessKey(section *ini.Section) (*Configuration, error) {
+	accesskeyid, err := section.GetKey("access_key_id")
+	if err != nil {
+		return nil, errors.New("Missing required access_key_id option in profile for access_key")
+	}
+	if accesskeyid.String() == "" {
+		return nil, errors.New("access_key_id cannot be empty")
+	}
+	accessKeySecret, err := section.GetKey("access_key_secret")
+	if err != nil {
+		return nil, errors.New("Missing required access_key_secret option in profile for access_key")
+	}
+	if accessKeySecret.String() == "" {
+		return nil, errors.New("access_key_secret cannot be empty")
+	}
+	config := &Configuration{
+		Type:            "access_key",
+		AccessKeyID:     accesskeyid.String(),
+		AccessKeySecret: accessKeySecret.String(),
+	}
+	return config, nil
+}
+
+func getType(path, profile string) (*ini.Key, *ini.Section, error) {
+	ini, err := ini.Load(path)
+	if err != nil {
+		return nil, nil, errors.New("ERROR: Can not open file " + err.Error())
+	}
+
+	section, err := ini.GetSection(profile)
+	if err != nil {
+		return nil, nil, errors.New("ERROR: Can not load section " + err.Error())
+	}
+
+	value, err := section.GetKey("type")
+	if err != nil {
+		return nil, nil, errors.New("Missing required type option " + err.Error())
+	}
+	return value, section, nil
 }
 
 func getHomePath() string {
