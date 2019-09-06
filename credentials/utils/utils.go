@@ -11,6 +11,7 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"hash"
+	"io"
 	rand2 "math/rand"
 	"net/url"
 	"reflect"
@@ -21,6 +22,14 @@ import (
 type UUID [16]byte
 
 const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+var hookRead = func(fn func(p []byte) (n int, err error)) func(p []byte) (n int, err error) {
+	return fn
+}
+
+var hookRSA = func(fn func(rand io.Reader, priv *rsa.PrivateKey, hash crypto.Hash, hashed []byte) ([]byte, error)) func(rand io.Reader, priv *rsa.PrivateKey, hash crypto.Hash, hashed []byte) ([]byte, error) {
+	return fn
+}
 
 func GetUUID() (uuidHex string) {
 	uuid := NewUUID()
@@ -58,7 +67,7 @@ func Sha256WithRsa(source, secret string) string {
 	h := crypto.Hash.New(crypto.SHA256)
 	h.Write([]byte(source))
 	hashed := h.Sum(nil)
-	signature, err := rsa.SignPKCS1v15(rand.Reader, private.(*rsa.PrivateKey),
+	signature, err := hookRSA(rsa.SignPKCS1v15)(rand.Reader, private.(*rsa.PrivateKey),
 		crypto.SHA256, hashed)
 	if err != nil {
 		panic(err)
@@ -141,7 +150,7 @@ func newFromHash(h hash.Hash, ns UUID, name string) UUID {
 }
 
 func safeRandom(dest []byte) {
-	if _, err := rand.Read(dest); err != nil {
+	if _, err := hookRead(rand.Read)(dest); err != nil {
 		panic(err)
 	}
 }

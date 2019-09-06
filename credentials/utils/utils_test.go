@@ -1,6 +1,10 @@
 package utils
 
 import (
+	"crypto"
+	"crypto/rsa"
+	"errors"
+	"io"
 	"regexp"
 	"testing"
 	"time"
@@ -111,5 +115,63 @@ func TestSha256WithRsa_ParsePKCS8PrivateKey_Error(t *testing.T) {
 		assert.Equal(t, "asn1: structure error: length too large", err.(error).Error())
 	}()
 	secret := `Jv4yi8SobFhg5t1C7nWLbhBSFZQ=`
+	Sha256WithRsa("source", secret)
+}
+
+func TestHookRead(t *testing.T) {
+	fn := func(p []byte) (n int, err error) {
+		return 0, errors.New("hookRead")
+	}
+	result := hookRead(fn)
+	n, err := result(nil)
+	assert.Equal(t, 0, n)
+	assert.Equal(t, "hookRead", err.Error())
+
+	originHookRead := hookRead
+	hookRead = func(old func(p []byte) (n int, err error)) func(p []byte) (n int, err error) {
+		return fn
+	}
+	defer func() {
+		err := recover()
+		assert.Equal(t, "hookRead", err.(error).Error())
+		hookRead = originHookRead
+	}()
+	safeRandom([]byte("credentialtest"))
+}
+
+func TestHookRSA(t *testing.T) {
+	fn := func(rand io.Reader, priv *rsa.PrivateKey, hash crypto.Hash, hashed []byte) ([]byte, error) {
+		return nil, errors.New("hookRSA")
+	}
+	result := hookRSA(fn)
+	hash := crypto.Hash(10)
+	byt, err := result(nil, nil, hash, nil)
+	assert.Nil(t, byt)
+	assert.Equal(t, "hookRSA", err.Error())
+
+	originHookRSA := hookRSA
+	hookRSA = func(old func(rand io.Reader, priv *rsa.PrivateKey, hash crypto.Hash, hashed []byte) ([]byte, error)) func(rand io.Reader, priv *rsa.PrivateKey, hash crypto.Hash, hashed []byte) ([]byte, error) {
+		return fn
+	}
+	defer func() {
+		err := recover()
+		assert.Equal(t, "hookRSA", err.(error).Error())
+		hookRSA = originHookRSA
+	}()
+	secret := `
+MIICeQIBADANBgkqhkiG9w0BAQEFAASCAmMwggJfAgEAAoGBAOJC+2WXtkXZ+6sa
+3+qJp4mDOsiZb3BghHT9nVbjTeaw4hsZWHYxQ6l6XDmTg4twPB59LOGAlAjYrT31
+3pdwEawnmdf6zyF93Zvxxpy7lO2HoxYKSjbtXO4I0pcq3WTnw2xlbhqHvrcuWwt+
+FqH9akzcnwHjc03siZBzt/dwDL3vAgMBAAECgYEAzwgZPqFuUEYgaTVDFDl2ynYA
+kNMMzBgUu3Pgx0Nf4amSitdLQYLcdbQXtTtMT4eYCxHgwkpDqkCRbLOQRKNwFo0I
+oaCuhjZlxWcKil4z4Zb/zB7gkeuXPOVUjFSS3FogsRWMtnNAMgR/yJRlbcg/Puqk
+Magt/yDk+7cJCe6H96ECQQDxMT4S+tVP9nOw//QT39Dk+kWe/YVEhnWnCMZmGlEq
+1gnN6qpUi68ts6b3BVgrDPrPN6wm/Z9vpcKNeWpIvxXRAkEA8CcT2UEUwDGRKAUu
+WVPJqdAJjpjc072eRF5g792NyO+TAF6thBlDKNslRvFQDB6ymLsjfy8JYCnGbbSb
+WqbHvwJBAIs7KeI6+jiWxGJA3t06LpSABQCqyOut0u0Bm8YFGyXnOPGtrXXwzMdN
+Fe0zIJp5e69zK+W2Mvt4bL7OgBROeoECQQDsE+4uLw0gFln0tosmovhmp60NcfX7
+bLbtzL2MbwbXlbOztF7ssgzUWAHgKI6hK3g0LhsqBuo3jzmSVO43giZvAkEA08Nm
+2TI9EvX6DfCVfPOiKZM+Pijh0xLN4Dn8qUgt3Tcew/vfj4WA2ZV6qiJqL01vMsHc
+vftlY0Hs1vNXcaBgEA==`
 	Sha256WithRsa("source", secret)
 }
