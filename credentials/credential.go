@@ -65,32 +65,20 @@ func NewCredential(config *Configuration) (credential Credential, err error) {
 	}
 	switch config.Type {
 	case "access_key":
-		if config.AccessKeyID == "" {
-			err = errors.New("AccessKeyID cannot be empty")
-			return
-		}
-		if config.AccessKeySecret == "" {
-			err = errors.New("AccessKeySecret cannot be empty")
+		err = checkAccessKey(config)
+		if err != nil {
 			return
 		}
 		credential = newAccessKeyCredential(config.AccessKeyID, config.AccessKeySecret)
 	case "sts":
-		if config.AccessKeyID == "" {
-			err = errors.New("AccessKeyID cannot be empty")
-			return
-		}
-		if config.AccessKeySecret == "" {
-			err = errors.New("AccessKeySecret cannot be empty")
-			return
-		}
-		if config.SecurityToken == "" {
-			err = errors.New("SecurityToken cannot be empty")
+		err = checkSTS(config)
+		if err != nil {
 			return
 		}
 		credential = newStsTokenCredential(config.AccessKeyID, config.AccessKeySecret, config.SecurityToken)
 	case "ecs_ram_role":
-		if config.RoleName == "" {
-			err = errors.New("RoleName cannot be empty")
+		err = checkEcsRAMRole(config)
+		if err != nil {
 			return
 		}
 		runtime := &utils.Runtime{
@@ -101,20 +89,8 @@ func NewCredential(config *Configuration) (credential Credential, err error) {
 		}
 		credential = newEcsRAMRoleCredential(config.RoleName, runtime)
 	case "ram_role_arn":
-		if config.AccessKeySecret == "" {
-			err = errors.New("AccessKeySecret cannot be empty")
-			return
-		}
-		if config.RoleArn == "" {
-			err = errors.New("RoleArn cannot be empty")
-			return
-		}
-		if config.RoleSessionName == "" {
-			err = errors.New("RoleSessionName cannot be empty")
-			return
-		}
-		if config.AccessKeyID == "" {
-			err = errors.New("AccessKeyID cannot be empty")
+		err = checkRAMRoleArn(config)
+		if err != nil {
 			return
 		}
 		runtime := &utils.Runtime{
@@ -125,12 +101,8 @@ func NewCredential(config *Configuration) (credential Credential, err error) {
 		}
 		credential = newRAMRoleArnCredential(config.AccessKeyID, config.AccessKeySecret, config.RoleArn, config.RoleSessionName, config.Policy, config.RoleSessionExpiration, runtime)
 	case "rsa_key_pair":
-		if config.PrivateKeyFile == "" {
-			err = errors.New("PrivateKeyFile cannot be empty")
-			return
-		}
-		if config.PublicKeyID == "" {
-			err = errors.New("PublicKeyID cannot be empty")
+		err = checkRSAKeyPair(config)
+		if err != nil {
 			return
 		}
 		file, err1 := os.Open(config.PrivateKeyFile)
@@ -165,6 +137,74 @@ func NewCredential(config *Configuration) (credential Credential, err error) {
 		return
 	}
 	return credential, nil
+}
+
+func checkRSAKeyPair(config *Configuration) (err error) {
+	if config.PrivateKeyFile == "" {
+		err = errors.New("PrivateKeyFile cannot be empty")
+		return
+	}
+	if config.PublicKeyID == "" {
+		err = errors.New("PublicKeyID cannot be empty")
+		return
+	}
+	return
+}
+
+func checkRAMRoleArn(config *Configuration) (err error) {
+	if config.AccessKeySecret == "" {
+		err = errors.New("AccessKeySecret cannot be empty")
+		return
+	}
+	if config.RoleArn == "" {
+		err = errors.New("RoleArn cannot be empty")
+		return
+	}
+	if config.RoleSessionName == "" {
+		err = errors.New("RoleSessionName cannot be empty")
+		return
+	}
+	if config.AccessKeyID == "" {
+		err = errors.New("AccessKeyID cannot be empty")
+		return
+	}
+	return
+}
+
+func checkEcsRAMRole(config *Configuration) (err error) {
+	if config.RoleName == "" {
+		err = errors.New("RoleName cannot be empty")
+		return
+	}
+	return
+}
+
+func checkSTS(config *Configuration) (err error) {
+	if config.AccessKeyID == "" {
+		err = errors.New("AccessKeyID cannot be empty")
+		return
+	}
+	if config.AccessKeySecret == "" {
+		err = errors.New("AccessKeySecret cannot be empty")
+		return
+	}
+	if config.SecurityToken == "" {
+		err = errors.New("SecurityToken cannot be empty")
+		return
+	}
+	return
+}
+
+func checkAccessKey(config *Configuration) (err error) {
+	if config.AccessKeyID == "" {
+		err = errors.New("AccessKeyID cannot be empty")
+		return
+	}
+	if config.AccessKeySecret == "" {
+		err = errors.New("AccessKeySecret cannot be empty")
+		return
+	}
+	return
 }
 
 func doAction(request *request.CommonRequest, runtime *utils.Runtime) (content []byte, err error) {

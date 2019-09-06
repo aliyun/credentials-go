@@ -305,6 +305,7 @@ func TestProfileProvider(t *testing.T) {
 	// testcase 7, normal AK
 	p = newProfileProvider()
 	c, err = p.resolve()
+	assert.Equal(t, "access_key", c.Type)
 	assert.Nil(t, err)
 	// testcase 8, access_key_id key does not exist
 	p = newProfileProvider("noak")
@@ -330,6 +331,7 @@ func TestProfileProvider(t *testing.T) {
 	//testcase 12, normal EcsRamRole
 	p = newProfileProvider("ecs")
 	c, err = p.resolve()
+	assert.Equal(t, "ecs_ram_role", c.Type)
 	assert.Nil(t, err)
 	//testcase 13, key does not exist
 	p = newProfileProvider("noecs")
@@ -350,6 +352,7 @@ func TestProfileProvider(t *testing.T) {
 	//testcase 16, normal RamRoleArn
 	p = newProfileProvider("ram")
 	c, err = p.resolve()
+	assert.Equal(t, "ram_role_arn", c.Type)
 	assert.Nil(t, err)
 	//testcase 17, access_key_id key does not exist
 	p = newProfileProvider("noramak")
@@ -411,6 +414,7 @@ func TestProfileProvider(t *testing.T) {
 
 	p = newProfileProvider("rsa")
 	c, err = p.resolve()
+	assert.Equal(t, "rsa_key_pair", c.Type)
 	assert.Nil(t, err)
 	defer os.Remove(`./pk.pem`)
 	//testcase 28, private_key_file key does not exist
@@ -452,6 +456,7 @@ func TestProfileProvider(t *testing.T) {
 	//testcase 35, normal RamRoleArn
 	p = newProfileProvider("sts")
 	c, err = p.resolve()
+	assert.Equal(t, "sts", c.Type)
 	assert.Nil(t, err)
 	//testcase 36, access_key_id key does not exist
 	p = newProfileProvider("nostskey")
@@ -487,6 +492,7 @@ func TestProfileProvider(t *testing.T) {
 	//testcase 42, normal RamRoleArn
 	p = newProfileProvider("bearer")
 	c, err = p.resolve()
+	assert.Equal(t, "bearer", c.Type)
 	assert.Nil(t, err)
 	//testcase 43, key does not exist
 	p = newProfileProvider("nobearer")
