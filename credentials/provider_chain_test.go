@@ -8,11 +8,11 @@ import (
 )
 
 func TestProviderChain(t *testing.T) {
-	env := NewEnvProvider()
-	pp := NewProfileProvider()
-	instanceP := NewInstanceCredentialsProvider()
+	env := newEnvProvider()
+	pp := newProfileProvider()
+	instanceP := newInstanceCredentialsProvider()
 
-	pc := NewProviderChain([]Provider{env, pp, instanceP})
+	pc := newProviderChain([]Provider{env, pp, instanceP})
 
 	originAccessKeyID := os.Getenv(EnvVarAccessKeyID)
 	originAccessKeySecret := os.Getenv(EnvVarAccessKeySecret)
@@ -22,13 +22,13 @@ func TestProviderChain(t *testing.T) {
 		os.Setenv(EnvVarAccessKeyID, originAccessKeyID)
 		os.Setenv(EnvVarAccessKeySecret, originAccessKeySecret)
 	}()
-	c, err := pc.Resolve()
+	c, err := pc.resolve()
 	assert.Nil(t, c)
 	assert.EqualError(t, err, "ALIBABA_CLOUD_ACCESS_KEY_ID cannot be empty")
 
 	os.Setenv(EnvVarAccessKeyID, "AccessKeyID")
 	os.Setenv(EnvVarAccessKeySecret, "AccessKeySecret")
-	c, err = pc.Resolve()
+	c, err = pc.resolve()
 	assert.NotNil(t, c)
 	assert.Nil(t, err)
 
@@ -37,7 +37,7 @@ func TestProviderChain(t *testing.T) {
 	os.Unsetenv(ENVCredentialFile)
 	os.Unsetenv(ENVEcsMetadata)
 
-	c, err = pc.Resolve()
+	c, err = pc.resolve()
 	assert.Nil(t, c)
 	assert.EqualError(t, err, "No credential found")
 }

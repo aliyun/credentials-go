@@ -22,6 +22,7 @@ var hookParse = func(err error) error {
 	return err
 }
 
+// Credential is an interface for getting actual credential
 type Credential interface {
 	GetAccessKeyID() (string, error)
 	GetAccessSecret() (string, error)
@@ -30,6 +31,7 @@ type Credential interface {
 	GetType() string
 }
 
+// Configuration is important when call NewCredential
 type Configuration struct {
 	Type                  string `json:"type"`
 	AccessKeyID           string `json:"access_key_id"`
@@ -50,9 +52,12 @@ type Configuration struct {
 	Proxy                 string `json:"proxy"`
 }
 
+// NewCredential return a credential according to the type in config.
+// if config is nil, the function will use default provider chain to get credential.
+// please see README.md for detail.
 func NewCredential(config *Configuration) (credential Credential, err error) {
 	if config == nil {
-		config, err = DefaultChain.Resolve()
+		config, err = defaultChain.resolve()
 		if err != nil {
 			return
 		}
@@ -94,7 +99,7 @@ func NewCredential(config *Configuration) (credential Credential, err error) {
 			ReadTimeout:    config.Timeout,
 			ConnectTimeout: config.ConnectTimeout,
 		}
-		credential = newEcsRamRoleCredential(config.RoleName, runtime)
+		credential = newEcsRAMRoleCredential(config.RoleName, runtime)
 	case "ram_role_arn":
 		if config.AccessKeySecret == "" {
 			err = errors.New("AccessKeySecret cannot be empty")
@@ -118,7 +123,7 @@ func NewCredential(config *Configuration) (credential Credential, err error) {
 			ReadTimeout:    config.Timeout,
 			ConnectTimeout: config.ConnectTimeout,
 		}
-		credential = newRamRoleArnCredential(config.AccessKeyID, config.AccessKeySecret, config.RoleArn, config.RoleSessionName, config.Policy, config.RoleSessionExpiration, runtime)
+		credential = newRAMRoleArnCredential(config.AccessKeyID, config.AccessKeySecret, config.RoleArn, config.RoleSessionName, config.Policy, config.RoleSessionExpiration, runtime)
 	case "rsa_key_pair":
 		if config.PrivateKeyFile == "" {
 			err = errors.New("PrivateKeyFile cannot be empty")
@@ -163,7 +168,7 @@ func NewCredential(config *Configuration) (credential Credential, err error) {
 }
 
 func doAction(request *request.CommonRequest, runtime *utils.Runtime) (content []byte, err error) {
-	httpRequest, err := http.NewRequest(request.Method, request.Url, strings.NewReader(""))
+	httpRequest, err := http.NewRequest(request.Method, request.URL, strings.NewReader(""))
 	if err != nil {
 		return
 	}
@@ -204,14 +209,14 @@ func doAction(request *request.CommonRequest, runtime *utils.Runtime) (content [
 	debuglog("<")
 
 	resp := &response.CommonResponse{}
-	err = hookParse(resp.ParseFromHttpResponse(httpResponse))
+	err = hookParse(resp.ParseFromHTTPResponse(httpResponse))
 	if err != nil {
 		return
 	}
-	debuglog("%s", resp.GetHttpContentString())
-	if resp.GetHttpStatus() != http.StatusOK {
-		err = fmt.Errorf("httpStatus: %d, message = %s", resp.GetHttpStatus(), resp.GetHttpContentString())
+	debuglog("%s", resp.GetHTTPContentString())
+	if resp.GetHTTPStatus() != http.StatusOK {
+		err = fmt.Errorf("httpStatus: %d, message = %s", resp.GetHTTPStatus(), resp.GetHTTPContentString())
 		return
 	}
-	return resp.GetHttpContentBytes(), nil
+	return resp.GetHTTPContentBytes(), nil
 }

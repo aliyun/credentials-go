@@ -5,20 +5,22 @@ import (
 	"os"
 )
 
-type EnvProvider struct{}
+type envProvider struct{}
 
-var ProviderEnv = new(EnvProvider)
+var providerEnv = new(envProvider)
 
 const (
-	EnvVarAccessKeyID     = "ALIBABA_CLOUD_ACCESS_KEY_ID"
+	// EnvVarAccessKeyID is a name of ALIBABA_CLOUD_ACCESS_KEY_ID
+	EnvVarAccessKeyID = "ALIBABA_CLOUD_ACCESS_KEY_ID"
+	// EnvVarAccessKeySecret is a name of ALIBABA_CLOUD_ACCESS_KEY_SECRET
 	EnvVarAccessKeySecret = "ALIBABA_CLOUD_ACCESS_KEY_SECRET"
 )
 
-func NewEnvProvider() Provider {
-	return &EnvProvider{}
+func newEnvProvider() Provider {
+	return &envProvider{}
 }
 
-func (p *EnvProvider) Resolve() (*Configuration, error) {
+func (p *envProvider) resolve() (*Configuration, error) {
 	accessKeyID, ok1 := os.LookupEnv(EnvVarAccessKeyID)
 	accessKeySecret, ok2 := os.LookupEnv(EnvVarAccessKeySecret)
 	if !ok1 || !ok2 {

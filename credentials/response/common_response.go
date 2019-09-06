@@ -10,6 +10,7 @@ var hookReadAll = func(fn func(r io.Reader) (b []byte, err error)) func(r io.Rea
 	return fn
 }
 
+// CommonResponse is for storing message of httpResponse
 type CommonResponse struct {
 	httpStatus        int
 	httpHeaders       map[string][]string
@@ -17,7 +18,8 @@ type CommonResponse struct {
 	httpContentBytes  []byte
 }
 
-func (resp *CommonResponse) ParseFromHttpResponse(httpResponse *http.Response) (err error) {
+// ParseFromHTTPResponse assigns for CommonResponse, returns err when body is too large.
+func (resp *CommonResponse) ParseFromHTTPResponse(httpResponse *http.Response) (err error) {
 	defer httpResponse.Body.Close()
 	body, err := hookReadAll(ioutil.ReadAll)(httpResponse.Body)
 	if err != nil {
@@ -30,18 +32,22 @@ func (resp *CommonResponse) ParseFromHttpResponse(httpResponse *http.Response) (
 	return
 }
 
-func (resp *CommonResponse) GetHttpStatus() int {
+// GetHTTPStatus returns httpStatus
+func (resp *CommonResponse) GetHTTPStatus() int {
 	return resp.httpStatus
 }
 
-func (resp *CommonResponse) GetHttpHeaders() map[string][]string {
+// GetHTTPHeaders returns httpresponse's headers
+func (resp *CommonResponse) GetHTTPHeaders() map[string][]string {
 	return resp.httpHeaders
 }
 
-func (resp *CommonResponse) GetHttpContentString() string {
+// GetHTTPContentString return body content as string
+func (resp *CommonResponse) GetHTTPContentString() string {
 	return resp.httpContentString
 }
 
-func (resp *CommonResponse) GetHttpContentBytes() []byte {
+// GetHTTPContentBytes return body content as []byte
+func (resp *CommonResponse) GetHTTPContentBytes() []byte {
 	return resp.httpContentBytes
 }

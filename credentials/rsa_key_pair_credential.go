@@ -11,6 +11,7 @@ import (
 	"github.com/aliyun/credentials-go/credentials/utils"
 )
 
+// RsaKeyPairCredential is a kind of credentials
 type RsaKeyPairCredential struct {
 	*credentialUpdater
 	PrivateKey        string
@@ -20,11 +21,11 @@ type RsaKeyPairCredential struct {
 	runtime           *utils.Runtime
 }
 
-type RsaKeyPairResponse struct {
-	SessionAccessKey *SessionAccessKey `json:"SessionAccessKey" xml:"SessionAccessKey"`
+type rsaKeyPairResponse struct {
+	SessionAccessKey *sessionAccessKey `json:"SessionAccessKey" xml:"SessionAccessKey"`
 }
 
-type SessionAccessKey struct {
+type sessionAccessKey struct {
 	SessionAccessKeyID     string `json:"SessionAccessKeyID" xml:"SessionAccessKeyID"`
 	SessionAccessKeySecret string `json:"SessionAccessKeySecret" xml:"SessionAccessKeySecret"`
 	Expiration             string `json:"Expiration" xml:"Expiration"`
@@ -113,12 +114,12 @@ func (r *RsaKeyPairCredential) updateCredential() (err error) {
 	request.QueryParams["Signature"] = signature
 	request.Headers["Host"] = request.Domain
 	request.Headers["Accept-Encoding"] = "identity"
-	request.Url = request.BuildUrl()
+	request.URL = request.BuildURL()
 	content, err := doAction(request, r.runtime)
 	if err != nil {
 		return fmt.Errorf("refresh KeyPair err: %s", err.Error())
 	}
-	var resp *RsaKeyPairResponse
+	var resp *rsaKeyPairResponse
 	err = json.Unmarshal(content, &resp)
 	if err != nil {
 		return fmt.Errorf("refresh KeyPair err: Json Unmarshal fail: %s", err.Error())

@@ -5,15 +5,15 @@ import (
 	"os"
 )
 
-type InstanceCredentialsProvider struct{}
+type instanceCredentialsProvider struct{}
 
-var ProviderInstance = new(InstanceCredentialsProvider)
+var providerInstance = new(instanceCredentialsProvider)
 
-func NewInstanceCredentialsProvider() Provider {
-	return &InstanceCredentialsProvider{}
+func newInstanceCredentialsProvider() Provider {
+	return &instanceCredentialsProvider{}
 }
 
-func (p *InstanceCredentialsProvider) Resolve() (*Configuration, error) {
+func (p *instanceCredentialsProvider) resolve() (*Configuration, error) {
 	roleName, ok := os.LookupEnv(ENVEcsMetadata)
 	if !ok {
 		return nil, nil

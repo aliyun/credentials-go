@@ -10,11 +10,11 @@ import (
 	ini "gopkg.in/ini.v1"
 )
 
-type ProfileProvider struct {
+type profileProvider struct {
 	Profile string
 }
 
-var ProviderProfile = NewProfileProvider()
+var providerProfile = newProfileProvider()
 
 var hookOS = func(goos string) string {
 	return goos
@@ -28,8 +28,8 @@ var hookState = func(info os.FileInfo, err error) (os.FileInfo, error) {
 // when length of name is 0, the value of field Profile will be "default",
 // and when there are multiple inputs, the function will take the
 // first one and  discard the other values.
-func NewProfileProvider(name ...string) Provider {
-	p := new(ProfileProvider)
+func newProfileProvider(name ...string) Provider {
+	p := new(profileProvider)
 	if len(name) == 0 {
 		p.Profile = "default"
 	} else {
@@ -38,11 +38,11 @@ func NewProfileProvider(name ...string) Provider {
 	return p
 }
 
-// Resolve implements the Provider interface
+// resolve implements the Provider interface
 // when credential type is rsa_key_pair, the content of private_key file
 // must be able to be parsed directly into the required string
 // that NewRsaKeyPairCredential function needed
-func (p *ProfileProvider) Resolve() (*Configuration, error) {
+func (p *profileProvider) resolve() (*Configuration, error) {
 	path, ok := os.LookupEnv(ENVCredentialFile)
 	if !ok {
 		path, err := checkDefaultPath()
@@ -242,9 +242,7 @@ func (p *ProfileProvider) Resolve() (*Configuration, error) {
 	}
 }
 
-// GetHomePath return home directory according to the system.
-// if the environmental virables does not exist, will return empty
-func GetHomePath() string {
+func getHomePath() string {
 	if hookOS(runtime.GOOS) == "windows" {
 		path, ok := os.LookupEnv("USERPROFILE")
 		if !ok {
@@ -260,7 +258,7 @@ func GetHomePath() string {
 }
 
 func checkDefaultPath() (path string, err error) {
-	path = GetHomePath()
+	path = getHomePath()
 	if path == "" {
 		return "", errors.New("The default credential file path is invalid")
 	}

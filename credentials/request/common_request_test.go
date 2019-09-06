@@ -6,15 +6,15 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func Test_BuildUrl(t *testing.T) {
+func Test_BuildURL(t *testing.T) {
 	r := NewCommonRequest()
 	r.Domain = "domain.com"
 	r.Scheme = "http"
-	assert.Equal(t, "http://domain.com/?", r.BuildUrl())
+	assert.Equal(t, "http://domain.com/?", r.BuildURL())
 	r.QueryParams["key"] = "value"
-	assert.Equal(t, "http://domain.com/?key=value", r.BuildUrl())
+	assert.Equal(t, "http://domain.com/?key=value", r.BuildURL())
 	r.QueryParams["key"] = "https://domain/?q=v"
-	assert.Equal(t, "http://domain.com/?key=https%3A%2F%2Fdomain%2F%3Fq%3Dv", r.BuildUrl())
+	assert.Equal(t, "http://domain.com/?key=https%3A%2F%2Fdomain%2F%3Fq%3Dv", r.BuildURL())
 }
 
 func Test_BuildRpcStringToSign(t *testing.T) {

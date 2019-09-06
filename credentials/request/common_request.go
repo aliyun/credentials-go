@@ -9,12 +9,13 @@ import (
 	"github.com/aliyun/credentials-go/credentials/utils"
 )
 
+// CommonRequest is for requesting credential
 type CommonRequest struct {
 	Scheme         string
 	Method         string
 	Domain         string
 	RegionID       string
-	Url            string
+	URL            string
 	ReadTimeout    time.Duration
 	ConnectTimeout time.Duration
 	isInsecure     *bool
@@ -26,6 +27,7 @@ type CommonRequest struct {
 	queries string
 }
 
+// NewCommonRequest returns a CommonRequest
 func NewCommonRequest() *CommonRequest {
 	return &CommonRequest{
 		QueryParams: make(map[string]string),
@@ -33,19 +35,21 @@ func NewCommonRequest() *CommonRequest {
 	}
 }
 
-func (request *CommonRequest) BuildUrl() string {
+// BuildURL returns a url
+func (request *CommonRequest) BuildURL() string {
 	url := fmt.Sprintf("%s://%s", strings.ToLower(request.Scheme), request.Domain)
-	request.queries = "/?" + utils.GetUrlFormedMap(request.QueryParams)
+	request.queries = "/?" + utils.GetURLFormedMap(request.QueryParams)
 	return url + request.queries
 }
 
+// BuildStringToSign returns BuildStringToSign
 func (request *CommonRequest) BuildStringToSign() (stringToSign string) {
 	signParams := make(map[string]string)
 	for key, value := range request.QueryParams {
 		signParams[key] = value
 	}
 
-	stringToSign = utils.GetUrlFormedMap(signParams)
+	stringToSign = utils.GetURLFormedMap(signParams)
 	stringToSign = strings.Replace(stringToSign, "+", "%20", -1)
 	stringToSign = strings.Replace(stringToSign, "*", "%2A", -1)
 	stringToSign = strings.Replace(stringToSign, "%7E", "~", -1)
