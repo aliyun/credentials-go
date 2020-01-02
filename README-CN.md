@@ -200,6 +200,10 @@ access_key_secret = bar            # access key secret
 #### 3. 实例 RAM 角色
 如果定义了环境变量 `ALIBABA_CLOUD_ECS_METADATA` 且不为空，程序会将该环境变量的值作为角色名称，请求 `http://100.100.100.200/latest/meta-data/ram/security-credentials/` 获取临时安全凭证。
 
+## 许可证
+[Apache-2.0](/LICENSE)
+
+Copyright (c) 2009-present, Alibaba Cloud All rights reserved.
 
 [ak]: https://usercenter.console.aliyun.com/#/manage/ak
 [ram]: https://ram.console.aliyun.com/users
