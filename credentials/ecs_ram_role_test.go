@@ -49,9 +49,28 @@ func Test_EcsRAmRoleCredential(t *testing.T) {
 
 	hookDo = func(fn func(req *http.Request) (*http.Response, error)) func(req *http.Request) (*http.Response, error) {
 		return func(req *http.Request) (*http.Response, error) {
+			return mockResponse(400, `role`, nil)
+		}
+	}
+	auth.RoleName = ""
+	accesskeyID, err = auth.GetAccessKeyID()
+	assert.NotNil(t, err)
+	assert.Equal(t, "refresh Ecs sts token err: httpStatus: 400, message = role", err.Error())
+
+	hookDo = func(fn func(req *http.Request) (*http.Response, error)) func(req *http.Request) (*http.Response, error) {
+		return func(req *http.Request) (*http.Response, error) {
+			return mockResponse(200, `role`, nil)
+		}
+	}
+	accesskeyID, err = auth.GetAccessKeyID()
+	assert.NotNil(t, err)
+	assert.Equal(t, "refresh Ecs sts token err: Json Unmarshal fail: invalid character 'r' looking for beginning of value", err.Error())
+	hookDo = func(fn func(req *http.Request) (*http.Response, error)) func(req *http.Request) (*http.Response, error) {
+		return func(req *http.Request) (*http.Response, error) {
 			return mockResponse(200, `"AccessKeyID":"accessKeyID","AccessKeySecret":"accessKeySecret","SecurityToken":"securitytoken","Expiration":"expiration"`, nil)
 		}
 	}
+	auth.RoleName = "role"
 	accesskeyID, err = auth.GetAccessKeyID()
 	assert.NotNil(t, err)
 	assert.Equal(t, "refresh Ecs sts token err: Json Unmarshal fail: invalid character ':' after top-level value", err.Error())

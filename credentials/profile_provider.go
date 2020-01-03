@@ -191,18 +191,14 @@ func getRAMRoleArn(section *ini.Section) (*Configuration, error) {
 }
 
 func getEcsRAMRole(section *ini.Section) (*Configuration, error) {
-	roleName, err := section.GetKey("role_name")
-	if err != nil {
-		return nil, errors.New("Missing required role_name option in profile for ecs_ram_role")
-	}
-	if roleName.String() == "" {
-		return nil, errors.New("role_name cannot be empty")
-	}
+	roleName, _ := section.GetKey("role_name")
 	config := &Configuration{
-		Type:     "ecs_ram_role",
-		RoleName: roleName.String(),
+		Type: "ecs_ram_role",
 	}
-	err = setRuntimeToConfig(config, section)
+	if roleName != nil {
+		config.RoleName = roleName.String()
+	}
+	err := setRuntimeToConfig(config, section)
 	if err != nil {
 		return nil, err
 	}

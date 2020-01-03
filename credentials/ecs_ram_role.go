@@ -81,11 +81,29 @@ func (e *EcsRAMRoleCredential) GetType() string {
 	return "ecs_ram_role"
 }
 
+func getRoleName() (string, error) {
+	runtime := utils.NewRuntime(1, 1, "", "")
+	request := request.NewCommonRequest()
+	request.URL = securityCredURL
+	request.Method = "GET"
+	content, err := doAction(request, runtime)
+	if err != nil {
+		return "", err
+	}
+	return string(content), nil
+}
+
 func (e *EcsRAMRoleCredential) updateCredential() (err error) {
 	if e.runtime == nil {
 		e.runtime = new(utils.Runtime)
 	}
 	request := request.NewCommonRequest()
+	if e.RoleName == "" {
+		e.RoleName, err = getRoleName()
+		if err != nil {
+			return fmt.Errorf("refresh Ecs sts token err: %s", err.Error())
+		}
+	}
 	request.URL = securityCredURL + e.RoleName
 	request.Method = "GET"
 	content, err := doAction(request, e.runtime)

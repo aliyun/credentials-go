@@ -67,9 +67,8 @@ func Test_NewCredential(t *testing.T) {
 
 	config.Type = "ecs_ram_role"
 	cred, err = NewCredential(config)
-	assert.NotNil(t, err)
-	assert.Equal(t, "RoleName cannot be empty", err.Error())
-	assert.Nil(t, cred)
+	assert.Nil(t, err)
+	assert.NotNil(t, cred)
 
 	config.Type = "rsa_key_pair"
 	cred, err = NewCredential(config)
