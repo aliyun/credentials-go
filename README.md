@@ -122,7 +122,7 @@ import (
 func main(){
 	config := &credentials.Configuration{
 		Type:                   "ecs_ram_role",     // Which type of credential you want
-		RoleName:               "RoleName",         // RoleName of your account
+		RoleName:               "RoleName",         // `roleName` is optional. It will be retrieved automatically if not set. It is highly recommended to set it up to reduce requests
     }
 	ecsCredential, err := credentials.NewCredential(config)
 	if err != nil {

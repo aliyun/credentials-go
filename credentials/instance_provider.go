@@ -1,7 +1,6 @@
 package credentials
 
 import (
-	"errors"
 	"os"
 )
 
@@ -17,9 +16,6 @@ func (p *instanceCredentialsProvider) resolve() (*Configuration, error) {
 	roleName, ok := os.LookupEnv(ENVEcsMetadata)
 	if !ok {
 		return nil, nil
-	}
-	if roleName == "" {
-		return nil, errors.New(ENVEcsMetadata + " cannot be empty")
 	}
 
 	config := &Configuration{

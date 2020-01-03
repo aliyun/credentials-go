@@ -77,10 +77,7 @@ func NewCredential(config *Configuration) (credential Credential, err error) {
 		}
 		credential = newStsTokenCredential(config.AccessKeyID, config.AccessKeySecret, config.SecurityToken)
 	case "ecs_ram_role":
-		err = checkEcsRAMRole(config)
-		if err != nil {
-			return
-		}
+		checkEcsRAMRole(config)
 		runtime := &utils.Runtime{
 			Host:           config.Host,
 			Proxy:          config.Proxy,
@@ -172,10 +169,6 @@ func checkRAMRoleArn(config *Configuration) (err error) {
 }
 
 func checkEcsRAMRole(config *Configuration) (err error) {
-	if config.RoleName == "" {
-		err = errors.New("RoleName cannot be empty")
-		return
-	}
 	return
 }
 

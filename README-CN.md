@@ -121,8 +121,8 @@ import (
 
 func main(){
 	config := &credentialsConfiguration{
-		Type:                   "ecs_ram_role",     // Which type of credential you want
-		RoleName:               "RoleName",         // RoleName of your account
+		Type:                   "ecs_ram_role",     // 凭证类型
+		RoleName:               "RoleName",         // 账户RoleName，非必填，不填则自动获取，建议设置，可以减少请求
     }
 	ecsCredential, err := credentials.NewCredential(config)
 	if err != nil {
@@ -145,9 +145,9 @@ import (
 
 func main(){
 	config := &credentialsConfiguration{
-		Type:                   "rsa_key_pair",       // Which type of credential you want
-		PrivateKeyFile:         "PrivateKeyFile",     // The file path to store the PrivateKey
-		PublicKeyID:            "PublicKeyID",        // PublicKeyID of your account
+		Type:                   "rsa_key_pair",       // 凭证类型
+		PrivateKeyFile:         "PrivateKeyFile",     // PrivateKey文件路径
+		PublicKeyID:            "PublicKeyID",        // 账户PublicKeyId
     }
 	rsaCredential, err := credentials.NewCredential(config)
 	if err != nil {
@@ -169,8 +169,8 @@ import (
 
 func main(){
 	config := &credentials.Configuration{
-		Type:                 "bearer",       // Which type of credential you want
-		BearerToken:          "BearerToken",  // BearerToken of your account
+		Type:                 "bearer",       // 凭证类型
+		BearerToken:          "BearerToken",  // BearerToken
     }
 	bearerCredential, err := credentials.NewCredential(config)
 	if err != nil {

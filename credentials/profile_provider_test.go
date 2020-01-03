@@ -333,16 +333,6 @@ func TestProfileProvider(t *testing.T) {
 	c, err = p.resolve()
 	assert.Equal(t, "ecs_ram_role", c.Type)
 	assert.Nil(t, err)
-	//testcase 13, key does not exist
-	p = newProfileProvider("noecs")
-	c, err = p.resolve()
-	assert.Nil(t, c)
-	assert.Equal(t, "Missing required role_name option in profile for ecs_ram_role", err.Error())
-	//testcase 14, value is empty
-	p = newProfileProvider("emptyecs")
-	c, err = p.resolve()
-	assert.Nil(t, c)
-	assert.Equal(t, "role_name cannot be empty", err.Error())
 	//testcase 15, timeout is not int
 	p = newProfileProvider("invalidRuntimeEcs")
 	c, err = p.resolve()
