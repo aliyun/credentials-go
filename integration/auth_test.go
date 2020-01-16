@@ -34,7 +34,7 @@ func Test_Arn(t *testing.T) {
 	cred, err := credentials.NewCredential(config)
 	assert.Nil(t, err)
 	assert.NotNil(t, cred)
-	accesskey, err := cred.GetAccessKeyID()
+	accesskey, err := cred.GetAccessKeyId()
 	assert.Nil(t, err)
 	assert.NotNil(t, accesskey)
 }
