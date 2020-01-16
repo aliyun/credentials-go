@@ -43,7 +43,7 @@ func newRsaKeyPairCredential(privateKey, publicKeyID string, sessionExpiration i
 
 // GetAccessKeyID reutrns RsaKeyPairCredential's AccessKeyID
 // if AccessKeyID is not exist or out of date, the function will update it.
-func (r *RsaKeyPairCredential) GetAccessKeyID() (string, error) {
+func (r *RsaKeyPairCredential) GetAccessKeyId() (string, error) {
 	if r.sessionCredential == nil || r.needUpdateCredential() {
 		err := r.updateCredential()
 		if err != nil {
@@ -55,7 +55,7 @@ func (r *RsaKeyPairCredential) GetAccessKeyID() (string, error) {
 
 // GetAccessSecret reutrns  RsaKeyPairCredential's AccessKeySecret
 // if AccessKeySecret is not exist or out of date, the function will update it.
-func (r *RsaKeyPairCredential) GetAccessSecret() (string, error) {
+func (r *RsaKeyPairCredential) GetAccessKeySecret() (string, error) {
 	if r.sessionCredential == nil || r.needUpdateCredential() {
 		err := r.updateCredential()
 		if err != nil {

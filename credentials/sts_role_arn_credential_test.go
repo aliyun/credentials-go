@@ -34,12 +34,12 @@ func Test_RoleArnCredential(t *testing.T) {
 			return mockResponse(200, `{"Credentials":{"AccessKeyID":"accessKeyID","AccessKeySecret":"accessKeySecret","SecurityToken":"securitytoken","Expiration":"expiration"}}`, errors.New("Internal error"))
 		}
 	}
-	accesskeyID, err := auth.GetAccessKeyID()
+	accesskeyID, err := auth.GetAccessKeyId()
 	assert.NotNil(t, err)
 	assert.Equal(t, "[InvalidParam]:Assume Role session duration should be in the range of 15min - 1Hr", err.Error())
 	assert.Equal(t, "", accesskeyID)
 
-	accesskeySecret, err := auth.GetAccessSecret()
+	accesskeySecret, err := auth.GetAccessKeySecret()
 	assert.NotNil(t, err)
 	assert.Equal(t, "[InvalidParam]:Assume Role session duration should be in the range of 15min - 1Hr", err.Error())
 	assert.Equal(t, "", accesskeySecret)
@@ -53,13 +53,13 @@ func Test_RoleArnCredential(t *testing.T) {
 	assert.Equal(t, "ram_role_arn", auth.GetType())
 
 	auth.RoleSessionExpiration = 1000
-	accesskeyID, err = auth.GetAccessKeyID()
+	accesskeyID, err = auth.GetAccessKeyId()
 	assert.NotNil(t, err)
 	assert.Equal(t, "refresh RoleArn sts token err: Internal error", err.Error())
 	assert.Equal(t, "", accesskeyID)
 
 	auth.RoleSessionExpiration = 0
-	accesskeyID, err = auth.GetAccessKeyID()
+	accesskeyID, err = auth.GetAccessKeyId()
 	assert.NotNil(t, err)
 	assert.Equal(t, "refresh RoleArn sts token err: Internal error", err.Error())
 	assert.Equal(t, "", accesskeyID)
@@ -69,7 +69,7 @@ func Test_RoleArnCredential(t *testing.T) {
 			return mockResponse(300, ``, nil)
 		}
 	}
-	accesskeyID, err = auth.GetAccessKeyID()
+	accesskeyID, err = auth.GetAccessKeyId()
 	assert.NotNil(t, err)
 	assert.Equal(t, "refresh RoleArn sts token err: httpStatus: 300, message = ", err.Error())
 	assert.Equal(t, "", accesskeyID)
@@ -79,7 +79,7 @@ func Test_RoleArnCredential(t *testing.T) {
 			return mockResponse(200, `"Credentials":{"AccessKeyID":"accessKeyID","AccessKeySecret":"accessKeySecret","SecurityToken":"securitytoken","Expiration":"expiration"}}`, nil)
 		}
 	}
-	accesskeyID, err = auth.GetAccessKeyID()
+	accesskeyID, err = auth.GetAccessKeyId()
 	assert.NotNil(t, err)
 	assert.Equal(t, "refresh RoleArn sts token err: Json.Unmarshal fail: invalid character ':' after top-level value", err.Error())
 	assert.Equal(t, "", accesskeyID)
@@ -89,7 +89,7 @@ func Test_RoleArnCredential(t *testing.T) {
 			return mockResponse(200, `{"Credentials":{"AccessKeySecret":"accessKeySecret","SecurityToken":"securitytoken","Expiration":"expiration"}}`, nil)
 		}
 	}
-	accesskeyID, err = auth.GetAccessKeyID()
+	accesskeyID, err = auth.GetAccessKeyId()
 	assert.NotNil(t, err)
 	assert.Equal(t, "refresh RoleArn sts token err: AccessKeyID: , AccessKeySecret: accessKeySecret, SecurityToken: securitytoken, Expiration: expiration", err.Error())
 	assert.Equal(t, "", accesskeyID)
@@ -99,7 +99,7 @@ func Test_RoleArnCredential(t *testing.T) {
 			return mockResponse(200, `{}`, nil)
 		}
 	}
-	accesskeyID, err = auth.GetAccessKeyID()
+	accesskeyID, err = auth.GetAccessKeyId()
 	assert.NotNil(t, err)
 	assert.Equal(t, "refresh RoleArn sts token err: Credentials is empty", err.Error())
 	assert.Equal(t, "", accesskeyID)
@@ -109,11 +109,11 @@ func Test_RoleArnCredential(t *testing.T) {
 			return mockResponse(200, `{"Credentials":{"AccessKeyID":"accessKeyID","AccessKeySecret":"accessKeySecret","SecurityToken":"securitytoken","Expiration":"2020-01-02T15:04:05Z"}}`, nil)
 		}
 	}
-	accesskeyID, err = auth.GetAccessKeyID()
+	accesskeyID, err = auth.GetAccessKeyId()
 	assert.Nil(t, err)
 	assert.Equal(t, "accessKeyID", accesskeyID)
 
-	accesskeySecret, err = auth.GetAccessSecret()
+	accesskeySecret, err = auth.GetAccessKeySecret()
 	assert.Nil(t, err)
 	assert.Equal(t, "accessKeySecret", accesskeySecret)
 

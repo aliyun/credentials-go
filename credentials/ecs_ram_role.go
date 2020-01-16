@@ -37,7 +37,7 @@ func newEcsRAMRoleCredential(roleName string, runtime *utils.Runtime) *EcsRAMRol
 
 // GetAccessKeyID reutrns  EcsRAMRoleCredential's AccessKeyID
 // if AccessKeyID is not exist or out of date, the function will update it.
-func (e *EcsRAMRoleCredential) GetAccessKeyID() (string, error) {
+func (e *EcsRAMRoleCredential) GetAccessKeyId() (string, error) {
 	if e.sessionCredential == nil || e.needUpdateCredential() {
 		err := e.updateCredential()
 		if err != nil {
@@ -49,7 +49,7 @@ func (e *EcsRAMRoleCredential) GetAccessKeyID() (string, error) {
 
 // GetAccessSecret reutrns  EcsRAMRoleCredential's AccessKeySecret
 // if AccessKeySecret is not exist or out of date, the function will update it.
-func (e *EcsRAMRoleCredential) GetAccessSecret() (string, error) {
+func (e *EcsRAMRoleCredential) GetAccessKeySecret() (string, error) {
 	if e.sessionCredential == nil || e.needUpdateCredential() {
 		err := e.updateCredential()
 		if err != nil {
