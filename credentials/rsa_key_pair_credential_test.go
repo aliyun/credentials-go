@@ -34,12 +34,12 @@ vftlY0Hs1vNXcaBgEA==`
 			return mockResponse(200, `{"Credentials":{"AccessKeyID":"accessKeyID","AccessKeySecret":"accessKeySecret","SecurityToken":"securitytoken","Expiration":"expiration"}}`, errors.New("Internal error"))
 		}
 	}
-	accesskeyID, err := auth.GetAccessKeyID()
+	accesskeyID, err := auth.GetAccessKeyId()
 	assert.NotNil(t, err)
 	assert.Equal(t, "[InvalidParam]:Key Pair session duration should be in the range of 15min - 1Hr", err.Error())
 	assert.Equal(t, "", accesskeyID)
 
-	accesskeySecret, err := auth.GetAccessSecret()
+	accesskeySecret, err := auth.GetAccessKeySecret()
 	assert.NotNil(t, err)
 	assert.Equal(t, "[InvalidParam]:Key Pair session duration should be in the range of 15min - 1Hr", err.Error())
 	assert.Equal(t, "", accesskeySecret)
@@ -52,13 +52,13 @@ vftlY0Hs1vNXcaBgEA==`
 	assert.Equal(t, "rsa_key_pair", auth.GetType())
 
 	auth.SessionExpiration = 1000
-	accesskeyID, err = auth.GetAccessKeyID()
+	accesskeyID, err = auth.GetAccessKeyId()
 	assert.NotNil(t, err)
 	assert.Equal(t, "refresh KeyPair err: Internal error", err.Error())
 	assert.Equal(t, "", accesskeyID)
 
 	auth.SessionExpiration = 0
-	accesskeyID, err = auth.GetAccessKeyID()
+	accesskeyID, err = auth.GetAccessKeyId()
 	assert.NotNil(t, err)
 	assert.Equal(t, "refresh KeyPair err: Internal error", err.Error())
 	assert.Equal(t, "", accesskeyID)
@@ -68,7 +68,7 @@ vftlY0Hs1vNXcaBgEA==`
 			return mockResponse(300, ``, nil)
 		}
 	}
-	accesskeyID, err = auth.GetAccessKeyID()
+	accesskeyID, err = auth.GetAccessKeyId()
 	assert.NotNil(t, err)
 	assert.Equal(t, "refresh KeyPair err: httpStatus: 300, message = ", err.Error())
 	assert.Equal(t, "", accesskeyID)
@@ -78,7 +78,7 @@ vftlY0Hs1vNXcaBgEA==`
 			return mockResponse(200, `"SessionAccessKey":{"SessionAccessKeyID":"accessKeyID","SessionAccessKeySecret":"accessKeySecret","Expiration":"expiration"}}`, nil)
 		}
 	}
-	accesskeyID, err = auth.GetAccessKeyID()
+	accesskeyID, err = auth.GetAccessKeyId()
 	assert.NotNil(t, err)
 	assert.Equal(t, "refresh KeyPair err: Json Unmarshal fail: invalid character ':' after top-level value", err.Error())
 	assert.Equal(t, "", accesskeyID)
@@ -88,7 +88,7 @@ vftlY0Hs1vNXcaBgEA==`
 			return mockResponse(200, `{"SessionAccessKey":{"SessionAccessKeySecret":"accessKeySecret","Expiration":"expiration"}}`, nil)
 		}
 	}
-	accesskeyID, err = auth.GetAccessKeyID()
+	accesskeyID, err = auth.GetAccessKeyId()
 	assert.NotNil(t, err)
 	assert.Equal(t, "refresh KeyPair err: SessionAccessKeyID: , SessionAccessKeySecret: accessKeySecret, Expiration: expiration", err.Error())
 	assert.Equal(t, "", accesskeyID)
@@ -98,7 +98,7 @@ vftlY0Hs1vNXcaBgEA==`
 			return mockResponse(200, `{}`, nil)
 		}
 	}
-	accesskeyID, err = auth.GetAccessKeyID()
+	accesskeyID, err = auth.GetAccessKeyId()
 	assert.NotNil(t, err)
 	assert.Equal(t, "refresh KeyPair err: SessionAccessKey is empty", err.Error())
 	assert.Equal(t, "", accesskeyID)
@@ -108,17 +108,17 @@ vftlY0Hs1vNXcaBgEA==`
 			return mockResponse(200, `{"SessionAccessKey":{"SessionAccessKeyID":"accessKeyID","SessionAccessKeySecret":"accessKeySecret","Expiration":"2020-01-02T15:04:05Z"}}`, nil)
 		}
 	}
-	accesskeyID, err = auth.GetAccessKeyID()
+	accesskeyID, err = auth.GetAccessKeyId()
 	assert.Nil(t, err)
 	assert.Equal(t, "accessKeyID", accesskeyID)
 
-	accesskeySecret, err = auth.GetAccessSecret()
+	accesskeySecret, err = auth.GetAccessKeySecret()
 	assert.Nil(t, err)
 	assert.Equal(t, "accessKeySecret", accesskeySecret)
 
 	auth.runtime = nil
 	auth.lastUpdateTimestamp = 0
-	accesskeyID, err = auth.GetAccessKeyID()
+	accesskeyID, err = auth.GetAccessKeyId()
 	assert.Nil(t, err)
 	assert.Equal(t, "accessKeyID", accesskeyID)
 }

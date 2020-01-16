@@ -16,12 +16,12 @@ func newStsTokenCredential(accessKeyID, accessKeySecret, securityToken string) *
 }
 
 // GetAccessKeyID reutrns  StsTokenCredential's AccessKeyID
-func (s *StsTokenCredential) GetAccessKeyID() (string, error) {
+func (s *StsTokenCredential) GetAccessKeyId() (string, error) {
 	return s.AccessKeyID, nil
 }
 
 // GetAccessSecret reutrns  StsTokenCredential's AccessKeySecret
-func (s *StsTokenCredential) GetAccessSecret() (string, error) {
+func (s *StsTokenCredential) GetAccessKeySecret() (string, error) {
 	return s.AccessKeySecret, nil
 }
 

@@ -13,12 +13,12 @@ func newBearerTokenCredential(token string) *BearerTokenCredential {
 }
 
 // GetAccessKeyID is useless for BearerTokenCredential
-func (b *BearerTokenCredential) GetAccessKeyID() (string, error) {
+func (b *BearerTokenCredential) GetAccessKeyId() (string, error) {
 	return "", nil
 }
 
 // GetAccessSecret is useless for BearerTokenCredential
-func (b *BearerTokenCredential) GetAccessSecret() (string, error) {
+func (b *BearerTokenCredential) GetAccessKeySecret() (string, error) {
 	return "", nil
 }
 

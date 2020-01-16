@@ -52,7 +52,7 @@ func newRAMRoleArnCredential(accessKeyID, accessKeySecret, roleArn, roleSessionN
 
 // GetAccessKeyID reutrns RamRoleArnCredential's AccessKeyID
 // if AccessKeyID is not exist or out of date, the function will update it.
-func (r *RAMRoleArnCredential) GetAccessKeyID() (string, error) {
+func (r *RAMRoleArnCredential) GetAccessKeyId() (string, error) {
 	if r.sessionCredential == nil || r.needUpdateCredential() {
 		err := r.updateCredential()
 		if err != nil {
@@ -64,7 +64,7 @@ func (r *RAMRoleArnCredential) GetAccessKeyID() (string, error) {
 
 // GetAccessSecret reutrns RamRoleArnCredential's AccessKeySecret
 // if AccessKeySecret is not exist or out of date, the function will update it.
-func (r *RAMRoleArnCredential) GetAccessSecret() (string, error) {
+func (r *RAMRoleArnCredential) GetAccessKeySecret() (string, error) {
 	if r.sessionCredential == nil || r.needUpdateCredential() {
 		err := r.updateCredential()
 		if err != nil {

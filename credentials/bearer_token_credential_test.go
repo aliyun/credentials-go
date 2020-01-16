@@ -8,11 +8,11 @@ import (
 
 func Test_BearerTokenCredential(t *testing.T) {
 	auth := newBearerTokenCredential("bearertoken")
-	accessKeyID, err := auth.GetAccessKeyID()
+	accessKeyID, err := auth.GetAccessKeyId()
 	assert.Nil(t, err)
 	assert.Equal(t, "", accessKeyID)
 
-	accessKeySecret, err := auth.GetAccessSecret()
+	accessKeySecret, err := auth.GetAccessKeySecret()
 	assert.Nil(t, err)
 	assert.Equal(t, "", accessKeySecret)
 

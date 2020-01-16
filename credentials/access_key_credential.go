@@ -14,12 +14,12 @@ func newAccessKeyCredential(accessKeyID, accessKeySecret string) *AccessKeyCrede
 }
 
 // GetAccessKeyID reutrns  AccessKeyCreential's AccessKeyID
-func (a *AccessKeyCredential) GetAccessKeyID() (string, error) {
+func (a *AccessKeyCredential) GetAccessKeyId() (string, error) {
 	return a.AccessKeyID, nil
 }
 
 // GetAccessSecret reutrns  AccessKeyCreential's AccessKeySecret
-func (a *AccessKeyCredential) GetAccessSecret() (string, error) {
+func (a *AccessKeyCredential) GetAccessKeySecret() (string, error) {
 	return a.AccessKeySecret, nil
 }
 
