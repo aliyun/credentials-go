@@ -3,6 +3,8 @@ package credentials
 import (
 	"errors"
 	"os"
+
+	"github.com/alibabacloud-go/tea/tea"
 )
 
 type envProvider struct{}
@@ -10,8 +12,8 @@ type envProvider struct{}
 var providerEnv = new(envProvider)
 
 const (
-	// EnvVarAccessKeyID is a name of ALIBABA_CLOUD_ACCESS_KEY_ID
-	EnvVarAccessKeyID = "ALIBABA_CLOUD_ACCESS_KEY_ID"
+	// EnvVarAccessKeyId is a name of ALIBABA_CLOUD_ACCESS_KEY_Id
+	EnvVarAccessKeyId = "ALIBABA_CLOUD_ACCESS_KEY_Id"
 	// EnvVarAccessKeySecret is a name of ALIBABA_CLOUD_ACCESS_KEY_SECRET
 	EnvVarAccessKeySecret = "ALIBABA_CLOUD_ACCESS_KEY_SECRET"
 )
@@ -20,22 +22,22 @@ func newEnvProvider() Provider {
 	return &envProvider{}
 }
 
-func (p *envProvider) resolve() (*Configuration, error) {
-	accessKeyID, ok1 := os.LookupEnv(EnvVarAccessKeyID)
+func (p *envProvider) resolve() (*Config, error) {
+	accessKeyId, ok1 := os.LookupEnv(EnvVarAccessKeyId)
 	accessKeySecret, ok2 := os.LookupEnv(EnvVarAccessKeySecret)
 	if !ok1 || !ok2 {
 		return nil, nil
 	}
-	if accessKeyID == "" {
-		return nil, errors.New(EnvVarAccessKeyID + " cannot be empty")
+	if accessKeyId == "" {
+		return nil, errors.New(EnvVarAccessKeyId + " cannot be empty")
 	}
 	if accessKeySecret == "" {
 		return nil, errors.New(EnvVarAccessKeySecret + " cannot be empty")
 	}
-	config := &Configuration{
-		Type:            "access_key",
-		AccessKeyID:     accessKeyID,
-		AccessKeySecret: accessKeySecret,
+	config := &Config{
+		Type:            tea.String("access_key"),
+		AccessKeyId:     tea.String(accessKeyId),
+		AccessKeySecret: tea.String(accessKeySecret),
 	}
 	return config, nil
 }

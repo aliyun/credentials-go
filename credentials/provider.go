@@ -9,5 +9,5 @@ const (
 
 // Provider will be implemented When you want to customize the provider.
 type Provider interface {
-	resolve() (*Configuration, error)
+	resolve() (*Config, error)
 }

@@ -14,7 +14,7 @@ type CommonRequest struct {
 	Scheme         string
 	Method         string
 	Domain         string
-	RegionID       string
+	RegionId       string
 	URL            string
 	ReadTimeout    time.Duration
 	ConnectTimeout time.Duration

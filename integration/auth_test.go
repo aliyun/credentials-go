@@ -5,12 +5,13 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/credentials-go/credentials"
 	"github.com/stretchr/testify/assert"
 )
 
 const (
-	EnvVarSubAccessKeyID        = "SUB_ALICLOUD_ACCESS_KEY"
+	EnvVarSubAccessKeyId        = "SUB_ALICLOUD_ACCESS_KEY"
 	EnvVarSubAccessKeySecret    = "SUB_ALICLOUD_SECRET_KEY"
 	EnvVarRoleArn               = "ALICLOUD_ROLE_ARN"
 	EnvVarRoleSessionName       = "ALICLOUD_ROLE_SESSION_NAME"
@@ -23,13 +24,13 @@ func Test_Arn(t *testing.T) {
 	if rawexpiration != "" {
 		expiration, _ = strconv.Atoi(rawexpiration)
 	}
-	config := &credentials.Configuration{
-		Type:                  "ram_role_arn",
-		AccessKeyID:           os.Getenv(EnvVarSubAccessKeyID),
-		AccessKeySecret:       os.Getenv(EnvVarSubAccessKeySecret),
-		RoleArn:               os.Getenv(EnvVarRoleArn),
-		RoleSessionName:       os.Getenv(EnvVarRoleSessionName),
-		RoleSessionExpiration: expiration,
+	config := &credentials.Config{
+		Type:                  tea.String("ram_role_arn"),
+		AccessKeyId:           tea.String(os.Getenv(EnvVarSubAccessKeyId)),
+		AccessKeySecret:       tea.String(os.Getenv(EnvVarSubAccessKeySecret)),
+		RoleArn:               tea.String(os.Getenv(EnvVarRoleArn)),
+		RoleSessionName:       tea.String(os.Getenv(EnvVarRoleSessionName)),
+		RoleSessionExpiration: tea.Int(expiration),
 	}
 	cred, err := credentials.NewCredential(config)
 	assert.Nil(t, err)

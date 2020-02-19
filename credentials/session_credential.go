@@ -1,7 +1,7 @@
 package credentials
 
 type sessionCredential struct {
-	AccessKeyID     string
+	AccessKeyId     string
 	AccessKeySecret string
 	SecurityToken   string
 }

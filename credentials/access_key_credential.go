@@ -2,20 +2,20 @@ package credentials
 
 // AccessKeyCredential is a kind of credential
 type AccessKeyCredential struct {
-	AccessKeyID     string
+	AccessKeyId     string
 	AccessKeySecret string
 }
 
-func newAccessKeyCredential(accessKeyID, accessKeySecret string) *AccessKeyCredential {
+func newAccessKeyCredential(accessKeyId, accessKeySecret string) *AccessKeyCredential {
 	return &AccessKeyCredential{
-		AccessKeyID:     accessKeyID,
+		AccessKeyId:     accessKeyId,
 		AccessKeySecret: accessKeySecret,
 	}
 }
 
-// GetAccessKeyID reutrns  AccessKeyCreential's AccessKeyID
+// GetAccessKeyId reutrns  AccessKeyCreential's AccessKeyId
 func (a *AccessKeyCredential) GetAccessKeyId() (string, error) {
-	return a.AccessKeyID, nil
+	return a.AccessKeyId, nil
 }
 
 // GetAccessSecret reutrns  AccessKeyCreential's AccessKeySecret

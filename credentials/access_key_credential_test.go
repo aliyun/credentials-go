@@ -7,10 +7,10 @@ import (
 )
 
 func Test_AccessKeyCredential(t *testing.T) {
-	auth := newAccessKeyCredential("accessKeyID", "accessKeySecret")
-	accessKeyID, err := auth.GetAccessKeyId()
+	auth := newAccessKeyCredential("accessKeyId", "accessKeySecret")
+	accessKeyId, err := auth.GetAccessKeyId()
 	assert.Nil(t, err)
-	assert.Equal(t, "accessKeyID", accessKeyID)
+	assert.Equal(t, "accessKeyId", accessKeyId)
 
 	accessKeySecret, err := auth.GetAccessKeySecret()
 	assert.Nil(t, err)

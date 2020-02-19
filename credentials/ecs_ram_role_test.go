@@ -18,20 +18,20 @@ func Test_EcsRAmRoleCredential(t *testing.T) {
 			return mockResponse(300, ``, errors.New("sdk test"))
 		}
 	}
-	accesskeyID, err := auth.GetAccessKeyId()
+	accesskeyId, err := auth.GetAccessKeyId()
 	assert.NotNil(t, err)
 	assert.Equal(t, "refresh Ecs sts token err: sdk test", err.Error())
-	assert.Equal(t, "", accesskeyID)
+	assert.Equal(t, "", accesskeyId)
 
 	hookDo = func(fn func(req *http.Request) (*http.Response, error)) func(req *http.Request) (*http.Response, error) {
 		return func(req *http.Request) (*http.Response, error) {
 			return mockResponse(300, ``, nil)
 		}
 	}
-	accesskeyID, err = auth.GetAccessKeyId()
+	accesskeyId, err = auth.GetAccessKeyId()
 	assert.NotNil(t, err)
 	assert.Equal(t, "refresh Ecs sts token err: httpStatus: 300, message = ", err.Error())
-	assert.Equal(t, "", accesskeyID)
+	assert.Equal(t, "", accesskeyId)
 
 	accesskeySecret, err := auth.GetAccessKeySecret()
 	assert.NotNil(t, err)
@@ -53,7 +53,7 @@ func Test_EcsRAmRoleCredential(t *testing.T) {
 		}
 	}
 	auth.RoleName = ""
-	accesskeyID, err = auth.GetAccessKeyId()
+	accesskeyId, err = auth.GetAccessKeyId()
 	assert.NotNil(t, err)
 	assert.Equal(t, "refresh Ecs sts token err: httpStatus: 400, message = role", err.Error())
 
@@ -62,49 +62,49 @@ func Test_EcsRAmRoleCredential(t *testing.T) {
 			return mockResponse(200, `role`, nil)
 		}
 	}
-	accesskeyID, err = auth.GetAccessKeyId()
+	accesskeyId, err = auth.GetAccessKeyId()
 	assert.NotNil(t, err)
 	assert.Equal(t, "refresh Ecs sts token err: Json Unmarshal fail: invalid character 'r' looking for beginning of value", err.Error())
 	hookDo = func(fn func(req *http.Request) (*http.Response, error)) func(req *http.Request) (*http.Response, error) {
 		return func(req *http.Request) (*http.Response, error) {
-			return mockResponse(200, `"AccessKeyID":"accessKeyID","AccessKeySecret":"accessKeySecret","SecurityToken":"securitytoken","Expiration":"expiration"`, nil)
+			return mockResponse(200, `"AccessKeyId":"accessKeyId","AccessKeySecret":"accessKeySecret","SecurityToken":"securitytoken","Expiration":"expiration"`, nil)
 		}
 	}
 	auth.RoleName = "role"
-	accesskeyID, err = auth.GetAccessKeyId()
+	accesskeyId, err = auth.GetAccessKeyId()
 	assert.NotNil(t, err)
 	assert.Equal(t, "refresh Ecs sts token err: Json Unmarshal fail: invalid character ':' after top-level value", err.Error())
-	assert.Equal(t, "", accesskeyID)
+	assert.Equal(t, "", accesskeyId)
 
 	hookDo = func(fn func(req *http.Request) (*http.Response, error)) func(req *http.Request) (*http.Response, error) {
 		return func(req *http.Request) (*http.Response, error) {
 			return mockResponse(200, `{"AccessKeySecret":"accessKeySecret","SecurityToken":"securitytoken","Expiration":"expiration","Code":"fail"}`, nil)
 		}
 	}
-	accesskeyID, err = auth.GetAccessKeyId()
+	accesskeyId, err = auth.GetAccessKeyId()
 	assert.NotNil(t, err)
 	assert.Equal(t, "refresh Ecs sts token err: Code is not Success", err.Error())
-	assert.Equal(t, "", accesskeyID)
+	assert.Equal(t, "", accesskeyId)
 
 	hookDo = func(fn func(req *http.Request) (*http.Response, error)) func(req *http.Request) (*http.Response, error) {
 		return func(req *http.Request) (*http.Response, error) {
 			return mockResponse(200, `{"AccessKeySecret":"accessKeySecret","SecurityToken":"securitytoken","Expiration":"expiration","Code":"Success"}`, nil)
 		}
 	}
-	accesskeyID, err = auth.GetAccessKeyId()
+	accesskeyId, err = auth.GetAccessKeyId()
 	assert.NotNil(t, err)
-	assert.Equal(t, "refresh Ecs sts token err: AccessKeyID: , AccessKeySecret: accessKeySecret, SecurityToken: securitytoken, Expiration: expiration", err.Error())
-	assert.Equal(t, "", accesskeyID)
+	assert.Equal(t, "refresh Ecs sts token err: AccessKeyId: , AccessKeySecret: accessKeySecret, SecurityToken: securitytoken, Expiration: expiration", err.Error())
+	assert.Equal(t, "", accesskeyId)
 
 	hookDo = func(fn func(req *http.Request) (*http.Response, error)) func(req *http.Request) (*http.Response, error) {
 		return func(req *http.Request) (*http.Response, error) {
-			return mockResponse(200, `{"AccessKeyID":"accessKeyID","AccessKeySecret":"accessKeySecret","SecurityToken":"securitytoken","Expiration":"2018-01-02T15:04:05Z","Code":"Success"}`, nil)
+			return mockResponse(200, `{"AccessKeyId":"accessKeyId","AccessKeySecret":"accessKeySecret","SecurityToken":"securitytoken","Expiration":"2018-01-02T15:04:05Z","Code":"Success"}`, nil)
 		}
 	}
 
-	accesskeyID, err = auth.GetAccessKeyId()
+	accesskeyId, err = auth.GetAccessKeyId()
 	assert.Nil(t, err)
-	assert.Equal(t, "accessKeyID", accesskeyID)
+	assert.Equal(t, "accessKeyId", accesskeyId)
 
 	accesskeySecret, err = auth.GetAccessKeySecret()
 	assert.Nil(t, err)
@@ -125,7 +125,7 @@ func Test_EcsRAmRoleCredential(t *testing.T) {
 	defer func() {
 		hookParse = originHookParse
 	}()
-	accesskeyID, err = auth.GetAccessKeyId()
+	accesskeyId, err = auth.GetAccessKeyId()
 	assert.Equal(t, "refresh Ecs sts token err: error parse", err.Error())
-	assert.Equal(t, "", accesskeyID)
+	assert.Equal(t, "", accesskeyId)
 }

@@ -2,22 +2,22 @@ package credentials
 
 // StsTokenCredential is a kind of credentials
 type StsTokenCredential struct {
-	AccessKeyID     string
+	AccessKeyId     string
 	AccessKeySecret string
 	SecurityToken   string
 }
 
-func newStsTokenCredential(accessKeyID, accessKeySecret, securityToken string) *StsTokenCredential {
+func newStsTokenCredential(accessKeyId, accessKeySecret, securityToken string) *StsTokenCredential {
 	return &StsTokenCredential{
-		AccessKeyID:     accessKeyID,
+		AccessKeyId:     accessKeyId,
 		AccessKeySecret: accessKeySecret,
 		SecurityToken:   securityToken,
 	}
 }
 
-// GetAccessKeyID reutrns  StsTokenCredential's AccessKeyID
+// GetAccessKeyId reutrns  StsTokenCredential's AccessKeyId
 func (s *StsTokenCredential) GetAccessKeyId() (string, error) {
-	return s.AccessKeyID, nil
+	return s.AccessKeyId, nil
 }
 
 // GetAccessSecret reutrns  StsTokenCredential's AccessKeySecret
