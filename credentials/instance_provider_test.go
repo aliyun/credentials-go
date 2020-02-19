@@ -4,6 +4,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/alibabacloud-go/tea/tea"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -21,8 +22,8 @@ func TestInstanceCredentialsProvider(t *testing.T) {
 	os.Setenv(ENVEcsMetadata, "role_name")
 	c, err = p.resolve()
 	assert.Nil(t, err)
-	assert.Equal(t, "role_name", c.RoleName)
-	assert.Equal(t, "ecs_ram_role", c.Type)
+	assert.Equal(t, "role_name", tea.StringValue(c.RoleName))
+	assert.Equal(t, "ecs_ram_role", tea.StringValue(c.Type))
 
 	os.Unsetenv(ENVEcsMetadata)
 	c, err = p.resolve()

@@ -7,6 +7,7 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/alibabacloud-go/tea/tea"
 	ini "gopkg.in/ini.v1"
 )
 
@@ -42,7 +43,7 @@ func newProfileProvider(name ...string) Provider {
 // when credential type is rsa_key_pair, the content of private_key file
 // must be able to be parsed directly into the required string
 // that NewRsaKeyPairCredential function needed
-func (p *profileProvider) resolve() (*Configuration, error) {
+func (p *profileProvider) resolve() (*Config, error) {
 	path, ok := os.LookupEnv(ENVCredentialFile)
 	if !ok {
 		path, err := checkDefaultPath()
@@ -102,12 +103,12 @@ func (p *profileProvider) resolve() (*Configuration, error) {
 	}
 }
 
-func getRSAKeyPair(section *ini.Section) (*Configuration, error) {
-	publicKeyID, err := section.GetKey("public_key_id")
+func getRSAKeyPair(section *ini.Section) (*Config, error) {
+	publicKeyId, err := section.GetKey("public_key_id")
 	if err != nil {
 		return nil, errors.New("Missing required public_key_id option in profile for rsa_key_pair")
 	}
-	if publicKeyID.String() == "" {
+	if publicKeyId.String() == "" {
 		return nil, errors.New("public_key_id cannot be empty")
 	}
 	privateKeyFile, err := section.GetKey("private_key_file")
@@ -125,11 +126,11 @@ func getRSAKeyPair(section *ini.Section) (*Configuration, error) {
 			return nil, errors.New("session_expiration must be an int")
 		}
 	}
-	config := &Configuration{
-		Type:              "rsa_key_pair",
-		PublicKeyID:       publicKeyID.String(),
-		PrivateKeyFile:    privateKeyFile.String(),
-		SessionExpiration: expiration,
+	config := &Config{
+		Type:              tea.String("rsa_key_pair"),
+		PublicKeyId:       tea.String(publicKeyId.String()),
+		PrivateKeyFile:    tea.String(privateKeyFile.String()),
+		SessionExpiration: tea.Int(expiration),
 	}
 	err = setRuntimeToConfig(config, section)
 	if err != nil {
@@ -138,12 +139,12 @@ func getRSAKeyPair(section *ini.Section) (*Configuration, error) {
 	return config, nil
 }
 
-func getRAMRoleArn(section *ini.Section) (*Configuration, error) {
-	accessKeyID, err := section.GetKey("access_key_id")
+func getRAMRoleArn(section *ini.Section) (*Config, error) {
+	accessKeyId, err := section.GetKey("access_key_id")
 	if err != nil {
 		return nil, errors.New("Missing required access_key_id option in profile for ram_role_arn")
 	}
-	if accessKeyID.String() == "" {
+	if accessKeyId.String() == "" {
 		return nil, errors.New("access_key_id cannot be empty")
 	}
 	accessKeySecret, err := section.GetKey("access_key_secret")
@@ -175,13 +176,13 @@ func getRAMRoleArn(section *ini.Section) (*Configuration, error) {
 			return nil, errors.New("role_session_expiration must be an int")
 		}
 	}
-	config := &Configuration{
-		Type:                  "ram_role_arn",
-		AccessKeyID:           accessKeyID.String(),
-		AccessKeySecret:       accessKeySecret.String(),
-		RoleArn:               roleArn.String(),
-		RoleSessionName:       roleSessionName.String(),
-		RoleSessionExpiration: expiration,
+	config := &Config{
+		Type:                  tea.String("ram_role_arn"),
+		AccessKeyId:           tea.String(accessKeyId.String()),
+		AccessKeySecret:       tea.String(accessKeySecret.String()),
+		RoleArn:               tea.String(roleArn.String()),
+		RoleSessionName:       tea.String(roleSessionName.String()),
+		RoleSessionExpiration: tea.Int(expiration),
 	}
 	err = setRuntimeToConfig(config, section)
 	if err != nil {
@@ -190,13 +191,13 @@ func getRAMRoleArn(section *ini.Section) (*Configuration, error) {
 	return config, nil
 }
 
-func getEcsRAMRole(section *ini.Section) (*Configuration, error) {
+func getEcsRAMRole(section *ini.Section) (*Config, error) {
 	roleName, _ := section.GetKey("role_name")
-	config := &Configuration{
-		Type: "ecs_ram_role",
+	config := &Config{
+		Type: tea.String("ecs_ram_role"),
 	}
 	if roleName != nil {
-		config.RoleName = roleName.String()
+		config.RoleName = tea.String(roleName.String())
 	}
 	err := setRuntimeToConfig(config, section)
 	if err != nil {
@@ -205,7 +206,7 @@ func getEcsRAMRole(section *ini.Section) (*Configuration, error) {
 	return config, nil
 }
 
-func getBearerToken(section *ini.Section) (*Configuration, error) {
+func getBearerToken(section *ini.Section) (*Config, error) {
 	bearerToken, err := section.GetKey("bearer_token")
 	if err != nil {
 		return nil, errors.New("Missing required bearer_token option in profile for bearer")
@@ -213,14 +214,14 @@ func getBearerToken(section *ini.Section) (*Configuration, error) {
 	if bearerToken.String() == "" {
 		return nil, errors.New("bearer_token cannot be empty")
 	}
-	config := &Configuration{
-		Type:        "bearer",
-		BearerToken: bearerToken.String(),
+	config := &Config{
+		Type:        tea.String("bearer"),
+		BearerToken: tea.String(bearerToken.String()),
 	}
 	return config, nil
 }
 
-func getSTS(section *ini.Section) (*Configuration, error) {
+func getSTS(section *ini.Section) (*Config, error) {
 	accesskeyid, err := section.GetKey("access_key_id")
 	if err != nil {
 		return nil, errors.New("Missing required access_key_id option in profile for sts")
@@ -242,16 +243,16 @@ func getSTS(section *ini.Section) (*Configuration, error) {
 	if securityToken.String() == "" {
 		return nil, errors.New("security_token cannot be empty")
 	}
-	config := &Configuration{
-		Type:            "sts",
-		AccessKeyID:     accesskeyid.String(),
-		AccessKeySecret: accessKeySecret.String(),
-		SecurityToken:   securityToken.String(),
+	config := &Config{
+		Type:            tea.String("sts"),
+		AccessKeyId:     tea.String(accesskeyid.String()),
+		AccessKeySecret: tea.String(accessKeySecret.String()),
+		SecurityToken:   tea.String(securityToken.String()),
 	}
 	return config, nil
 }
 
-func getAccessKey(section *ini.Section) (*Configuration, error) {
+func getAccessKey(section *ini.Section) (*Config, error) {
 	accesskeyid, err := section.GetKey("access_key_id")
 	if err != nil {
 		return nil, errors.New("Missing required access_key_id option in profile for access_key")
@@ -266,10 +267,10 @@ func getAccessKey(section *ini.Section) (*Configuration, error) {
 	if accessKeySecret.String() == "" {
 		return nil, errors.New("access_key_secret cannot be empty")
 	}
-	config := &Configuration{
-		Type:            "access_key",
-		AccessKeyID:     accesskeyid.String(),
-		AccessKeySecret: accessKeySecret.String(),
+	config := &Config{
+		Type:            tea.String("access_key"),
+		AccessKeyId:     tea.String(accesskeyid.String()),
+		AccessKeySecret: tea.String(accessKeySecret.String()),
 	}
 	return config, nil
 }
@@ -320,30 +321,30 @@ func checkDefaultPath() (path string, err error) {
 	return path, nil
 }
 
-func setRuntimeToConfig(config *Configuration, section *ini.Section) error {
+func setRuntimeToConfig(config *Config, section *ini.Section) error {
 	rawTimeout, _ := section.GetKey("timeout")
 	rawConnectTimeout, _ := section.GetKey("connect_timeout")
 	rawProxy, _ := section.GetKey("proxy")
 	rawHost, _ := section.GetKey("host")
 	if rawProxy != nil {
-		config.Proxy = rawProxy.String()
+		config.Proxy = tea.String(rawProxy.String())
 	}
 	if rawConnectTimeout != nil {
 		connectTimeout, err := rawConnectTimeout.Int()
 		if err != nil {
 			return fmt.Errorf("Please set connect_timeout with an int value")
 		}
-		config.ConnectTimeout = connectTimeout
+		config.ConnectTimeout = tea.Int(connectTimeout)
 	}
 	if rawTimeout != nil {
 		timeout, err := rawTimeout.Int()
 		if err != nil {
 			return fmt.Errorf("Please set timeout with an int value")
 		}
-		config.Timeout = timeout
+		config.Timeout = tea.Int(timeout)
 	}
 	if rawHost != nil {
-		config.Host = rawHost.String()
+		config.Host = tea.String(rawHost.String())
 	}
 	return nil
 }

@@ -15,7 +15,7 @@ import (
 type RsaKeyPairCredential struct {
 	*credentialUpdater
 	PrivateKey        string
-	PublicKeyID       string
+	PublicKeyId       string
 	SessionExpiration int
 	sessionCredential *sessionCredential
 	runtime           *utils.Runtime
@@ -26,23 +26,23 @@ type rsaKeyPairResponse struct {
 }
 
 type sessionAccessKey struct {
-	SessionAccessKeyID     string `json:"SessionAccessKeyID" xml:"SessionAccessKeyID"`
+	SessionAccessKeyId     string `json:"SessionAccessKeyId" xml:"SessionAccessKeyId"`
 	SessionAccessKeySecret string `json:"SessionAccessKeySecret" xml:"SessionAccessKeySecret"`
 	Expiration             string `json:"Expiration" xml:"Expiration"`
 }
 
-func newRsaKeyPairCredential(privateKey, publicKeyID string, sessionExpiration int, runtime *utils.Runtime) *RsaKeyPairCredential {
+func newRsaKeyPairCredential(privateKey, publicKeyId string, sessionExpiration int, runtime *utils.Runtime) *RsaKeyPairCredential {
 	return &RsaKeyPairCredential{
 		PrivateKey:        privateKey,
-		PublicKeyID:       publicKeyID,
+		PublicKeyId:       publicKeyId,
 		SessionExpiration: sessionExpiration,
 		credentialUpdater: new(credentialUpdater),
 		runtime:           runtime,
 	}
 }
 
-// GetAccessKeyID reutrns RsaKeyPairCredential's AccessKeyID
-// if AccessKeyID is not exist or out of date, the function will update it.
+// GetAccessKeyId reutrns RsaKeyPairCredential's AccessKeyId
+// if AccessKeyId is not exist or out of date, the function will update it.
 func (r *RsaKeyPairCredential) GetAccessKeyId() (string, error) {
 	if r.sessionCredential == nil || r.needUpdateCredential() {
 		err := r.updateCredential()
@@ -50,7 +50,7 @@ func (r *RsaKeyPairCredential) GetAccessKeyId() (string, error) {
 			return "", err
 		}
 	}
-	return r.sessionCredential.AccessKeyID, nil
+	return r.sessionCredential.AccessKeyId, nil
 }
 
 // GetAccessSecret reutrns  RsaKeyPairCredential's AccessKeySecret
@@ -91,7 +91,7 @@ func (r *RsaKeyPairCredential) updateCredential() (err error) {
 	}
 	request.Scheme = "HTTPS"
 	request.Method = "GET"
-	request.QueryParams["AccessKeyId"] = r.PublicKeyID
+	request.QueryParams["AccessKeyId"] = r.PublicKeyId
 	request.QueryParams["Action"] = "GenerateSessionAccessKey"
 	request.QueryParams["Format"] = "JSON"
 	if r.SessionExpiration > 0 {
@@ -128,15 +128,15 @@ func (r *RsaKeyPairCredential) updateCredential() (err error) {
 		return fmt.Errorf("refresh KeyPair err: SessionAccessKey is empty")
 	}
 	sessionAccessKey := resp.SessionAccessKey
-	if sessionAccessKey.SessionAccessKeyID == "" || sessionAccessKey.SessionAccessKeySecret == "" || sessionAccessKey.Expiration == "" {
-		return fmt.Errorf("refresh KeyPair err: SessionAccessKeyID: %v, SessionAccessKeySecret: %v, Expiration: %v", sessionAccessKey.SessionAccessKeyID, sessionAccessKey.SessionAccessKeySecret, sessionAccessKey.Expiration)
+	if sessionAccessKey.SessionAccessKeyId == "" || sessionAccessKey.SessionAccessKeySecret == "" || sessionAccessKey.Expiration == "" {
+		return fmt.Errorf("refresh KeyPair err: SessionAccessKeyId: %v, SessionAccessKeySecret: %v, Expiration: %v", sessionAccessKey.SessionAccessKeyId, sessionAccessKey.SessionAccessKeySecret, sessionAccessKey.Expiration)
 	}
 
 	expirationTime, err := time.Parse("2006-01-02T15:04:05Z", sessionAccessKey.Expiration)
 	r.lastUpdateTimestamp = time.Now().Unix()
 	r.credentialExpiration = int(expirationTime.Unix() - time.Now().Unix())
 	r.sessionCredential = &sessionCredential{
-		AccessKeyID:     sessionAccessKey.SessionAccessKeyID,
+		AccessKeyId:     sessionAccessKey.SessionAccessKeyId,
 		AccessKeySecret: sessionAccessKey.SessionAccessKeySecret,
 	}
 

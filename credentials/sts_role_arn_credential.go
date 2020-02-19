@@ -16,7 +16,7 @@ const defaultDurationSeconds = 3600
 // RAMRoleArnCredential is a kind of credentials
 type RAMRoleArnCredential struct {
 	*credentialUpdater
-	AccessKeyID           string
+	AccessKeyId           string
 	AccessKeySecret       string
 	RoleArn               string
 	RoleSessionName       string
@@ -31,15 +31,15 @@ type ramRoleArnResponse struct {
 }
 
 type credentialsInResponse struct {
-	AccessKeyID     string `json:"AccessKeyID" xml:"AccessKeyID"`
+	AccessKeyId     string `json:"AccessKeyId" xml:"AccessKeyId"`
 	AccessKeySecret string `json:"AccessKeySecret" xml:"AccessKeySecret"`
 	SecurityToken   string `json:"SecurityToken" xml:"SecurityToken"`
 	Expiration      string `json:"Expiration" xml:"Expiration"`
 }
 
-func newRAMRoleArnCredential(accessKeyID, accessKeySecret, roleArn, roleSessionName, policy string, roleSessionExpiration int, runtime *utils.Runtime) *RAMRoleArnCredential {
+func newRAMRoleArnCredential(accessKeyId, accessKeySecret, roleArn, roleSessionName, policy string, roleSessionExpiration int, runtime *utils.Runtime) *RAMRoleArnCredential {
 	return &RAMRoleArnCredential{
-		AccessKeyID:           accessKeyID,
+		AccessKeyId:           accessKeyId,
 		AccessKeySecret:       accessKeySecret,
 		RoleArn:               roleArn,
 		RoleSessionName:       roleSessionName,
@@ -50,8 +50,8 @@ func newRAMRoleArnCredential(accessKeyID, accessKeySecret, roleArn, roleSessionN
 	}
 }
 
-// GetAccessKeyID reutrns RamRoleArnCredential's AccessKeyID
-// if AccessKeyID is not exist or out of date, the function will update it.
+// GetAccessKeyId reutrns RamRoleArnCredential's AccessKeyId
+// if AccessKeyId is not exist or out of date, the function will update it.
 func (r *RAMRoleArnCredential) GetAccessKeyId() (string, error) {
 	if r.sessionCredential == nil || r.needUpdateCredential() {
 		err := r.updateCredential()
@@ -59,7 +59,7 @@ func (r *RAMRoleArnCredential) GetAccessKeyId() (string, error) {
 			return "", err
 		}
 	}
-	return r.sessionCredential.AccessKeyID, nil
+	return r.sessionCredential.AccessKeyId, nil
 }
 
 // GetAccessSecret reutrns RamRoleArnCredential's AccessKeySecret
@@ -104,7 +104,7 @@ func (r *RAMRoleArnCredential) updateCredential() (err error) {
 	request.Domain = "sts.aliyuncs.com"
 	request.Scheme = "HTTPS"
 	request.Method = "GET"
-	request.QueryParams["AccessKeyId"] = r.AccessKeyID
+	request.QueryParams["AccessKeyId"] = r.AccessKeyId
 	request.QueryParams["Action"] = "AssumeRole"
 	request.QueryParams["Format"] = "JSON"
 	if r.RoleSessionExpiration > 0 {
@@ -145,15 +145,15 @@ func (r *RAMRoleArnCredential) updateCredential() (err error) {
 		return fmt.Errorf("refresh RoleArn sts token err: Credentials is empty")
 	}
 	respCredentials := resp.Credentials
-	if respCredentials.AccessKeyID == "" || respCredentials.AccessKeySecret == "" || respCredentials.SecurityToken == "" || respCredentials.Expiration == "" {
-		return fmt.Errorf("refresh RoleArn sts token err: AccessKeyID: %s, AccessKeySecret: %s, SecurityToken: %s, Expiration: %s", respCredentials.AccessKeyID, respCredentials.AccessKeySecret, respCredentials.SecurityToken, respCredentials.Expiration)
+	if respCredentials.AccessKeyId == "" || respCredentials.AccessKeySecret == "" || respCredentials.SecurityToken == "" || respCredentials.Expiration == "" {
+		return fmt.Errorf("refresh RoleArn sts token err: AccessKeyId: %s, AccessKeySecret: %s, SecurityToken: %s, Expiration: %s", respCredentials.AccessKeyId, respCredentials.AccessKeySecret, respCredentials.SecurityToken, respCredentials.Expiration)
 	}
 
 	expirationTime, err := time.Parse("2006-01-02T15:04:05Z", respCredentials.Expiration)
 	r.lastUpdateTimestamp = time.Now().Unix()
 	r.credentialExpiration = int(expirationTime.Unix() - time.Now().Unix())
 	r.sessionCredential = &sessionCredential{
-		AccessKeyID:     respCredentials.AccessKeyID,
+		AccessKeyId:     respCredentials.AccessKeyId,
 		AccessKeySecret: respCredentials.AccessKeySecret,
 		SecurityToken:   respCredentials.SecurityToken,
 	}

@@ -44,16 +44,16 @@ import (
 )
 
 func main(){
-	config := &credentials.Configuration{
+	config := &credentials.Config{
 		Type:                  "access_key",       // 凭证类型
-		AccessKeyID:           "AccessKeyID",      // AccessKeyID
+		AccessKeyId:           "AccessKeyId",      // AccessKeyId
 		AccessKeySecret:       "AccessKeySecret",  // AccessKeySecret
     }
 	akCredential, err := credentials.NewCredential(config)
 	if err != nil {
 		return err
 	}
-	accessKeyID, err := akCredential.GetAccessKeyID()
+	accessKeyId, err := akCredential.GetAccessKeyId()
 	accessSecret, err := akCredential.GetAccessSecret()
 	credentialType := akCredential.GetType()
 }
@@ -67,9 +67,9 @@ import (
 )
 
 func main(){
-	config := &credentials.Configuration{
+	config := &credentials.Config{
 		Type:                  "sts",              // 凭证类型
-		AccessKeyID:           "AccessKeyID",      // AccessKeyID
+		AccessKeyId:           "AccessKeyId",      // AccessKeyId
 		AccessKeySecret:       "AccessKeySecret",  // AccessKeySecret
 		SecurityToken:         "SecurityToken",    // STS Token
     }
@@ -77,7 +77,7 @@ func main(){
 	if err != nil {
 		return err
 	}
-	accessKeyID, err := stsCredential.GetAccessKeyID()
+	accessKeyId, err := stsCredential.GetAccessKeyId()
 	accessSecret, err := stsCredential.GetAccessSecret()
 	securityToken, err := stsCredential.GetSecurityToken()
 	credentialType := stsCredential.GetType()
@@ -92,11 +92,11 @@ import (
 )
 
 func main(){
-	config := &credentialsConfiguration{
+	config := &credentials.Config{
 		Type:                   "ram_role_arn",     // 凭证类型
-		AccessKeyID:            "AccessKeyID",      // AccessKeyID
+		AccessKeyId:            "AccessKeyId",      // AccessKeyId
 		AccessKeySecret:        "AccessKeySecret",  // AccessKeySecret
-		RoleArn:                "RoleArn",          // 格式: acs:ram::用户ID:role/角色名
+		RoleArn:                "RoleArn",          // 格式: acs:ram::用户Id:role/角色名
 		RoleSessionName:        "RoleSessionName",  // 角色会话名称
 		Policy:                 "Policy",           // 可选, 限制 STS Token 的权限
 		RoleSessionExpiration:  3600,               // 可选, 限制 STS Token 的有效时间
@@ -105,7 +105,7 @@ func main(){
 	if err != nil {
 		return err
 	}
-	accessKeyID, err := arnCredential.GetAccessKeyID()
+	accessKeyId, err := arnCredential.GetAccessKeyId()
 	accessSecret, err := arnCredential.GetAccessSecret()
 	securityToken, err := arnCredential.GetSecurityToken()
 	credentialType := arnCredential.GetType()
@@ -120,7 +120,7 @@ import (
 )
 
 func main(){
-	config := &credentialsConfiguration{
+	config := &credentials.Config{
 		Type:                   "ecs_ram_role",     // 凭证类型
 		RoleName:               "RoleName",         // 账户RoleName，非必填，不填则自动获取，建议设置，可以减少请求
     }
@@ -128,7 +128,7 @@ func main(){
 	if err != nil {
 		return err
 	}
-	accessKeyID, err := ecsCredential.GetAccessKeyID()
+	accessKeyId, err := ecsCredential.GetAccessKeyId()
 	accessSecret, err := ecsCredential.GetAccessSecret()
 	securityToken, err := ecsCredential.GetSecurityToken()
 	credentialType := ecsCredential.GetType()
@@ -136,24 +136,24 @@ func main(){
 ```
 
 #### RsaKeyPair
-通过指定公钥ID和私钥文件，让凭证自动申请维护 AccessKey。仅支持日本站。 
-By specifying the public key ID and the private key file, the credential will be able to automatically request maintenance of the AccessKey before sending the request. Only Japan station is supported. 
+通过指定公钥Id和私钥文件，让凭证自动申请维护 AccessKey。仅支持日本站。 
+By specifying the public key Id and the private key file, the credential will be able to automatically request maintenance of the AccessKey before sending the request. Only Japan station is supported. 
 ```go
 import (
 	"github.com/aliyun/credentials-go/credentials"
 )
 
 func main(){
-	config := &credentialsConfiguration{
+	config := &credentials.Config{
 		Type:                   "rsa_key_pair",       // 凭证类型
 		PrivateKeyFile:         "PrivateKeyFile",     // PrivateKey文件路径
-		PublicKeyID:            "PublicKeyID",        // 账户PublicKeyId
+		PublicKeyId:            "PublicKeyId",        // 账户PublicKeyId
     }
 	rsaCredential, err := credentials.NewCredential(config)
 	if err != nil {
 		return err
 	}
-	accessKeyID, err := rsaCredential.GetAccessKeyID()
+	accessKeyId, err := rsaCredential.GetAccessKeyId()
 	accessSecret, err := rsaCredential.GetAccessSecret()
 	securityToken, err := rsaCredential.GetSecurityToken()
 	credentialType := rsaCredential.GetType()
@@ -168,7 +168,7 @@ import (
 )
 
 func main(){
-	config := &credentials.Configuration{
+	config := &credentials.Config{
 		Type:                 "bearer",       // 凭证类型
 		BearerToken:          "BearerToken",  // BearerToken
     }

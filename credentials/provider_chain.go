@@ -17,7 +17,7 @@ func newProviderChain(providers []Provider) Provider {
 	}
 }
 
-func (p *providerChain) resolve() (*Configuration, error) {
+func (p *providerChain) resolve() (*Config, error) {
 	for _, provider := range p.Providers {
 		config, err := provider.resolve()
 		if err != nil {

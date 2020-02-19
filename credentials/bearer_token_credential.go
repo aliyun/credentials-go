@@ -12,7 +12,7 @@ func newBearerTokenCredential(token string) *BearerTokenCredential {
 	}
 }
 
-// GetAccessKeyID is useless for BearerTokenCredential
+// GetAccessKeyId is useless for BearerTokenCredential
 func (b *BearerTokenCredential) GetAccessKeyId() (string, error) {
 	return "", nil
 }

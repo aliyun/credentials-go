@@ -21,7 +21,7 @@ type EcsRAMRoleCredential struct {
 
 type ecsRAMRoleResponse struct {
 	Code            string `json:"Code" xml:"Code"`
-	AccessKeyID     string `json:"AccessKeyID" xml:"AccessKeyID"`
+	AccessKeyId     string `json:"AccessKeyId" xml:"AccessKeyId"`
 	AccessKeySecret string `json:"AccessKeySecret" xml:"AccessKeySecret"`
 	SecurityToken   string `json:"SecurityToken" xml:"SecurityToken"`
 	Expiration      string `json:"Expiration" xml:"Expiration"`
@@ -35,8 +35,8 @@ func newEcsRAMRoleCredential(roleName string, runtime *utils.Runtime) *EcsRAMRol
 	}
 }
 
-// GetAccessKeyID reutrns  EcsRAMRoleCredential's AccessKeyID
-// if AccessKeyID is not exist or out of date, the function will update it.
+// GetAccessKeyId reutrns  EcsRAMRoleCredential's AccessKeyId
+// if AccessKeyId is not exist or out of date, the function will update it.
 func (e *EcsRAMRoleCredential) GetAccessKeyId() (string, error) {
 	if e.sessionCredential == nil || e.needUpdateCredential() {
 		err := e.updateCredential()
@@ -44,7 +44,7 @@ func (e *EcsRAMRoleCredential) GetAccessKeyId() (string, error) {
 			return "", err
 		}
 	}
-	return e.sessionCredential.AccessKeyID, nil
+	return e.sessionCredential.AccessKeyId, nil
 }
 
 // GetAccessSecret reutrns  EcsRAMRoleCredential's AccessKeySecret
@@ -118,15 +118,15 @@ func (e *EcsRAMRoleCredential) updateCredential() (err error) {
 	if resp.Code != "Success" {
 		return fmt.Errorf("refresh Ecs sts token err: Code is not Success")
 	}
-	if resp.AccessKeyID == "" || resp.AccessKeySecret == "" || resp.SecurityToken == "" || resp.Expiration == "" {
-		return fmt.Errorf("refresh Ecs sts token err: AccessKeyID: %s, AccessKeySecret: %s, SecurityToken: %s, Expiration: %s", resp.AccessKeyID, resp.AccessKeySecret, resp.SecurityToken, resp.Expiration)
+	if resp.AccessKeyId == "" || resp.AccessKeySecret == "" || resp.SecurityToken == "" || resp.Expiration == "" {
+		return fmt.Errorf("refresh Ecs sts token err: AccessKeyId: %s, AccessKeySecret: %s, SecurityToken: %s, Expiration: %s", resp.AccessKeyId, resp.AccessKeySecret, resp.SecurityToken, resp.Expiration)
 	}
 
 	expirationTime, err := time.Parse("2006-01-02T15:04:05Z", resp.Expiration)
 	e.lastUpdateTimestamp = time.Now().Unix()
 	e.credentialExpiration = int(expirationTime.Unix() - time.Now().Unix())
 	e.sessionCredential = &sessionCredential{
-		AccessKeyID:     resp.AccessKeyID,
+		AccessKeyId:     resp.AccessKeyId,
 		AccessKeySecret: resp.AccessKeySecret,
 		SecurityToken:   resp.SecurityToken,
 	}

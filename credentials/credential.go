@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/alibabacloud-go/debug/debug"
+	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/credentials-go/credentials/request"
 	"github.com/aliyun/credentials-go/credentials/response"
 	"github.com/aliyun/credentials-go/credentials/utils"
@@ -31,31 +32,31 @@ type Credential interface {
 	GetType() string
 }
 
-// Configuration is important when call NewCredential
-type Configuration struct {
-	Type                  string `json:"type"`
-	AccessKeyID           string `json:"access_key_id"`
-	AccessKeySecret       string `json:"access_key_secret"`
-	RoleArn               string `json:"role_arn"`
-	RoleSessionName       string `json:"role_session_name"`
-	PublicKeyID           string `json:"public_key_id"`
-	RoleName              string `json:"role_name"`
-	SessionExpiration     int    `json:"session_expiration"`
-	PrivateKeyFile        string `json:"private_key_file"`
-	BearerToken           string `json:"bearer_token"`
-	SecurityToken         string `json:"security_token"`
-	RoleSessionExpiration int    `json:"role_session_expiratioon"`
-	Policy                string `json:"policy"`
-	Host                  string `json:"host"`
-	Timeout               int    `json:"timeout"`
-	ConnectTimeout        int    `json:"connect_timeout"`
-	Proxy                 string `json:"proxy"`
+// Config is important when call NewCredential
+type Config struct {
+	Type                  *string `json:"type"`
+	AccessKeyId           *string `json:"access_key_id"`
+	AccessKeySecret       *string `json:"access_key_secret"`
+	RoleArn               *string `json:"role_arn"`
+	RoleSessionName       *string `json:"role_session_name"`
+	PublicKeyId           *string `json:"public_key_id"`
+	RoleName              *string `json:"role_name"`
+	SessionExpiration     *int    `json:"session_expiration"`
+	PrivateKeyFile        *string `json:"private_key_file"`
+	BearerToken           *string `json:"bearer_token"`
+	SecurityToken         *string `json:"security_token"`
+	RoleSessionExpiration *int    `json:"role_session_expiratioon"`
+	Policy                *string `json:"policy"`
+	Host                  *string `json:"host"`
+	Timeout               *int    `json:"timeout"`
+	ConnectTimeout        *int    `json:"connect_timeout"`
+	Proxy                 *string `json:"proxy"`
 }
 
 // NewCredential return a credential according to the type in config.
 // if config is nil, the function will use default provider chain to get credential.
 // please see README.md for detail.
-func NewCredential(config *Configuration) (credential Credential, err error) {
+func NewCredential(config *Config) (credential Credential, err error) {
 	if config == nil {
 		config, err = defaultChain.resolve()
 		if err != nil {
@@ -63,46 +64,46 @@ func NewCredential(config *Configuration) (credential Credential, err error) {
 		}
 		return NewCredential(config)
 	}
-	switch config.Type {
+	switch tea.StringValue(config.Type) {
 	case "access_key":
 		err = checkAccessKey(config)
 		if err != nil {
 			return
 		}
-		credential = newAccessKeyCredential(config.AccessKeyID, config.AccessKeySecret)
+		credential = newAccessKeyCredential(tea.StringValue(config.AccessKeyId), tea.StringValue(config.AccessKeySecret))
 	case "sts":
 		err = checkSTS(config)
 		if err != nil {
 			return
 		}
-		credential = newStsTokenCredential(config.AccessKeyID, config.AccessKeySecret, config.SecurityToken)
+		credential = newStsTokenCredential(tea.StringValue(config.AccessKeyId), tea.StringValue(config.AccessKeySecret), tea.StringValue(config.SecurityToken))
 	case "ecs_ram_role":
 		checkEcsRAMRole(config)
 		runtime := &utils.Runtime{
-			Host:           config.Host,
-			Proxy:          config.Proxy,
-			ReadTimeout:    config.Timeout,
-			ConnectTimeout: config.ConnectTimeout,
+			Host:           tea.StringValue(config.Host),
+			Proxy:          tea.StringValue(config.Proxy),
+			ReadTimeout:    tea.IntValue(config.Timeout),
+			ConnectTimeout: tea.IntValue(config.ConnectTimeout),
 		}
-		credential = newEcsRAMRoleCredential(config.RoleName, runtime)
+		credential = newEcsRAMRoleCredential(tea.StringValue(config.RoleName), runtime)
 	case "ram_role_arn":
 		err = checkRAMRoleArn(config)
 		if err != nil {
 			return
 		}
 		runtime := &utils.Runtime{
-			Host:           config.Host,
-			Proxy:          config.Proxy,
-			ReadTimeout:    config.Timeout,
-			ConnectTimeout: config.ConnectTimeout,
+			Host:           tea.StringValue(config.Host),
+			Proxy:          tea.StringValue(config.Proxy),
+			ReadTimeout:    tea.IntValue(config.Timeout),
+			ConnectTimeout: tea.IntValue(config.ConnectTimeout),
 		}
-		credential = newRAMRoleArnCredential(config.AccessKeyID, config.AccessKeySecret, config.RoleArn, config.RoleSessionName, config.Policy, config.RoleSessionExpiration, runtime)
+		credential = newRAMRoleArnCredential(tea.StringValue(config.AccessKeyId), tea.StringValue(config.AccessKeySecret), tea.StringValue(config.RoleArn), tea.StringValue(config.RoleSessionName), tea.StringValue(config.Policy), tea.IntValue(config.RoleSessionExpiration), runtime)
 	case "rsa_key_pair":
 		err = checkRSAKeyPair(config)
 		if err != nil {
 			return
 		}
-		file, err1 := os.Open(config.PrivateKeyFile)
+		file, err1 := os.Open(tea.StringValue(config.PrivateKeyFile))
 		if err1 != nil {
 			err = fmt.Errorf("InvalidPath: Can not open PrivateKeyFile, err is %s", err1.Error())
 			return
@@ -117,18 +118,18 @@ func NewCredential(config *Configuration) (credential Credential, err error) {
 			privateKey += scan.Text() + "\n"
 		}
 		runtime := &utils.Runtime{
-			Host:           config.Host,
-			Proxy:          config.Proxy,
-			ReadTimeout:    config.Timeout,
-			ConnectTimeout: config.ConnectTimeout,
+			Host:           tea.StringValue(config.Host),
+			Proxy:          tea.StringValue(config.Proxy),
+			ReadTimeout:    tea.IntValue(config.Timeout),
+			ConnectTimeout: tea.IntValue(config.ConnectTimeout),
 		}
-		credential = newRsaKeyPairCredential(privateKey, config.PublicKeyID, config.SessionExpiration, runtime)
+		credential = newRsaKeyPairCredential(privateKey, tea.StringValue(config.PublicKeyId), tea.IntValue(config.SessionExpiration), runtime)
 	case "bearer":
-		if config.BearerToken == "" {
+		if tea.StringValue(config.BearerToken) == "" {
 			err = errors.New("BearerToken cannot be empty")
 			return
 		}
-		credential = newBearerTokenCredential(config.BearerToken)
+		credential = newBearerTokenCredential(tea.StringValue(config.BearerToken))
 	default:
 		err = errors.New("Invalid type option, support: access_key, sts, ecs_ram_role, ram_role_arn, rsa_key_pair")
 		return
@@ -136,64 +137,64 @@ func NewCredential(config *Configuration) (credential Credential, err error) {
 	return credential, nil
 }
 
-func checkRSAKeyPair(config *Configuration) (err error) {
-	if config.PrivateKeyFile == "" {
+func checkRSAKeyPair(config *Config) (err error) {
+	if tea.StringValue(config.PrivateKeyFile) == "" {
 		err = errors.New("PrivateKeyFile cannot be empty")
 		return
 	}
-	if config.PublicKeyID == "" {
-		err = errors.New("PublicKeyID cannot be empty")
+	if tea.StringValue(config.PublicKeyId) == "" {
+		err = errors.New("PublicKeyId cannot be empty")
 		return
 	}
 	return
 }
 
-func checkRAMRoleArn(config *Configuration) (err error) {
-	if config.AccessKeySecret == "" {
+func checkRAMRoleArn(config *Config) (err error) {
+	if tea.StringValue(config.AccessKeySecret) == "" {
 		err = errors.New("AccessKeySecret cannot be empty")
 		return
 	}
-	if config.RoleArn == "" {
+	if tea.StringValue(config.RoleArn) == "" {
 		err = errors.New("RoleArn cannot be empty")
 		return
 	}
-	if config.RoleSessionName == "" {
+	if tea.StringValue(config.RoleSessionName) == "" {
 		err = errors.New("RoleSessionName cannot be empty")
 		return
 	}
-	if config.AccessKeyID == "" {
-		err = errors.New("AccessKeyID cannot be empty")
+	if tea.StringValue(config.AccessKeyId) == "" {
+		err = errors.New("AccessKeyId cannot be empty")
 		return
 	}
 	return
 }
 
-func checkEcsRAMRole(config *Configuration) (err error) {
+func checkEcsRAMRole(config *Config) (err error) {
 	return
 }
 
-func checkSTS(config *Configuration) (err error) {
-	if config.AccessKeyID == "" {
-		err = errors.New("AccessKeyID cannot be empty")
+func checkSTS(config *Config) (err error) {
+	if tea.StringValue(config.AccessKeyId) == "" {
+		err = errors.New("AccessKeyId cannot be empty")
 		return
 	}
-	if config.AccessKeySecret == "" {
+	if tea.StringValue(config.AccessKeySecret) == "" {
 		err = errors.New("AccessKeySecret cannot be empty")
 		return
 	}
-	if config.SecurityToken == "" {
+	if tea.StringValue(config.SecurityToken) == "" {
 		err = errors.New("SecurityToken cannot be empty")
 		return
 	}
 	return
 }
 
-func checkAccessKey(config *Configuration) (err error) {
-	if config.AccessKeyID == "" {
-		err = errors.New("AccessKeyID cannot be empty")
+func checkAccessKey(config *Config) (err error) {
+	if tea.StringValue(config.AccessKeyId) == "" {
+		err = errors.New("AccessKeyId cannot be empty")
 		return
 	}
-	if config.AccessKeySecret == "" {
+	if tea.StringValue(config.AccessKeySecret) == "" {
 		err = errors.New("AccessKeySecret cannot be empty")
 		return
 	}
