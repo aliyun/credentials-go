@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/credentials-go/credentials/request"
 	"github.com/aliyun/credentials-go/credentials/utils"
 )
@@ -52,48 +53,48 @@ func newRAMRoleArnCredential(accessKeyId, accessKeySecret, roleArn, roleSessionN
 
 // GetAccessKeyId reutrns RamRoleArnCredential's AccessKeyId
 // if AccessKeyId is not exist or out of date, the function will update it.
-func (r *RAMRoleArnCredential) GetAccessKeyId() (string, error) {
+func (r *RAMRoleArnCredential) GetAccessKeyId() (*string, error) {
 	if r.sessionCredential == nil || r.needUpdateCredential() {
 		err := r.updateCredential()
 		if err != nil {
-			return "", err
+			return tea.String(""), err
 		}
 	}
-	return r.sessionCredential.AccessKeyId, nil
+	return tea.String(r.sessionCredential.AccessKeyId), nil
 }
 
 // GetAccessSecret reutrns RamRoleArnCredential's AccessKeySecret
 // if AccessKeySecret is not exist or out of date, the function will update it.
-func (r *RAMRoleArnCredential) GetAccessKeySecret() (string, error) {
+func (r *RAMRoleArnCredential) GetAccessKeySecret() (*string, error) {
 	if r.sessionCredential == nil || r.needUpdateCredential() {
 		err := r.updateCredential()
 		if err != nil {
-			return "", err
+			return tea.String(""), err
 		}
 	}
-	return r.sessionCredential.AccessKeySecret, nil
+	return tea.String(r.sessionCredential.AccessKeySecret), nil
 }
 
 // GetSecurityToken reutrns RamRoleArnCredential's SecurityToken
 // if SecurityToken is not exist or out of date, the function will update it.
-func (r *RAMRoleArnCredential) GetSecurityToken() (string, error) {
+func (r *RAMRoleArnCredential) GetSecurityToken() (*string, error) {
 	if r.sessionCredential == nil || r.needUpdateCredential() {
 		err := r.updateCredential()
 		if err != nil {
-			return "", err
+			return tea.String(""), err
 		}
 	}
-	return r.sessionCredential.SecurityToken, nil
+	return tea.String(r.sessionCredential.SecurityToken), nil
 }
 
 // GetBearerToken is useless RamRoleArnCredential
-func (r *RAMRoleArnCredential) GetBearerToken() string {
-	return ""
+func (r *RAMRoleArnCredential) GetBearerToken() *string {
+	return tea.String("")
 }
 
 // GetType reutrns RamRoleArnCredential's type
-func (r *RAMRoleArnCredential) GetType() string {
-	return "ram_role_arn"
+func (r *RAMRoleArnCredential) GetType() *string {
+	return tea.String("ram_role_arn")
 }
 
 func (r *RAMRoleArnCredential) updateCredential() (err error) {

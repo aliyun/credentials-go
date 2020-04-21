@@ -1,5 +1,7 @@
 package credentials
 
+import "github.com/alibabacloud-go/tea/tea"
+
 // AccessKeyCredential is a kind of credential
 type AccessKeyCredential struct {
 	AccessKeyId     string
@@ -14,26 +16,26 @@ func newAccessKeyCredential(accessKeyId, accessKeySecret string) *AccessKeyCrede
 }
 
 // GetAccessKeyId reutrns  AccessKeyCreential's AccessKeyId
-func (a *AccessKeyCredential) GetAccessKeyId() (string, error) {
-	return a.AccessKeyId, nil
+func (a *AccessKeyCredential) GetAccessKeyId() (*string, error) {
+	return tea.String(a.AccessKeyId), nil
 }
 
 // GetAccessSecret reutrns  AccessKeyCreential's AccessKeySecret
-func (a *AccessKeyCredential) GetAccessKeySecret() (string, error) {
-	return a.AccessKeySecret, nil
+func (a *AccessKeyCredential) GetAccessKeySecret() (*string, error) {
+	return tea.String(a.AccessKeySecret), nil
 }
 
 // GetSecurityToken is useless for AccessKeyCreential
-func (a *AccessKeyCredential) GetSecurityToken() (string, error) {
-	return "", nil
+func (a *AccessKeyCredential) GetSecurityToken() (*string, error) {
+	return tea.String(""), nil
 }
 
 // GetBearerToken is useless for AccessKeyCreential
-func (a *AccessKeyCredential) GetBearerToken() string {
-	return ""
+func (a *AccessKeyCredential) GetBearerToken() *string {
+	return tea.String("")
 }
 
 // GetType reutrns  AccessKeyCreential's type
-func (a *AccessKeyCredential) GetType() string {
-	return "access_key"
+func (a *AccessKeyCredential) GetType() *string {
+	return tea.String("access_key")
 }

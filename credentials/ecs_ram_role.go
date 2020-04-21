@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/credentials-go/credentials/request"
 	"github.com/aliyun/credentials-go/credentials/utils"
 )
@@ -37,48 +38,48 @@ func newEcsRAMRoleCredential(roleName string, runtime *utils.Runtime) *EcsRAMRol
 
 // GetAccessKeyId reutrns  EcsRAMRoleCredential's AccessKeyId
 // if AccessKeyId is not exist or out of date, the function will update it.
-func (e *EcsRAMRoleCredential) GetAccessKeyId() (string, error) {
+func (e *EcsRAMRoleCredential) GetAccessKeyId() (*string, error) {
 	if e.sessionCredential == nil || e.needUpdateCredential() {
 		err := e.updateCredential()
 		if err != nil {
-			return "", err
+			return tea.String(""), err
 		}
 	}
-	return e.sessionCredential.AccessKeyId, nil
+	return tea.String(e.sessionCredential.AccessKeyId), nil
 }
 
 // GetAccessSecret reutrns  EcsRAMRoleCredential's AccessKeySecret
 // if AccessKeySecret is not exist or out of date, the function will update it.
-func (e *EcsRAMRoleCredential) GetAccessKeySecret() (string, error) {
+func (e *EcsRAMRoleCredential) GetAccessKeySecret() (*string, error) {
 	if e.sessionCredential == nil || e.needUpdateCredential() {
 		err := e.updateCredential()
 		if err != nil {
-			return "", err
+			return tea.String(""), err
 		}
 	}
-	return e.sessionCredential.AccessKeySecret, nil
+	return tea.String(e.sessionCredential.AccessKeySecret), nil
 }
 
 // GetSecurityToken reutrns  EcsRAMRoleCredential's SecurityToken
 // if SecurityToken is not exist or out of date, the function will update it.
-func (e *EcsRAMRoleCredential) GetSecurityToken() (string, error) {
+func (e *EcsRAMRoleCredential) GetSecurityToken() (*string, error) {
 	if e.sessionCredential == nil || e.needUpdateCredential() {
 		err := e.updateCredential()
 		if err != nil {
-			return "", err
+			return tea.String(""), err
 		}
 	}
-	return e.sessionCredential.SecurityToken, nil
+	return tea.String(e.sessionCredential.SecurityToken), nil
 }
 
 // GetBearerToken is useless for EcsRAMRoleCredential
-func (e *EcsRAMRoleCredential) GetBearerToken() string {
-	return ""
+func (e *EcsRAMRoleCredential) GetBearerToken() *string {
+	return tea.String("")
 }
 
 // GetType reutrns  EcsRAMRoleCredential's type
-func (e *EcsRAMRoleCredential) GetType() string {
-	return "ecs_ram_role"
+func (e *EcsRAMRoleCredential) GetType() *string {
+	return tea.String("ecs_ram_role")
 }
 
 func getRoleName() (string, error) {

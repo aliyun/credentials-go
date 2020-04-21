@@ -37,32 +37,32 @@ func Test_RoleArnCredential(t *testing.T) {
 	accesskeyId, err := auth.GetAccessKeyId()
 	assert.NotNil(t, err)
 	assert.Equal(t, "[InvalidParam]:Assume Role session duration should be in the range of 15min - 1Hr", err.Error())
-	assert.Equal(t, "", accesskeyId)
+	assert.Equal(t, "", *accesskeyId)
 
 	accesskeySecret, err := auth.GetAccessKeySecret()
 	assert.NotNil(t, err)
 	assert.Equal(t, "[InvalidParam]:Assume Role session duration should be in the range of 15min - 1Hr", err.Error())
-	assert.Equal(t, "", accesskeySecret)
+	assert.Equal(t, "", *accesskeySecret)
 
 	ststoken, err := auth.GetSecurityToken()
 	assert.NotNil(t, err)
 	assert.Equal(t, "[InvalidParam]:Assume Role session duration should be in the range of 15min - 1Hr", err.Error())
-	assert.Equal(t, "", ststoken)
+	assert.Equal(t, "", *ststoken)
 
-	assert.Equal(t, "", auth.GetBearerToken())
-	assert.Equal(t, "ram_role_arn", auth.GetType())
+	assert.Equal(t, "", *auth.GetBearerToken())
+	assert.Equal(t, "ram_role_arn", *auth.GetType())
 
 	auth.RoleSessionExpiration = 1000
 	accesskeyId, err = auth.GetAccessKeyId()
 	assert.NotNil(t, err)
 	assert.Equal(t, "refresh RoleArn sts token err: Internal error", err.Error())
-	assert.Equal(t, "", accesskeyId)
+	assert.Equal(t, "", *accesskeyId)
 
 	auth.RoleSessionExpiration = 0
 	accesskeyId, err = auth.GetAccessKeyId()
 	assert.NotNil(t, err)
 	assert.Equal(t, "refresh RoleArn sts token err: Internal error", err.Error())
-	assert.Equal(t, "", accesskeyId)
+	assert.Equal(t, "", *accesskeyId)
 
 	hookDo = func(fn func(req *http.Request) (*http.Response, error)) func(req *http.Request) (*http.Response, error) {
 		return func(req *http.Request) (*http.Response, error) {
@@ -72,7 +72,7 @@ func Test_RoleArnCredential(t *testing.T) {
 	accesskeyId, err = auth.GetAccessKeyId()
 	assert.NotNil(t, err)
 	assert.Equal(t, "refresh RoleArn sts token err: httpStatus: 300, message = ", err.Error())
-	assert.Equal(t, "", accesskeyId)
+	assert.Equal(t, "", *accesskeyId)
 
 	hookDo = func(fn func(req *http.Request) (*http.Response, error)) func(req *http.Request) (*http.Response, error) {
 		return func(req *http.Request) (*http.Response, error) {
@@ -82,7 +82,7 @@ func Test_RoleArnCredential(t *testing.T) {
 	accesskeyId, err = auth.GetAccessKeyId()
 	assert.NotNil(t, err)
 	assert.Equal(t, "refresh RoleArn sts token err: Json.Unmarshal fail: invalid character ':' after top-level value", err.Error())
-	assert.Equal(t, "", accesskeyId)
+	assert.Equal(t, "", *accesskeyId)
 
 	hookDo = func(fn func(req *http.Request) (*http.Response, error)) func(req *http.Request) (*http.Response, error) {
 		return func(req *http.Request) (*http.Response, error) {
@@ -92,7 +92,7 @@ func Test_RoleArnCredential(t *testing.T) {
 	accesskeyId, err = auth.GetAccessKeyId()
 	assert.NotNil(t, err)
 	assert.Equal(t, "refresh RoleArn sts token err: AccessKeyId: , AccessKeySecret: accessKeySecret, SecurityToken: securitytoken, Expiration: expiration", err.Error())
-	assert.Equal(t, "", accesskeyId)
+	assert.Equal(t, "", *accesskeyId)
 
 	hookDo = func(fn func(req *http.Request) (*http.Response, error)) func(req *http.Request) (*http.Response, error) {
 		return func(req *http.Request) (*http.Response, error) {
@@ -102,7 +102,7 @@ func Test_RoleArnCredential(t *testing.T) {
 	accesskeyId, err = auth.GetAccessKeyId()
 	assert.NotNil(t, err)
 	assert.Equal(t, "refresh RoleArn sts token err: Credentials is empty", err.Error())
-	assert.Equal(t, "", accesskeyId)
+	assert.Equal(t, "", *accesskeyId)
 
 	hookDo = func(fn func(req *http.Request) (*http.Response, error)) func(req *http.Request) (*http.Response, error) {
 		return func(req *http.Request) (*http.Response, error) {
@@ -111,13 +111,13 @@ func Test_RoleArnCredential(t *testing.T) {
 	}
 	accesskeyId, err = auth.GetAccessKeyId()
 	assert.Nil(t, err)
-	assert.Equal(t, "accessKeyId", accesskeyId)
+	assert.Equal(t, "accessKeyId", *accesskeyId)
 
 	accesskeySecret, err = auth.GetAccessKeySecret()
 	assert.Nil(t, err)
-	assert.Equal(t, "accessKeySecret", accesskeySecret)
+	assert.Equal(t, "accessKeySecret", *accesskeySecret)
 
 	ststoken, err = auth.GetSecurityToken()
 	assert.Nil(t, err)
-	assert.Equal(t, "securitytoken", ststoken)
+	assert.Equal(t, "securitytoken", *ststoken)
 }

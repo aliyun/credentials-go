@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/credentials-go/credentials/request"
 	"github.com/aliyun/credentials-go/credentials/utils"
 )
@@ -43,41 +44,41 @@ func newRsaKeyPairCredential(privateKey, publicKeyId string, sessionExpiration i
 
 // GetAccessKeyId reutrns RsaKeyPairCredential's AccessKeyId
 // if AccessKeyId is not exist or out of date, the function will update it.
-func (r *RsaKeyPairCredential) GetAccessKeyId() (string, error) {
+func (r *RsaKeyPairCredential) GetAccessKeyId() (*string, error) {
 	if r.sessionCredential == nil || r.needUpdateCredential() {
 		err := r.updateCredential()
 		if err != nil {
-			return "", err
+			return tea.String(""), err
 		}
 	}
-	return r.sessionCredential.AccessKeyId, nil
+	return tea.String(r.sessionCredential.AccessKeyId), nil
 }
 
 // GetAccessSecret reutrns  RsaKeyPairCredential's AccessKeySecret
 // if AccessKeySecret is not exist or out of date, the function will update it.
-func (r *RsaKeyPairCredential) GetAccessKeySecret() (string, error) {
+func (r *RsaKeyPairCredential) GetAccessKeySecret() (*string, error) {
 	if r.sessionCredential == nil || r.needUpdateCredential() {
 		err := r.updateCredential()
 		if err != nil {
-			return "", err
+			return tea.String(""), err
 		}
 	}
-	return r.sessionCredential.AccessKeySecret, nil
+	return tea.String(r.sessionCredential.AccessKeySecret), nil
 }
 
 // GetSecurityToken is useless  RsaKeyPairCredential
-func (r *RsaKeyPairCredential) GetSecurityToken() (string, error) {
-	return "", nil
+func (r *RsaKeyPairCredential) GetSecurityToken() (*string, error) {
+	return tea.String(""), nil
 }
 
 // GetBearerToken is useless for  RsaKeyPairCredential
-func (r *RsaKeyPairCredential) GetBearerToken() string {
-	return ""
+func (r *RsaKeyPairCredential) GetBearerToken() *string {
+	return tea.String("")
 }
 
 // GetType reutrns  RsaKeyPairCredential's type
-func (r *RsaKeyPairCredential) GetType() string {
-	return "rsa_key_pair"
+func (r *RsaKeyPairCredential) GetType() *string {
+	return tea.String("rsa_key_pair")
 }
 
 func (r *RsaKeyPairCredential) updateCredential() (err error) {
