@@ -1,5 +1,7 @@
 package credentials
 
+import "github.com/alibabacloud-go/tea/tea"
+
 // BearerTokenCredential is a kind of credential
 type BearerTokenCredential struct {
 	BearerToken string
@@ -13,26 +15,26 @@ func newBearerTokenCredential(token string) *BearerTokenCredential {
 }
 
 // GetAccessKeyId is useless for BearerTokenCredential
-func (b *BearerTokenCredential) GetAccessKeyId() (string, error) {
-	return "", nil
+func (b *BearerTokenCredential) GetAccessKeyId() (*string, error) {
+	return tea.String(""), nil
 }
 
 // GetAccessSecret is useless for BearerTokenCredential
-func (b *BearerTokenCredential) GetAccessKeySecret() (string, error) {
-	return "", nil
+func (b *BearerTokenCredential) GetAccessKeySecret() (*string, error) {
+	return tea.String(("")), nil
 }
 
 // GetSecurityToken is useless for BearerTokenCredential
-func (b *BearerTokenCredential) GetSecurityToken() (string, error) {
-	return "", nil
+func (b *BearerTokenCredential) GetSecurityToken() (*string, error) {
+	return tea.String(""), nil
 }
 
 // GetBearerToken reutrns  BearerTokenCredential's BearerToken
-func (b *BearerTokenCredential) GetBearerToken() string {
-	return b.BearerToken
+func (b *BearerTokenCredential) GetBearerToken() *string {
+	return tea.String(b.BearerToken)
 }
 
 // GetType reutrns  BearerTokenCredential's type
-func (b *BearerTokenCredential) GetType() string {
-	return "bearer"
+func (b *BearerTokenCredential) GetType() *string {
+	return tea.String("bearer")
 }

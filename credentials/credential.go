@@ -25,11 +25,11 @@ var hookParse = func(err error) error {
 
 // Credential is an interface for getting actual credential
 type Credential interface {
-	GetAccessKeyId() (string, error)
-	GetAccessKeySecret() (string, error)
-	GetSecurityToken() (string, error)
-	GetBearerToken() string
-	GetType() string
+	GetAccessKeyId() (*string, error)
+	GetAccessKeySecret() (*string, error)
+	GetSecurityToken() (*string, error)
+	GetBearerToken() *string
+	GetType() *string
 }
 
 // Config is important when call NewCredential

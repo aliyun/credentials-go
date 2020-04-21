@@ -10,16 +10,16 @@ func Test_BearerTokenCredential(t *testing.T) {
 	auth := newBearerTokenCredential("bearertoken")
 	accessKeyId, err := auth.GetAccessKeyId()
 	assert.Nil(t, err)
-	assert.Equal(t, "", accessKeyId)
+	assert.Equal(t, "", *accessKeyId)
 
 	accessKeySecret, err := auth.GetAccessKeySecret()
 	assert.Nil(t, err)
-	assert.Equal(t, "", accessKeySecret)
+	assert.Equal(t, "", *accessKeySecret)
 
 	token, err := auth.GetSecurityToken()
 	assert.Nil(t, err)
-	assert.Equal(t, "", token)
+	assert.Equal(t, "", *token)
 
-	assert.Equal(t, "bearertoken", auth.GetBearerToken())
-	assert.Equal(t, "bearer", auth.GetType())
+	assert.Equal(t, "bearertoken", *auth.GetBearerToken())
+	assert.Equal(t, "bearer", *auth.GetType())
 }

@@ -10,16 +10,16 @@ func Test_StsCredential(t *testing.T) {
 	auth := newStsTokenCredential("accessKeyId", "accessKeySecret", "securityToken")
 	accessKeyId, err := auth.GetAccessKeyId()
 	assert.Nil(t, err)
-	assert.Equal(t, "accessKeyId", accessKeyId)
+	assert.Equal(t, "accessKeyId", *accessKeyId)
 
 	accessKeySecret, err := auth.GetAccessKeySecret()
 	assert.Nil(t, err)
-	assert.Equal(t, "accessKeySecret", accessKeySecret)
+	assert.Equal(t, "accessKeySecret", *accessKeySecret)
 
 	token, err := auth.GetSecurityToken()
 	assert.Nil(t, err)
-	assert.Equal(t, "securityToken", token)
+	assert.Equal(t, "securityToken", *token)
 
-	assert.Equal(t, "", auth.GetBearerToken())
-	assert.Equal(t, "sts", auth.GetType())
+	assert.Equal(t, "", *auth.GetBearerToken())
+	assert.Equal(t, "sts", *auth.GetType())
 }
