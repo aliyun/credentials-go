@@ -136,8 +136,7 @@ func main(){
 ```
 
 #### RsaKeyPair
-通过指定公钥Id和私钥文件，让凭证自动申请维护 AccessKey。仅支持日本站。 
-By specifying the public key Id and the private key file, the credential will be able to automatically request maintenance of the AccessKey before sending the request. Only Japan station is supported. 
+通过指定公钥Id和私钥文件，让凭证自动申请维护 AccessKey。仅支持日本站。
 ```go
 import (
 	"github.com/aliyun/credentials-go/credentials"
