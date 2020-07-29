@@ -295,13 +295,13 @@ func TestProfileProvider(t *testing.T) {
 	p = newProfileProvider("NonExist")
 	c, err = p.resolve()
 	assert.Nil(t, c)
-	assert.Equal(t, "ERROR: Can not load section section \"NonExist\" does not exist", err.Error())
+	assert.Equal(t, "ERROR: Can not load section section 'NonExist' does not exist", err.Error())
 
 	// testcase 6, credential type does not set
 	p = newProfileProvider("notype")
 	c, err = p.resolve()
 	assert.Nil(t, c)
-	assert.Equal(t, "Missing required type option error when getting key of section \"notype\": key \"type\" not exists", err.Error())
+	assert.Equal(t, "Missing required type option error when getting key of section 'notype': key 'type' not exists", err.Error())
 
 	// testcase 7, normal AK
 	p = newProfileProvider()
