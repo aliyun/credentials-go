@@ -1,5 +1,7 @@
 module github.com/aliyun/credentials-go
 
+go 1.14
+
 require (
 	github.com/alibabacloud-go/debug v0.0.0-20190504072949-9472017b5c68
 	github.com/alibabacloud-go/tea v1.1.0
