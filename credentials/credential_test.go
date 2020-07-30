@@ -179,7 +179,7 @@ func Test_doaction(t *testing.T) {
 		Proxy: "# #%gfdf",
 	}
 	content, err = doAction(request, runtime)
-	assert.Equal(t, `parse # #%gfdf: invalid URL escape "%gf"`, err.Error())
+	assert.Contains(t, err.Error(), `invalid URL escape`)
 	assert.NotNil(t, err)
 	assert.Nil(t, content)
 }
