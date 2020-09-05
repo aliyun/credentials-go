@@ -32,63 +32,65 @@ func Test_NewCredential(t *testing.T) {
 	assert.Equal(t, "No credential found", err.Error())
 	assert.Nil(t, cred)
 
-	config := &Config{
-		Type: tea.String("access_key"),
-	}
+	config := new(Config)
+	config.String()
+	config.GoString()
+
+	config.SetType("access_key")
 	cred, err = NewCredential(config)
 	assert.NotNil(t, err)
 	assert.Equal(t, "AccessKeyId cannot be empty", err.Error())
 	assert.Nil(t, cred)
 
-	config.AccessKeyId = tea.String("AccessKeyId")
+	config.SetAccessKeyId("AccessKeyId")
 	cred, err = NewCredential(config)
 	assert.NotNil(t, err)
 	assert.Equal(t, "AccessKeySecret cannot be empty", err.Error())
 	assert.Nil(t, cred)
 
-	config.Type = tea.String("sts")
+	config.SetType("sts")
 	cred, err = NewCredential(config)
 	assert.NotNil(t, err)
 	assert.Equal(t, "AccessKeySecret cannot be empty", err.Error())
 	assert.Nil(t, cred)
 
-	config.AccessKeySecret = tea.String("AccessKeySecret")
+	config.SetAccessKeySecret("AccessKeySecret")
 	cred, err = NewCredential(config)
 	assert.NotNil(t, err)
 	assert.Equal(t, "SecurityToken cannot be empty", err.Error())
 	assert.Nil(t, cred)
 
-	config.AccessKeyId = tea.String("")
+	config.SetAccessKeyId("")
 	cred, err = NewCredential(config)
 	assert.NotNil(t, err)
 	assert.Equal(t, "AccessKeyId cannot be empty", err.Error())
 	assert.Nil(t, cred)
 
-	config.Type = tea.String("ecs_ram_role")
+	config.SetType("ecs_ram_role")
 	cred, err = NewCredential(config)
 	assert.Nil(t, err)
 	assert.NotNil(t, cred)
 
-	config.Type = tea.String("rsa_key_pair")
+	config.SetType("rsa_key_pair")
 	cred, err = NewCredential(config)
 	assert.NotNil(t, err)
 	assert.Equal(t, "PrivateKeyFile cannot be empty", err.Error())
 	assert.Nil(t, cred)
 
-	config.PrivateKeyFile = tea.String("test")
+	config.SetPrivateKeyFile("test")
 	cred, err = NewCredential(config)
 	assert.NotNil(t, err)
 	assert.Equal(t, "PublicKeyId cannot be empty", err.Error())
 	assert.Nil(t, cred)
 
-	config.Type = tea.String("ram_role_arn")
-	config.AccessKeySecret = tea.String("")
+	config.SetType("ram_role_arn")
+	config.SetAccessKeySecret("")
 	cred, err = NewCredential(config)
 	assert.NotNil(t, err)
 	assert.Equal(t, "AccessKeySecret cannot be empty", err.Error())
 	assert.Nil(t, cred)
 
-	config.AccessKeySecret = tea.String("AccessKeySecret")
+	config.SetAccessKeySecret("AccessKeySecret")
 	cred, err = NewCredential(config)
 	assert.NotNil(t, err)
 	assert.Equal(t, "RoleArn cannot be empty", err.Error())
@@ -100,55 +102,62 @@ func Test_NewCredential(t *testing.T) {
 	assert.Equal(t, "RoleSessionName cannot be empty", err.Error())
 	assert.Nil(t, cred)
 
-	config.RoleSessionName = tea.String("RoleSessionName")
-	config.AccessKeyId = tea.String("")
+	config.SetRoleSessionName("RoleSessionName")
+	config.SetAccessKeyId("")
 	cred, err = NewCredential(config)
 	assert.NotNil(t, err)
 	assert.Equal(t, "AccessKeyId cannot be empty", err.Error())
 	assert.Nil(t, cred)
 
-	config.Type = tea.String("bearer")
+	config.SetType("bearer")
 	cred, err = NewCredential(config)
 	assert.NotNil(t, err)
 	assert.Equal(t, "BearerToken cannot be empty", err.Error())
 	assert.Nil(t, cred)
 
-	config.Type = tea.String("sdk")
+	config.SetType("sdk")
 	cred, err = NewCredential(config)
 	assert.NotNil(t, err)
 	assert.Equal(t, "Invalid type option, support: access_key, sts, ecs_ram_role, ram_role_arn, rsa_key_pair", err.Error())
 	assert.Nil(t, cred)
 
-	config.Type = tea.String("sts")
-	config.AccessKeyId = tea.String("AccessKeyId")
-	config.AccessKeySecret = tea.String("AccessKeySecret")
-	config.SecurityToken = tea.String("SecurityToken")
+	config.SetType("sts").
+		SetAccessKeyId("AccessKeyId").
+		SetAccessKeySecret("AccessKeySecret").
+		SetSecurityToken("SecurityToken")
 	cred, err = NewCredential(config)
 	assert.Nil(t, err)
 	assert.NotNil(t, cred)
 
-	config.Type = tea.String("ecs_ram_role")
-	config.RoleName = tea.String("AccessKeyId")
+	config.SetType("ecs_ram_role").
+		SetRoleName("AccessKeyId")
 	cred, err = NewCredential(config)
 	assert.Nil(t, err)
 	assert.NotNil(t, cred)
 
-	config.Type = tea.String("ram_role_arn")
-	config.RoleArn = tea.String("roleArn")
-	config.RoleSessionName = tea.String("RoleSessionName")
+	config.SetType("ram_role_arn").
+		SetRoleArn("roleArn").
+		SetRoleSessionName("RoleSessionName")
 	cred, err = NewCredential(config)
 	assert.Nil(t, err)
 	assert.NotNil(t, cred)
 
-	config.Type = tea.String("bearer")
-	config.BearerToken = tea.String("BearerToken")
+	config.SetType("bearer").
+		SetBearerToken("BearerToken")
 	cred, err = NewCredential(config)
 	assert.Nil(t, err)
 	assert.NotNil(t, cred)
 
-	config.Type = tea.String("rsa_key_pair")
-	config.PublicKeyId = tea.String("resource")
-	config.PrivateKeyFile = tea.String("nofile")
+	config.SetType("rsa_key_pair").
+		SetPublicKeyId("resource").
+		SetPrivateKeyFile("nofile").
+		SetSessionExpiration(10).
+		SetRoleSessionExpiration(10).
+		SetPolicy("").
+		SetHost("").
+		SetTimeout(10).
+		SetConnectTimeout(10).
+		SetProxy("")
 	cred, err = NewCredential(config)
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "InvalidPath: Can not open PrivateKeyFile, err is open nofile:")
@@ -158,9 +167,10 @@ func Test_NewCredential(t *testing.T) {
 	assert.Nil(t, err)
 	file.WriteString(privatekey)
 	file.Close()
-	config.Type = tea.String("rsa_key_pair")
-	config.PublicKeyId = tea.String("resource")
-	config.PrivateKeyFile = tea.String("./pk.pem")
+
+	config.SetType("rsa_key_pair").
+		SetPublicKeyId("resource").
+		SetPrivateKeyFile("./pk.pem")
 	cred, err = NewCredential(config)
 	assert.Nil(t, err)
 	assert.NotNil(t, cred)
