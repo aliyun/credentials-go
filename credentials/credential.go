@@ -53,6 +53,99 @@ type Config struct {
 	Proxy                 *string `json:"proxy"`
 }
 
+func (s Config) String() string {
+	return tea.Prettify(s)
+}
+
+func (s Config) GoString() string {
+	return s.String()
+}
+
+func (s *Config) SetAccessKeyId(v string) *Config {
+	s.AccessKeyId = &v
+	return s
+}
+
+func (s *Config) SetAccessKeySecret(v string) *Config {
+	s.AccessKeySecret = &v
+	return s
+}
+
+func (s *Config) SetSecurityToken(v string) *Config {
+	s.SecurityToken = &v
+	return s
+}
+
+func (s *Config) SetRoleArn(v string) *Config {
+	s.RoleArn = &v
+	return s
+}
+
+func (s *Config) SetRoleSessionName(v string) *Config {
+	s.RoleSessionName = &v
+	return s
+}
+
+func (s *Config) SetPublicKeyId(v string) *Config {
+	s.PublicKeyId = &v
+	return s
+}
+
+func (s *Config) SetRoleName(v string) *Config {
+	s.RoleName = &v
+	return s
+}
+
+func (s *Config) SetSessionExpiration(v int) *Config {
+	s.SessionExpiration = &v
+	return s
+}
+
+func (s *Config) SetPrivateKeyFile(v string) *Config {
+	s.PrivateKeyFile = &v
+	return s
+}
+
+func (s *Config) SetBearerToken(v string) *Config {
+	s.BearerToken = &v
+	return s
+}
+
+func (s *Config) SetRoleSessionExpiration(v int) *Config {
+	s.RoleSessionExpiration = &v
+	return s
+}
+
+func (s *Config) SetPolicy(v string) *Config {
+	s.Policy = &v
+	return s
+}
+
+func (s *Config) SetHost(v string) *Config {
+	s.Host = &v
+	return s
+}
+
+func (s *Config) SetTimeout(v int) *Config {
+	s.Timeout = &v
+	return s
+}
+
+func (s *Config) SetConnectTimeout(v int) *Config {
+	s.ConnectTimeout = &v
+	return s
+}
+
+func (s *Config) SetProxy(v string) *Config {
+	s.Proxy = &v
+	return s
+}
+
+func (s *Config) SetType(v string) *Config {
+	s.Type = &v
+	return s
+}
+
 // NewCredential return a credential according to the type in config.
 // if config is nil, the function will use default provider chain to get credential.
 // please see README.md for detail.

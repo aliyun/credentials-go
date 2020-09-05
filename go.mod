@@ -4,7 +4,7 @@ go 1.14
 
 require (
 	github.com/alibabacloud-go/debug v0.0.0-20190504072949-9472017b5c68
-	github.com/alibabacloud-go/tea v1.1.0
+	github.com/alibabacloud-go/tea v1.1.8
 	github.com/gopherjs/gopherjs v0.0.0-20200217142428-fce0ec30dd00 // indirect
 	github.com/smartystreets/assertions v1.1.0 // indirect
 	github.com/smartystreets/goconvey v1.6.4 // indirect
