@@ -40,22 +40,28 @@ Before you begin, you need to sign up for an Alibaba Cloud account and retrieve 
 Setup access_key credential through [User Information Management][ak], it have full authority over the account, please keep it safe. Sometimes for security reasons, you cannot hand over a primary account AccessKey with full access to the developer of a project. You may create a sub-account [RAM Sub-account][ram] , grant its [authorization][permissions]，and use the AccessKey of RAM Sub-account.
 ```go
 import (
+	"fmt"
+
 	"github.com/aliyun/credentials-go/credentials"
 )
 
 func main(){
-	config := &credentials.Config{
-		Type:                  "access_key",       // Which type of credential you want
-		AccessKeyId:           "AccessKeyId",      // AccessKeyId of your account
-		AccessKeySecret:       "AccessKeySecret",  // AccessKeySecret of your account
-    }
+	config := new(credentials.Config).
+		// Which type of credential you want
+		SetType("access_key").
+		// AccessKeyId of your account
+		SetAccessKeyId("AccessKeyId").
+		// AccessKeySecret of your account
+		SetAccessKeySecret("AccessKeySecret")
+
 	akCredential, err := credentials.NewCredential(config)
 	if err != nil {
-		return err
+		return
 	}
 	accessKeyId, err := akCredential.GetAccessKeyId()
-	accessSecret, err := akCredential.GetAccessSecret()
+	accessSecret, err := akCredential.GetAccessKeySecret()
 	credentialType := akCredential.GetType()
+	fmt.Println(accessKeyId, accessSecret, credentialType)
 }
 ```
 
@@ -63,24 +69,31 @@ func main(){
 Create a temporary security credential by applying Temporary Security Credentials (TSC) through the Security Token Service (STS).
 ```go
 import (
+	"fmt"
+
 	"github.com/aliyun/credentials-go/credentials"
 )
 
-func main(){
-	config := &credentials.Config{
-		Type:                  "sts",              // Which type of credential you want
-		AccessKeyId:           "AccessKeyId",      // AccessKeyId of your account
-		AccessKeySecret:       "AccessKeySecret",  // AccessKeySecret of your account
-		SecurityToken:         "SecurityToken",    // Temporary Security Token
-    }
+func main() {
+	config := new(credentials.Config).
+		// Which type of credential you want
+		SetType("sts").
+		// AccessKeyId of your account
+		SetAccessKeyId("AccessKeyId").
+		// AccessKeySecret of your account
+		SetAccessKeySecret("AccessKeySecret").
+		// Temporary Security Token
+		SetSecurityToken("SecurityToken")
+
 	stsCredential, err := credentials.NewCredential(config)
 	if err != nil {
-		return err
+		return
 	}
 	accessKeyId, err := stsCredential.GetAccessKeyId()
-	accessSecret, err := stsCredential.GetAccessSecret()
+	accessSecret, err := stsCredential.GetAccessKeySecret()
 	securityToken, err := stsCredential.GetSecurityToken()
 	credentialType := stsCredential.GetType()
+	fmt.Println(accessKeyId, accessSecret, securityToken, credentialType)
 }
 ```
 
@@ -88,27 +101,37 @@ func main(){
 By specifying [RAM Role][RAM Role], the credential will be able to automatically request maintenance of STS Token. If you want to limit the permissions([How to make a policy][policy]) of STS Token, you can assign value for `Policy`.
 ```go
 import (
+	"fmt"
+
 	"github.com/aliyun/credentials-go/credentials"
 )
 
 func main(){
-	config := &credentials.Config{
-		Type:                   "ram_role_arn",     // Which type of credential you want
-		AccessKeyId:            "AccessKeyId",      // AccessKeyId of your account
-		AccessKeySecret:        "AccessKeySecret",  // AccessKeySecret of your account
-		RoleArn:                "RoleArn",          // Format: acs:ram::USER_Id:role/ROLE_NAME
-		RoleSessionName:        "RoleSessionName",  // Role Session Name
-		Policy:                 "Policy",           // Not required, limit the permissions of STS Token
-		RoleSessionExpiration:  3600,               // Not required, limit the Valid time of STS Token
-    }
+	config := new(credentials.Config).
+		// Which type of credential you want
+		SetType("ram_role_arn").
+		// AccessKeyId of your account
+		SetAccessKeyId("AccessKeyId").
+		// AccessKeySecret of your account
+		SetAccessKeySecret("AccessKeySecret").
+		// Format: acs:ram::USER_Id:role/ROLE_NAME
+		SetRoleArn("RoleArn").
+		// Role Session Name
+		SetRoleSessionName("RoleSessionName").
+		// Not required, limit the permissions of STS Token
+		SetPolicy("Policy").
+		// Not required, limit the Valid time of STS Token
+		SetRoleSessionExpiration(3600)
+
 	arnCredential, err := credentials.NewCredential(config)
 	if err != nil {
-		return err
+		return
 	}
 	accessKeyId, err := arnCredential.GetAccessKeyId()
-	accessSecret, err := arnCredential.GetAccessSecret()
+	accessSecret, err := arnCredential.GetAccessKeySecret()
 	securityToken, err := arnCredential.GetSecurityToken()
 	credentialType := arnCredential.GetType()
+	fmt.Println(accessKeyId, accessSecret, securityToken, credentialType)
 }
 ```
 
@@ -116,22 +139,27 @@ func main(){
 By specifying the role name, the credential will be able to automatically request maintenance of STS Token.
 ```go
 import (
+	"fmt"
+
 	"github.com/aliyun/credentials-go/credentials"
 )
 
 func main(){
-	config := &credentials.Config{
-		Type:                   "ecs_ram_role",     // Which type of credential you want
-		RoleName:               "RoleName",         // `roleName` is optional. It will be retrieved automatically if not set. It is highly recommended to set it up to reduce requests
-    }
+	config := new(credentials.Config).
+		// Which type of credential you want
+		SetType("ecs_ram_role").
+		// `roleName` is optional. It will be retrieved automatically if not set. It is highly recommended to set it up to reduce requests
+		SetRoleName("RoleName")
+
 	ecsCredential, err := credentials.NewCredential(config)
 	if err != nil {
-		return err
+		return
 	}
 	accessKeyId, err := ecsCredential.GetAccessKeyId()
-	accessSecret, err := ecsCredential.GetAccessSecret()
+	accessSecret, err := ecsCredential.GetAccessKeySecret()
 	securityToken, err := ecsCredential.GetSecurityToken()
 	credentialType := ecsCredential.GetType()
+	fmt.Println(accessKeyId, accessSecret, securityToken, credentialType)
 }
 ```
 
@@ -139,23 +167,29 @@ func main(){
 By specifying the public key Id and the private key file, the credential will be able to automatically request maintenance of the AccessKey before sending the request. Only Japan station is supported. 
 ```go
 import (
+	"fmt"
+
 	"github.com/aliyun/credentials-go/credentials"
 )
 
 func main(){
-	config := &credentials.Config{
-		Type:                   "rsa_key_pair",       // Which type of credential you want
-		PrivateKeyFile:         "PrivateKeyFile",     // The file path to store the PrivateKey
-		PublicKeyId:            "PublicKeyId",        // PublicKeyId of your account
-    }
+	config := new(credentials.Config).
+		// Which type of credential you want
+		SetType("rsa_key_pair").
+		// The file path to store the PrivateKey
+		SetPrivateKeyFile("PrivateKeyFile").
+		// PublicKeyId of your account
+		SetPublicKeyId("PublicKeyId")
+
 	rsaCredential, err := credentials.NewCredential(config)
 	if err != nil {
-		return err
+		return
 	}
 	accessKeyId, err := rsaCredential.GetAccessKeyId()
-	accessSecret, err := rsaCredential.GetAccessSecret()
+	accessSecret, err := rsaCredential.GetAccessKeySecret()
 	securityToken, err := rsaCredential.GetSecurityToken()
 	credentialType := rsaCredential.GetType()
+	fmt.Println(accessKeyId, accessSecret, securityToken, credentialType)
 }
 ```
 
@@ -163,20 +197,25 @@ func main(){
 If credential is required by the Cloud Call Centre (CCC), please apply for Bearer Token maintenance by yourself.
 ```go
 import (
+	"fmt"
+
 	"github.com/aliyun/credentials-go/credentials"
 )
 
 func main(){
-	config := &credentials.Config{
-		Type:                 "bearer",       // Which type of credential you want
-		BearerToken:          "BearerToken",  // BearerToken of your account
-    }
+	config := new(credentials.Config).
+		// Which type of credential you want
+		SetType("bearer").
+		// BearerToken of your account
+		SetBearerToken("BearerToken").
+
 	bearerCredential, err := credentials.NewCredential(config)
 	if err != nil {
-		return err
+		return
 	}
 	bearerToken := bearerCredential.GetBearerToken()
 	credentialType := bearerCredential.GetType()
+	fmt.Println(bearerToken, credentialType)
 }
 ```
 
