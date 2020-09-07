@@ -40,22 +40,28 @@ $ dep ensure -add  github.com/aliyun/credentials-go
 通过[用户信息管理][ak]设置 access_key，它们具有该账户完全的权限，请妥善保管。有时出于安全考虑，您不能把具有完全访问权限的主账户 AccessKey 交于一个项目的开发者使用，您可以[创建RAM子账户][ram]并为子账户[授权][permissions]，使用RAM子用户的 AccessKey 来进行API调用。
 ```go
 import (
+	"fmt"
+
 	"github.com/aliyun/credentials-go/credentials"
 )
 
 func main(){
-	config := &credentials.Config{
-		Type:                  "access_key",       // 凭证类型
-		AccessKeyId:           "AccessKeyId",      // AccessKeyId
-		AccessKeySecret:       "AccessKeySecret",  // AccessKeySecret
-    }
+	config := new(credentials.Config).
+		// Which type of credential you want
+		SetType("access_key").
+		// AccessKeyId of your account
+		SetAccessKeyId("AccessKeyId").
+		// AccessKeySecret of your account
+		SetAccessKeySecret("AccessKeySecret")
+
 	akCredential, err := credentials.NewCredential(config)
 	if err != nil {
-		return err
+		return
 	}
 	accessKeyId, err := akCredential.GetAccessKeyId()
-	accessSecret, err := akCredential.GetAccessSecret()
+	accessSecret, err := akCredential.GetAccessKeySecret()
 	credentialType := akCredential.GetType()
+	fmt.Println(accessKeyId, accessSecret, credentialType)
 }
 ```
 
@@ -63,24 +69,31 @@ func main(){
 通过安全令牌服务（Security Token Service，简称 STS），申请临时安全凭证（Temporary Security Credentials，简称 TSC），创建临时安全凭证。
 ```go
 import (
+	"fmt"
+
 	"github.com/aliyun/credentials-go/credentials"
 )
 
-func main(){
-	config := &credentials.Config{
-		Type:                  "sts",              // 凭证类型
-		AccessKeyId:           "AccessKeyId",      // AccessKeyId
-		AccessKeySecret:       "AccessKeySecret",  // AccessKeySecret
-		SecurityToken:         "SecurityToken",    // STS Token
-    }
+func main() {
+	config := new(credentials.Config).
+		// Which type of credential you want
+		SetType("sts").
+		// AccessKeyId of your account
+		SetAccessKeyId("AccessKeyId").
+		// AccessKeySecret of your account
+		SetAccessKeySecret("AccessKeySecret").
+		// Temporary Security Token
+		SetSecurityToken("SecurityToken")
+
 	stsCredential, err := credentials.NewCredential(config)
 	if err != nil {
-		return err
+		return
 	}
 	accessKeyId, err := stsCredential.GetAccessKeyId()
-	accessSecret, err := stsCredential.GetAccessSecret()
+	accessSecret, err := stsCredential.GetAccessKeySecret()
 	securityToken, err := stsCredential.GetSecurityToken()
 	credentialType := stsCredential.GetType()
+	fmt.Println(accessKeyId, accessSecret, securityToken, credentialType)
 }
 ```
 
@@ -88,27 +101,37 @@ func main(){
 通过指定[RAM角色][RAM Role]，让凭证自动申请维护 STS Token。你可以通过为 `Policy` 赋值来限制获取到的 STS Token 的权限。
 ```go
 import (
+	"fmt"
+
 	"github.com/aliyun/credentials-go/credentials"
 )
 
 func main(){
-	config := &credentials.Config{
-		Type:                   "ram_role_arn",     // 凭证类型
-		AccessKeyId:            "AccessKeyId",      // AccessKeyId
-		AccessKeySecret:        "AccessKeySecret",  // AccessKeySecret
-		RoleArn:                "RoleArn",          // 格式: acs:ram::用户Id:role/角色名
-		RoleSessionName:        "RoleSessionName",  // 角色会话名称
-		Policy:                 "Policy",           // 可选, 限制 STS Token 的权限
-		RoleSessionExpiration:  3600,               // 可选, 限制 STS Token 的有效时间
-    }
+	config := new(credentials.Config).
+		// Which type of credential you want
+		SetType("ram_role_arn").
+		// AccessKeyId of your account
+		SetAccessKeyId("AccessKeyId").
+		// AccessKeySecret of your account
+		SetAccessKeySecret("AccessKeySecret").
+		// Format: acs:ram::USER_Id:role/ROLE_NAME
+		SetRoleArn("RoleArn").
+		// Role Session Name
+		SetRoleSessionName("RoleSessionName").
+		// Not required, limit the permissions of STS Token
+		SetPolicy("Policy").
+		// Not required, limit the Valid time of STS Token
+		SetRoleSessionExpiration(3600)
+
 	arnCredential, err := credentials.NewCredential(config)
 	if err != nil {
-		return err
+		return
 	}
 	accessKeyId, err := arnCredential.GetAccessKeyId()
-	accessSecret, err := arnCredential.GetAccessSecret()
+	accessSecret, err := arnCredential.GetAccessKeySecret()
 	securityToken, err := arnCredential.GetSecurityToken()
 	credentialType := arnCredential.GetType()
+	fmt.Println(accessKeyId, accessSecret, securityToken, credentialType)
 }
 ```
 
@@ -116,22 +139,27 @@ func main(){
 通过指定角色名称，让凭证自动申请维护 STS Token
 ```go
 import (
+	"fmt"
+
 	"github.com/aliyun/credentials-go/credentials"
 )
 
 func main(){
-	config := &credentials.Config{
-		Type:                   "ecs_ram_role",     // 凭证类型
-		RoleName:               "RoleName",         // 账户RoleName，非必填，不填则自动获取，建议设置，可以减少请求
-    }
+	config := new(credentials.Config).
+		// Which type of credential you want
+		SetType("ecs_ram_role").
+		// `roleName` is optional. It will be retrieved automatically if not set. It is highly recommended to set it up to reduce requests
+		SetRoleName("RoleName")
+
 	ecsCredential, err := credentials.NewCredential(config)
 	if err != nil {
-		return err
+		return
 	}
 	accessKeyId, err := ecsCredential.GetAccessKeyId()
-	accessSecret, err := ecsCredential.GetAccessSecret()
+	accessSecret, err := ecsCredential.GetAccessKeySecret()
 	securityToken, err := ecsCredential.GetSecurityToken()
 	credentialType := ecsCredential.GetType()
+	fmt.Println(accessKeyId, accessSecret, securityToken, credentialType)
 }
 ```
 
@@ -139,23 +167,29 @@ func main(){
 通过指定公钥Id和私钥文件，让凭证自动申请维护 AccessKey。仅支持日本站。
 ```go
 import (
+	"fmt"
+
 	"github.com/aliyun/credentials-go/credentials"
 )
 
 func main(){
-	config := &credentials.Config{
-		Type:                   "rsa_key_pair",       // 凭证类型
-		PrivateKeyFile:         "PrivateKeyFile",     // PrivateKey文件路径
-		PublicKeyId:            "PublicKeyId",        // 账户PublicKeyId
-    }
+	config := new(credentials.Config).
+		// Which type of credential you want
+		SetType("rsa_key_pair").
+		// The file path to store the PrivateKey
+		SetPrivateKeyFile("PrivateKeyFile").
+		// PublicKeyId of your account
+		SetPublicKeyId("PublicKeyId")
+
 	rsaCredential, err := credentials.NewCredential(config)
 	if err != nil {
-		return err
+		return
 	}
 	accessKeyId, err := rsaCredential.GetAccessKeyId()
-	accessSecret, err := rsaCredential.GetAccessSecret()
+	accessSecret, err := rsaCredential.GetAccessKeySecret()
 	securityToken, err := rsaCredential.GetSecurityToken()
 	credentialType := rsaCredential.GetType()
+	fmt.Println(accessKeyId, accessSecret, securityToken, credentialType)
 }
 ```
 
@@ -163,20 +197,26 @@ func main(){
 如呼叫中心(CCC)需用此凭证，请自行申请维护 Bearer Token。
 ```go
 import (
+	"fmt"
+
 	"github.com/aliyun/credentials-go/credentials"
 )
 
 func main(){
+	config := new(credentials.Config).
+		// Which type of credential you want
+		SetType("bearer").
+		// BearerToken of your account
+		SetBearerToken("BearerToken").
 	config := &credentials.Config{
-		Type:                 "bearer",       // 凭证类型
-		BearerToken:          "BearerToken",  // BearerToken
-    }
+
 	bearerCredential, err := credentials.NewCredential(config)
 	if err != nil {
-		return err
+		return
 	}
 	bearerToken := bearerCredential.GetBearerToken()
 	credentialType := bearerCredential.GetType()
+	fmt.Println(bearerToken, credentialType)
 }
 ```
 
