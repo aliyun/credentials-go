@@ -34,23 +34,24 @@ type Credential interface {
 
 // Config is important when call NewCredential
 type Config struct {
-	Type                  *string `json:"type"`
-	AccessKeyId           *string `json:"access_key_id"`
-	AccessKeySecret       *string `json:"access_key_secret"`
-	RoleArn               *string `json:"role_arn"`
-	RoleSessionName       *string `json:"role_session_name"`
-	PublicKeyId           *string `json:"public_key_id"`
-	RoleName              *string `json:"role_name"`
-	SessionExpiration     *int    `json:"session_expiration"`
-	PrivateKeyFile        *string `json:"private_key_file"`
-	BearerToken           *string `json:"bearer_token"`
-	SecurityToken         *string `json:"security_token"`
-	RoleSessionExpiration *int    `json:"role_session_expiratioon"`
-	Policy                *string `json:"policy"`
-	Host                  *string `json:"host"`
-	Timeout               *int    `json:"timeout"`
-	ConnectTimeout        *int    `json:"connect_timeout"`
-	Proxy                 *string `json:"proxy"`
+	Type                  *string  `json:"type"`
+	AccessKeyId           *string  `json:"access_key_id"`
+	AccessKeySecret       *string  `json:"access_key_secret"`
+	RoleArn               *string  `json:"role_arn"`
+	RoleSessionName       *string  `json:"role_session_name"`
+	PublicKeyId           *string  `json:"public_key_id"`
+	RoleName              *string  `json:"role_name"`
+	SessionExpiration     *int     `json:"session_expiration"`
+	PrivateKeyFile        *string  `json:"private_key_file"`
+	BearerToken           *string  `json:"bearer_token"`
+	SecurityToken         *string  `json:"security_token"`
+	RoleSessionExpiration *int     `json:"role_session_expiratioon"`
+	Policy                *string  `json:"policy"`
+	Host                  *string  `json:"host"`
+	Timeout               *int     `json:"timeout"`
+	ConnectTimeout        *int     `json:"connect_timeout"`
+	Proxy                 *string  `json:"proxy"`
+	InAdvanceScale        *float64 `json:"inAdvanceScale"`
 }
 
 func (s Config) String() string {
@@ -178,7 +179,7 @@ func NewCredential(config *Config) (credential Credential, err error) {
 			ReadTimeout:    tea.IntValue(config.Timeout),
 			ConnectTimeout: tea.IntValue(config.ConnectTimeout),
 		}
-		credential = newEcsRAMRoleCredential(tea.StringValue(config.RoleName), runtime)
+		credential = newEcsRAMRoleCredential(tea.StringValue(config.RoleName), tea.Float64Value(config.InAdvanceScale), runtime)
 	case "ram_role_arn":
 		err = checkRAMRoleArn(config)
 		if err != nil {
