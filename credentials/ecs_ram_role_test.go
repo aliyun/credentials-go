@@ -9,7 +9,7 @@ import (
 )
 
 func Test_EcsRAmRoleCredential(t *testing.T) {
-	auth := newEcsRAMRoleCredential("go sdk", nil)
+	auth := newEcsRAMRoleCredential("go sdk", 0.5, nil)
 	origTestHookDo := hookDo
 	defer func() { hookDo = origTestHookDo }()
 
@@ -101,7 +101,6 @@ func Test_EcsRAmRoleCredential(t *testing.T) {
 			return mockResponse(200, `{"AccessKeyId":"accessKeyId","AccessKeySecret":"accessKeySecret","SecurityToken":"securitytoken","Expiration":"2018-01-02T15:04:05Z","Code":"Success"}`, nil)
 		}
 	}
-
 	accesskeyId, err = auth.GetAccessKeyId()
 	assert.Nil(t, err)
 	assert.Equal(t, "accessKeyId", *accesskeyId)
