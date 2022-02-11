@@ -134,6 +134,26 @@ func main(){
 	fmt.Println(accessKeyId, accessSecret, securityToken, credentialType)
 }
 ```
+#### uriCredential
+```go
+import (
+	"fmt"
+
+	"github.com/aliyun/credentials-go/credentials"
+)
+
+func main(){
+	config := new(credentials.Config).SetType("credentials_uri").SetURL("http://127.0.0.1")
+	credential, err := credentials.NewCredential(config)
+	if err != nil {
+		return
+	}
+	accessKeyId, err := credential.GetAccessKeyId()
+	accessKeySecret, err := credential.GetAccessKeySecret()
+	fmt.Println(accessKeyId, accessKeySecret)
+}
+```
+
 
 #### EcsRamRole
 By specifying the role name, the credential will be able to automatically request maintenance of STS Token.
@@ -218,6 +238,38 @@ func main(){
 	fmt.Println(bearerToken, credentialType)
 }
 ```
+
+#### AssumeRoleWithOIDC
+When performing oidc role SSO, obtain the temporary identity credential (STS Token) that plays the role of RAM by calling the AssumeRoleWithOIDC interface.
+``` go
+package main
+
+import (
+	"fmt"
+	"net/http"
+
+	"github.com/aliyun/credentials-go/credentials"
+)
+
+func main() {
+	config := new(credentials.Config).
+		SetType("oidc_role_arn").
+		SetOIDCProviderArn("OIDCProviderArn").
+		SetOIDCTokenFilePath("OIDCTokenFilePath").
+		SetRoleSessionName("RoleSessionName").
+		SetPolicy("Policy").
+		SetSessionExpiration(3600)
+	oidcCredential, err := credentials.NewCredential(config)
+	if err != nil {
+		return
+	}
+	accessKeyId, err := oidcCredential.GetAccessKeyId()
+	accessKeySecret, err := oidcCredential.GetAccessKeySecret()
+	token, err := oidcCredential.GetSecurityToken()
+	fmt.Println(accessKeyId, accessKeySecret, token)
+}
+```
+
 
 ### Provider
 If you call `NewCredential()` with nil, it will use provider chain to get credential for you.
