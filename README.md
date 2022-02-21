@@ -258,6 +258,7 @@ func main() {
 		SetOIDCTokenFilePath("OIDCTokenFilePath").
 		SetRoleSessionName("RoleSessionName").
 		SetPolicy("Policy").
+		SetRoleArn("RoleArn").
 		SetSessionExpiration(3600)
 	oidcCredential, err := credentials.NewCredential(config)
 	if err != nil {
