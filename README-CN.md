@@ -135,6 +135,38 @@ func main(){
 }
 ```
 
+#### AssumeRoleWithOIDC
+在执行oidc角色SSO时，通过调用AssumeRoleWithOIDC接口获取扮演RAM角色的临时身份凭证（STS令牌）。
+``` go
+package main
+
+import (
+	"fmt"
+	"net/http"
+
+	"github.com/aliyun/credentials-go/credentials"
+)
+
+func main() {
+	config := new(credentials.Config).
+		SetType("oidc_role_arn").
+		SetOIDCProviderArn("OIDCProviderArn").
+		SetOIDCTokenFilePath("OIDCTokenFilePath").
+		SetRoleSessionName("RoleSessionName").
+		SetPolicy("Policy").
+		SetRoleArn("RoleArn").
+		SetSessionExpiration(3600)
+	oidcCredential, err := credentials.NewCredential(config)
+	if err != nil {
+		return
+	}
+	accessKeyId, err := oidcCredential.GetAccessKeyId()
+	accessKeySecret, err := oidcCredential.GetAccessKeySecret()
+	token, err := oidcCredential.GetSecurityToken()
+	fmt.Println(accessKeyId, accessKeySecret, token)
+}
+```
+
 #### EcsRamRole
 通过指定角色名称，让凭证自动申请维护 STS Token
 ```go
