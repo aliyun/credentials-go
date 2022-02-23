@@ -174,6 +174,17 @@ func Test_NewCredential(t *testing.T) {
 	cred, err = NewCredential(config)
 	assert.Nil(t, err)
 	assert.NotNil(t, cred)
+
+	config.SetType("oidc_role_arn").
+		SetOIDCProviderArn("oidc_provider_arn_test").
+		SetOIDCTokenFilePath("oidc_token_file_path_test").
+		SetRoleArn("role_arn_test")
+	cred, err = NewCredential(config)
+	assert.Nil(t, err)
+	assert.NotNil(t, cred)
+	assert.Equal(t, "oidc_provider_arn_test", tea.StringValue(config.OIDCProviderArn))
+	assert.Equal(t, "oidc_token_file_path_test", tea.StringValue(config.OIDCTokenFilePath))
+	assert.Equal(t, "role_arn_test", tea.StringValue(config.RoleArn))
 }
 
 func Test_doaction(t *testing.T) {

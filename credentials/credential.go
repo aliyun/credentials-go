@@ -151,7 +151,7 @@ func (s *Config) SetType(v string) *Config {
 }
 
 func (s *Config) SetOIDCTokenFilePath(v string) *Config {
-	s.Type = &v
+	s.OIDCTokenFilePath = &v
 	return s
 }
 
