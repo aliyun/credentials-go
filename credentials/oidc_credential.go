@@ -98,33 +98,23 @@ func (r *OIDCCredential) GetBearerToken() *string {
 
 // GetType reutrns OIDCCredential's type
 func (r *OIDCCredential) GetType() *string {
-	return tea.String("OIDC_role_arn")
+	return tea.String("oidc_role_arn")
 }
 
 func (r *OIDCCredential) GetOIDCToken(OIDCTokenFilePath string) *string {
-	b := make([]byte, 1024)
-	_, err := os.Stat(OIDCTokenFilePath)
+	tokenPath := OIDCTokenFilePath
+	_, err := os.Stat(tokenPath)
 	if os.IsNotExist(err) {
-		token := os.Getenv("ALIBABA_CLOUD_OIDC_TOKEN_FILE")
-		if token == "" {
+		tokenPath = os.Getenv("ALIBABA_CLOUD_OIDC_TOKEN_FILE")
+		if tokenPath == "" {
 			return nil
 		}
-		byt, err := ioutil.ReadFile(token)
-		if err != nil {
-			return nil
-		}
-		return tea.String(string(byt))
 	}
-	file, err := os.Open(OIDCTokenFilePath)
+	byt, err := ioutil.ReadFile(tokenPath)
 	if err != nil {
 		return nil
 	}
-	_, err = file.Read(b)
-	if err != nil {
-		return nil
-	}
-
-	return tea.String(string(b))
+	return tea.String(string(byt))
 }
 
 func (r *OIDCCredential) updateCredential() (err error) {
