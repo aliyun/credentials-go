@@ -13,7 +13,7 @@ jobs:
     strategy:
       matrix:
         # test against latest update of each major Java version, as well as specific updates of LTS versions:
-        go: [1.14]
+        go: [1.12, 1.13, 1.14, 1.15]
 
     steps:
     - uses: actions/checkout@v3
@@ -29,4 +29,4 @@ jobs:
       run: go test -race -coverprofile=coverage.txt -covermode=atomic ./credentials/...
 
     - name: Integration Test
-      run: go test -race ./integration/...
+      run: test -z $SUB_ALICLOUD_ACCESS_KEY -a -z $SUB_ALICLOUD_SECRET_KEY || go test -v -timeout 120s ./integration/...
