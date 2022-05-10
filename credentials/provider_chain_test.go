@@ -14,17 +14,20 @@ func TestProviderChain(t *testing.T) {
 
 	pc := newProviderChain([]Provider{env, pp, instanceP})
 
+	originAccessKeyIdNew := os.Getenv(EnvVarAccessKeyIdNew)
 	originAccessKeyId := os.Getenv(EnvVarAccessKeyId)
 	originAccessKeySecret := os.Getenv(EnvVarAccessKeySecret)
 	os.Setenv(EnvVarAccessKeyId, "")
+	os.Setenv(EnvVarAccessKeyIdNew, "")
 	os.Setenv(EnvVarAccessKeySecret, "")
 	defer func() {
+		os.Setenv(EnvVarAccessKeyIdNew, originAccessKeyIdNew)
 		os.Setenv(EnvVarAccessKeyId, originAccessKeyId)
 		os.Setenv(EnvVarAccessKeySecret, originAccessKeySecret)
 	}()
 	c, err := pc.resolve()
 	assert.Nil(t, c)
-	assert.EqualError(t, err, "ALIBABA_CLOUD_ACCESS_KEY_Id cannot be empty")
+	assert.EqualError(t, err, "ALIBABA_CLOUD_ACCESS_KEY_ID or ALIBABA_CLOUD_ACCESS_KEY_Id cannot be empty")
 
 	os.Setenv(EnvVarAccessKeyId, "AccessKeyId")
 	os.Setenv(EnvVarAccessKeySecret, "AccessKeySecret")
