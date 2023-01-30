@@ -138,12 +138,6 @@ func (r *OIDCCredential) updateCredential() (err error) {
 	request.QueryParams["RoleSessionName"] = r.RoleSessionName
 	request.QueryParams["Version"] = "2015-04-01"
 	request.QueryParams["SignatureNonce"] = utils.GetUUID()
-	if r.AccessKeyId != "" && r.AccessKeySecret != "" {
-		signature := utils.ShaHmac1(request.BuildStringToSign(), r.AccessKeySecret+"&")
-		request.QueryParams["Signature"] = signature
-		request.QueryParams["AccessKeyId"] = r.AccessKeyId
-		request.QueryParams["AccessKeySecret"] = r.AccessKeySecret
-	}
 	request.Headers["Host"] = request.Domain
 	request.Headers["Accept-Encoding"] = "identity"
 	request.Headers["content-type"] = "application/x-www-form-urlencoded"
