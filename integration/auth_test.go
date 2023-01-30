@@ -39,3 +39,20 @@ func Test_Arn(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, accesskey)
 }
+
+func Test_Oidc(t *testing.T) {
+	path, _ := os.Getwd()
+	oidcTokenFilePath := path + "../credentials/oidc_token"
+	config := &credentials.Config{
+		Type:              tea.String("oidc_role_arn"),
+		RoleArn:           tea.String("acs:ram::roleArn:role/roleArn"),
+		OIDCProviderArn:   tea.String("acs:ram::roleArn"),
+		OIDCTokenFilePath: tea.String(oidcTokenFilePath),
+	}
+	cred, err := credentials.NewCredential(config)
+	assert.Nil(t, err)
+	assert.NotNil(t, cred)
+	_, err = cred.GetAccessKeyId()
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "AuthenticationFail.OIDCToken.Invalid")
+}
