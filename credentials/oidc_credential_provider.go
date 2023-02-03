@@ -27,6 +27,7 @@ func (p *oidcCredentialsProvider) resolve() (*Config, error) {
 		RoleArn:           tea.String(roleArn),
 		OIDCProviderArn:   tea.String(oidcProviderArn),
 		OIDCTokenFilePath: tea.String(oidcTokenFilePath),
+		RoleSessionName:   tea.String("defaultSessionName"),
 	}
 	roleSessionName, ok := os.LookupEnv(ENVRoleSessionName)
 	if ok {
