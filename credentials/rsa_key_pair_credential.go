@@ -17,6 +17,7 @@ type RsaKeyPairCredential struct {
 	*credentialUpdater
 	PrivateKey        string
 	PublicKeyId       string
+	STSEndpoint       string
 	SessionExpiration int
 	sessionCredential *sessionCredential
 	runtime           *utils.Runtime
@@ -32,10 +33,11 @@ type sessionAccessKey struct {
 	Expiration             string `json:"Expiration" xml:"Expiration"`
 }
 
-func newRsaKeyPairCredential(privateKey, publicKeyId string, sessionExpiration int, runtime *utils.Runtime) *RsaKeyPairCredential {
+func newRsaKeyPairCredential(privateKey, publicKeyId, STSEndpoint string, sessionExpiration int, runtime *utils.Runtime) *RsaKeyPairCredential {
 	return &RsaKeyPairCredential{
 		PrivateKey:        privateKey,
 		PublicKeyId:       publicKeyId,
+		STSEndpoint:       STSEndpoint,
 		SessionExpiration: sessionExpiration,
 		credentialUpdater: new(credentialUpdater),
 		runtime:           runtime,
@@ -86,7 +88,11 @@ func (r *RsaKeyPairCredential) updateCredential() (err error) {
 		r.runtime = new(utils.Runtime)
 	}
 	request := request.NewCommonRequest()
-	request.Domain = "sts.aliyuncs.com"
+	if r.STSEndpoint != "" {
+		request.Domain = r.STSEndpoint
+	} else {
+		request.Domain = "sts.aliyuncs.com"
+	}
 	if r.runtime.Host != "" {
 		request.Domain = r.runtime.Host
 	}

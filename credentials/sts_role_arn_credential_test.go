@@ -26,7 +26,7 @@ func mockResponse(statusCode int, content string, mockerr error) (res *http.Resp
 }
 
 func Test_RoleArnCredential(t *testing.T) {
-	auth := newRAMRoleArnCredential("accessKeyId", "accessKeySecret", "roleArn", "roleSessionName", "policy", 300, nil)
+	auth := newRAMRoleArnCredential("accessKeyId", "accessKeySecret", "roleArn", "roleSessionName", "policy", "", 300, nil)
 	origTestHookDo := hookDo
 	defer func() { hookDo = origTestHookDo }()
 	hookDo = func(fn func(req *http.Request) (*http.Response, error)) func(req *http.Request) (*http.Response, error) {

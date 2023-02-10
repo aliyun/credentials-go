@@ -23,6 +23,7 @@ type RAMRoleArnCredential struct {
 	RoleSessionName       string
 	RoleSessionExpiration int
 	Policy                string
+	STSEndpoint           string
 	sessionCredential     *sessionCredential
 	runtime               *utils.Runtime
 }
@@ -38,7 +39,7 @@ type credentialsInResponse struct {
 	Expiration      string `json:"Expiration" xml:"Expiration"`
 }
 
-func newRAMRoleArnCredential(accessKeyId, accessKeySecret, roleArn, roleSessionName, policy string, roleSessionExpiration int, runtime *utils.Runtime) *RAMRoleArnCredential {
+func newRAMRoleArnCredential(accessKeyId, accessKeySecret, roleArn, roleSessionName, policy, STSEndpoint string, roleSessionExpiration int, runtime *utils.Runtime) *RAMRoleArnCredential {
 	return &RAMRoleArnCredential{
 		AccessKeyId:           accessKeyId,
 		AccessKeySecret:       accessKeySecret,
@@ -46,6 +47,7 @@ func newRAMRoleArnCredential(accessKeyId, accessKeySecret, roleArn, roleSessionN
 		RoleSessionName:       roleSessionName,
 		RoleSessionExpiration: roleSessionExpiration,
 		Policy:                policy,
+		STSEndpoint:           STSEndpoint,
 		credentialUpdater:     new(credentialUpdater),
 		runtime:               runtime,
 	}
@@ -102,7 +104,11 @@ func (r *RAMRoleArnCredential) updateCredential() (err error) {
 		r.runtime = new(utils.Runtime)
 	}
 	request := request.NewCommonRequest()
-	request.Domain = "sts.aliyuncs.com"
+	if r.STSEndpoint != "" {
+		request.Domain = r.STSEndpoint
+	} else {
+		request.Domain = "sts.aliyuncs.com"
+	}
 	request.Scheme = "HTTPS"
 	request.Method = "GET"
 	request.QueryParams["AccessKeyId"] = r.AccessKeyId

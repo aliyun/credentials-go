@@ -25,6 +25,7 @@ type OIDCCredential struct {
 	Policy                string
 	RoleSessionName       string
 	RoleSessionExpiration int
+	STSEndpoint           string
 	sessionCredential     *sessionCredential
 	runtime               *utils.Runtime
 }
@@ -40,7 +41,7 @@ type OIDCcredentialsInResponse struct {
 	Expiration      string `json:"Expiration" xml:"Expiration"`
 }
 
-func newOIDCRoleArnCredential(accessKeyId, accessKeySecret, roleArn, OIDCProviderArn, OIDCTokenFilePath, RoleSessionName, policy string, RoleSessionExpiration int, runtime *utils.Runtime) *OIDCCredential {
+func newOIDCRoleArnCredential(accessKeyId, accessKeySecret, roleArn, OIDCProviderArn, OIDCTokenFilePath, RoleSessionName, policy, STSEndpoint string, RoleSessionExpiration int, runtime *utils.Runtime) *OIDCCredential {
 	return &OIDCCredential{
 		AccessKeyId:           accessKeyId,
 		AccessKeySecret:       accessKeySecret,
@@ -50,6 +51,7 @@ func newOIDCRoleArnCredential(accessKeyId, accessKeySecret, roleArn, OIDCProvide
 		RoleSessionName:       RoleSessionName,
 		Policy:                policy,
 		RoleSessionExpiration: RoleSessionExpiration,
+		STSEndpoint:           STSEndpoint,
 		credentialUpdater:     new(credentialUpdater),
 		runtime:               runtime,
 	}
@@ -122,7 +124,11 @@ func (r *OIDCCredential) updateCredential() (err error) {
 		r.runtime = new(utils.Runtime)
 	}
 	request := request.NewCommonRequest()
-	request.Domain = "sts.aliyuncs.com"
+	if r.STSEndpoint != "" {
+		request.Domain = r.STSEndpoint
+	} else {
+		request.Domain = "sts.aliyuncs.com"
+	}
 	request.Scheme = "HTTPS"
 	request.Method = "POST"
 	request.QueryParams["Timestamp"] = utils.GetTimeInFormatISO8601()

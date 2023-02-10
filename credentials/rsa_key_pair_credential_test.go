@@ -26,7 +26,7 @@ Fe0zIJp5e69zK+W2Mvt4bL7OgBROeoECQQDsE+4uLw0gFln0tosmovhmp60NcfX7
 bLbtzL2MbwbXlbOztF7ssgzUWAHgKI6hK3g0LhsqBuo3jzmSVO43giZvAkEA08Nm
 2TI9EvX6DfCVfPOiKZM+Pijh0xLN4Dn8qUgt3Tcew/vfj4WA2ZV6qiJqL01vMsHc
 vftlY0Hs1vNXcaBgEA==`
-	auth := newRsaKeyPairCredential(privatekey, "publicKeyId", 100, &utils.Runtime{Host: "www.aliyun.com", Proxy: "www.aliyuncs.com"})
+	auth := newRsaKeyPairCredential(privatekey, "publicKeyId", "", 100, &utils.Runtime{Host: "www.aliyun.com", Proxy: "www.aliyuncs.com"})
 	origTestHookDo := hookDo
 	defer func() { hookDo = origTestHookDo }()
 	hookDo = func(fn func(req *http.Request) (*http.Response, error)) func(req *http.Request) (*http.Response, error) {
