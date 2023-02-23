@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/aliyun/credentials-go/credentials/utils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -120,4 +121,16 @@ func Test_RoleArnCredential(t *testing.T) {
 	ststoken, err = auth.GetSecurityToken()
 	assert.Nil(t, err)
 	assert.Equal(t, "securitytoken", *ststoken)
+
+	auth = newRAMRoleArnCredential("accessKeyId", "accessKeySecret", "roleArn", "roleSessionName", "policy", 3600, &utils.Runtime{STSEndpoint: "www.aliyun.com"})
+	hookDo = func(fn func(req *http.Request) (*http.Response, error)) func(req *http.Request) (*http.Response, error) {
+		return func(req *http.Request) (*http.Response, error) {
+			assert.Equal(t, "www.aliyun.com", req.Host)
+			return mockResponse(200, `{}`, nil)
+		}
+	}
+	accesskeyId, err = auth.GetAccessKeyId()
+	assert.NotNil(t, err)
+	assert.Equal(t, "refresh RoleArn sts token err: Credentials is empty", err.Error())
+	assert.Equal(t, "", *accesskeyId)
 }

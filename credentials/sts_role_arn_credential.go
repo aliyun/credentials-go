@@ -103,6 +103,9 @@ func (r *RAMRoleArnCredential) updateCredential() (err error) {
 	}
 	request := request.NewCommonRequest()
 	request.Domain = "sts.aliyuncs.com"
+	if r.runtime.STSEndpoint != "" {
+		request.Domain = r.runtime.STSEndpoint
+	}
 	request.Scheme = "HTTPS"
 	request.Method = "GET"
 	request.QueryParams["AccessKeyId"] = r.AccessKeyId
