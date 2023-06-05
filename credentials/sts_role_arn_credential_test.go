@@ -133,4 +133,22 @@ func Test_RoleArnCredential(t *testing.T) {
 	assert.NotNil(t, err)
 	assert.Equal(t, "refresh RoleArn sts token err: Credentials is empty", err.Error())
 	assert.Equal(t, "", *accesskeyId)
+
+	auth = newRAMRoleArnWithExternalIdCredential("accessKeyId", "accessKeySecret", "roleArn", "roleSessionName", "policy", 3600, "externalId", nil)
+	hookDo = func(fn func(req *http.Request) (*http.Response, error)) func(req *http.Request) (*http.Response, error) {
+		return func(req *http.Request) (*http.Response, error) {
+			return mockResponse(200, `{"Credentials":{"AccessKeyId":"accessKeyId","AccessKeySecret":"accessKeySecret","SecurityToken":"securitytoken","Expiration":"2020-01-02T15:04:05Z"}}`, nil)
+		}
+	}
+	accesskeyId, err = auth.GetAccessKeyId()
+	assert.Nil(t, err)
+	assert.Equal(t, "accessKeyId", *accesskeyId)
+
+	accesskeySecret, err = auth.GetAccessKeySecret()
+	assert.Nil(t, err)
+	assert.Equal(t, "accessKeySecret", *accesskeySecret)
+
+	ststoken, err = auth.GetSecurityToken()
+	assert.Nil(t, err)
+	assert.Equal(t, "securitytoken", *ststoken)
 }
