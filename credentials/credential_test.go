@@ -33,8 +33,8 @@ func Test_NewCredential(t *testing.T) {
 	assert.Nil(t, cred)
 
 	config := new(Config)
-	config.String()
-	config.GoString()
+	assert.NotNil(t, config.String())
+	assert.NotNil(t, config.GoString())
 
 	config.SetType("access_key")
 	cred, err = NewCredential(config)

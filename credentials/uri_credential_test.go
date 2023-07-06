@@ -21,4 +21,8 @@ func TestURLCredential_updateCredential(t *testing.T) {
 	assert.Equal(t, "", *accesskeyId)
 
 	assert.Equal(t, "credential_uri", *URLCredential.GetType())
+
+	cred, err := URLCredential.GetCredential()
+	assert.Equal(t, "refresh Ecs sts token err: sdk test", err.Error())
+	assert.Nil(t, cred)
 }

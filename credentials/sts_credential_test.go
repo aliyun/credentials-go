@@ -22,4 +22,12 @@ func Test_StsCredential(t *testing.T) {
 
 	assert.Equal(t, "", *auth.GetBearerToken())
 	assert.Equal(t, "sts", *auth.GetType())
+
+	cred, err := auth.GetCredential()
+	assert.Nil(t, err)
+	assert.Equal(t, "accessKeyId", *cred.AccessKeyId)
+	assert.Equal(t, "accessKeySecret", *cred.AccessKeySecret)
+	assert.Equal(t, "securityToken", *cred.SecurityToken)
+	assert.Nil(t, cred.BearerToken)
+	assert.Equal(t, "sts", *cred.Type)
 }

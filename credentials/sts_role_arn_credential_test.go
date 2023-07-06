@@ -122,6 +122,14 @@ func Test_RoleArnCredential(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, "securitytoken", *ststoken)
 
+	cred, err := auth.GetCredential()
+	assert.Nil(t, err)
+	assert.Equal(t, "accessKeyId", *cred.AccessKeyId)
+	assert.Equal(t, "accessKeySecret", *cred.AccessKeySecret)
+	assert.Equal(t, "securitytoken", *cred.SecurityToken)
+	assert.Nil(t, cred.BearerToken)
+	assert.Equal(t, "ram_role_arn", *cred.Type)
+
 	auth = newRAMRoleArnCredential("accessKeyId", "accessKeySecret", "roleArn", "roleSessionName", "policy", 3600, &utils.Runtime{STSEndpoint: "www.aliyun.com"})
 	hookDo = func(fn func(req *http.Request) (*http.Response, error)) func(req *http.Request) (*http.Response, error) {
 		return func(req *http.Request) (*http.Response, error) {
