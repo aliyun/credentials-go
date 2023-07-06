@@ -116,6 +116,14 @@ vftlY0Hs1vNXcaBgEA==`
 	assert.Nil(t, err)
 	assert.Equal(t, "accessKeySecret", *accesskeySecret)
 
+	cred, err := auth.GetCredential()
+	assert.Nil(t, err)
+	assert.Equal(t, "accessKeyId", *cred.AccessKeyId)
+	assert.Equal(t, "accessKeySecret", *cred.AccessKeySecret)
+	assert.Equal(t, "", *cred.SecurityToken)
+	assert.Nil(t, cred.BearerToken)
+	assert.Equal(t, "rsa_key_pair", *cred.Type)
+
 	auth.runtime = nil
 	auth.lastUpdateTimestamp = 0
 	accesskeyId, err = auth.GetAccessKeyId()

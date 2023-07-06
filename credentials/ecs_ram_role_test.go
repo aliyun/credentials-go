@@ -117,6 +117,14 @@ func Test_EcsRAmRoleCredential(t *testing.T) {
 	err = hookParse(err)
 	assert.Equal(t, "credentials", err.Error())
 
+	cred, err := auth.GetCredential()
+	assert.Nil(t, err)
+	assert.Equal(t, "accessKeyId", *cred.AccessKeyId)
+	assert.Equal(t, "accessKeySecret", *cred.AccessKeySecret)
+	assert.Equal(t, "securitytoken", *cred.SecurityToken)
+	assert.Nil(t, cred.BearerToken)
+	assert.Equal(t, "ecs_ram_role", *cred.Type)
+
 	originHookParse := hookParse
 	hookParse = func(err error) error {
 		return errors.New("error parse")

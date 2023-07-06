@@ -41,6 +41,14 @@ func Test_oidcCredential_updateCredential(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, "securitytoken", *ststoken)
 
+	cred, err := oidcCredential.GetCredential()
+	assert.Nil(t, err)
+	assert.Equal(t, "accessKeyId", *cred.AccessKeyId)
+	assert.Equal(t, "accessKeySecret", *cred.AccessKeySecret)
+	assert.Equal(t, "securitytoken", *cred.SecurityToken)
+	assert.Nil(t, cred.BearerToken)
+	assert.Equal(t, "oidc_role_arn", *cred.Type)
+
 	os.Setenv("ALIBABA_CLOUD_OIDC_TOKEN_FILE", "")
 	token := oidcCredential.GetOIDCToken("/test")
 	assert.Nil(t, token)

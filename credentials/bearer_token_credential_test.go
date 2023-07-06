@@ -22,4 +22,12 @@ func Test_BearerTokenCredential(t *testing.T) {
 
 	assert.Equal(t, "bearertoken", *auth.GetBearerToken())
 	assert.Equal(t, "bearer", *auth.GetType())
+
+	cred, err := auth.GetCredential()
+	assert.Nil(t, err)
+	assert.Equal(t, "bearertoken", *cred.BearerToken)
+	assert.Nil(t, cred.AccessKeyId)
+	assert.Nil(t, cred.AccessKeySecret)
+	assert.Nil(t, cred.SecurityToken)
+	assert.Equal(t, "bearer", *cred.Type)
 }
