@@ -30,7 +30,7 @@ $ go get -u github.com/aliyun/credentials-go
 $ dep ensure -add  github.com/aliyun/credentials-go
 ```
 
-##快速使用
+## 快速使用
 在您开始之前，您需要注册阿里云帐户并获取您的[凭证](https://usercenter.console.aliyun.com/#/manage/ak)。
 
 ### 凭证类型
@@ -57,9 +57,10 @@ func main(){
 	if err != nil {
 		return
 	}
-	accessKeyId, err := akCredential.GetAccessKeyId()
-	accessSecret, err := akCredential.GetAccessKeySecret()
-	credentialType := akCredential.GetType()
+	credential, err := cred.GetCredential()
+	accessKeyId := credential.AccessKeyId
+	accessSecret := credential.AccessKeySecret
+	credentialType := credential.Type
 	fmt.Println(accessKeyId, accessSecret, credentialType)
 }
 ```
@@ -88,10 +89,12 @@ func main() {
 	if err != nil {
 		return
 	}
-	accessKeyId, err := stsCredential.GetAccessKeyId()
-	accessSecret, err := stsCredential.GetAccessKeySecret()
-	securityToken, err := stsCredential.GetSecurityToken()
-	credentialType := stsCredential.GetType()
+
+	credential, err := stsCredential.GetCredential()
+	accessKeyId := credential.AccessKeyId
+	accessSecret := credential.AccessKeySecret
+	securityToken := credential.SecurityToken
+	credentialType := credential.Type
 	fmt.Println(accessKeyId, accessSecret, securityToken, credentialType)
 }
 ```
@@ -121,10 +124,14 @@ func main() {
 	if err != nil {
 		return
 	}
-	accessKeyId, err := oidcCredential.GetAccessKeyId()
-	accessKeySecret, err := oidcCredential.GetAccessKeySecret()
-	token, err := oidcCredential.GetSecurityToken()
-	fmt.Println(accessKeyId, accessKeySecret, token)
+
+	credential, err := oidcCredential.GetCredential()
+	accessKeyId := credential.AccessKeyId
+	accessSecret := credential.AccessKeySecret
+	securityToken := credential.SecurityToken
+	credentialType := credential.Type
+
+	fmt.Println(accessKeyId, accessKeySecret, securityToken, credentialType)
 }
 ```
 
@@ -158,11 +165,39 @@ func main(){
 	if err != nil {
 		return
 	}
-	accessKeyId, err := arnCredential.GetAccessKeyId()
-	accessSecret, err := arnCredential.GetAccessKeySecret()
-	securityToken, err := arnCredential.GetSecurityToken()
-	credentialType := arnCredential.GetType()
-	fmt.Println(accessKeyId, accessSecret, securityToken, credentialType)
+	credential, err := arnCredential.GetCredential()
+	accessKeyId := credential.AccessKeyId
+	accessSecret := credential.AccessKeySecret
+	securityToken := credential.SecurityToken
+	credentialType := credential.Type
+
+	fmt.Println(accessKeyId, accessKeySecret, securityToken, credentialType)
+}
+```
+
+#### uriCredential
+
+```go
+import (
+	"fmt"
+
+	"github.com/aliyun/credentials-go/credentials"
+)
+
+func main(){
+	config := new(credentials.Config).SetType("credentials_uri").SetURL("http://127.0.0.1")
+	uriCredential, err := credentials.NewCredential(config)
+	if err != nil {
+		return
+	}
+
+	credential, err := uriCredential.GetCredential()
+	accessKeyId := credential.AccessKeyId
+	accessSecret := credential.AccessKeySecret
+	securityToken := credential.SecurityToken
+	credentialType := credential.Type
+
+	fmt.Println(accessKeyId, accessKeySecret, securityToken, credentialType)
 }
 ```
 
@@ -186,11 +221,14 @@ func main(){
 	if err != nil {
 		return
 	}
-	accessKeyId, err := ecsCredential.GetAccessKeyId()
-	accessSecret, err := ecsCredential.GetAccessKeySecret()
-	securityToken, err := ecsCredential.GetSecurityToken()
-	credentialType := ecsCredential.GetType()
-	fmt.Println(accessKeyId, accessSecret, securityToken, credentialType)
+
+	credential, err := ecsCredential.GetCredential()
+	accessKeyId := credential.AccessKeyId
+	accessSecret := credential.AccessKeySecret
+	securityToken := credential.SecurityToken
+	credentialType := credential.Type
+
+	fmt.Println(accessKeyId, accessKeySecret, securityToken, credentialType)
 }
 ```
 
@@ -216,11 +254,14 @@ func main(){
 	if err != nil {
 		return
 	}
-	accessKeyId, err := rsaCredential.GetAccessKeyId()
-	accessSecret, err := rsaCredential.GetAccessKeySecret()
-	securityToken, err := rsaCredential.GetSecurityToken()
-	credentialType := rsaCredential.GetType()
-	fmt.Println(accessKeyId, accessSecret, securityToken, credentialType)
+
+	credential, err := rsaCredential.GetCredential()
+	accessKeyId := credential.AccessKeyId
+	accessSecret := credential.AccessKeySecret
+	securityToken := credential.SecurityToken
+	credentialType := credential.Type
+
+	fmt.Println(accessKeyId, accessKeySecret, securityToken, credentialType)
 }
 ```
 
@@ -245,8 +286,11 @@ func main(){
 	if err != nil {
 		return
 	}
-	bearerToken := bearerCredential.GetBearerToken()
-	credentialType := bearerCredential.GetType()
+
+	credential, err := bearerCredential.GetCredential()
+
+	bearerToken := credential.BearerToken
+	credentialType := credential.Type
 	fmt.Println(bearerToken, credentialType)
 }
 ```

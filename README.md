@@ -57,9 +57,10 @@ func main(){
 	if err != nil {
 		return
 	}
-	accessKeyId, err := akCredential.GetAccessKeyId()
-	accessSecret, err := akCredential.GetAccessKeySecret()
-	credentialType := akCredential.GetType()
+	credential, err := cred.GetCredential()
+	accessKeyId := credential.AccessKeyId
+	accessSecret := credential.AccessKeySecret
+	credentialType := credential.Type
 	fmt.Println(accessKeyId, accessSecret, credentialType)
 }
 ```
@@ -88,11 +89,50 @@ func main() {
 	if err != nil {
 		return
 	}
-	accessKeyId, err := stsCredential.GetAccessKeyId()
-	accessSecret, err := stsCredential.GetAccessKeySecret()
-	securityToken, err := stsCredential.GetSecurityToken()
-	credentialType := stsCredential.GetType()
+
+	credential, err := stsCredential.GetCredential()
+	accessKeyId := credential.AccessKeyId
+	accessSecret := credential.AccessKeySecret
+	securityToken := credential.SecurityToken
+	credentialType := credential.Type
 	fmt.Println(accessKeyId, accessSecret, securityToken, credentialType)
+}
+```
+
+#### AssumeRoleWithOIDC
+When executing oidc role SSO, obtain the temporary identity credential (STS token) playing the RAM role by calling the AssumeRoleWithOIDC api.
+
+``` go
+package main
+
+import (
+	"fmt"
+	"net/http"
+
+	"github.com/aliyun/credentials-go/credentials"
+)
+
+func main() {
+	config := new(credentials.Config).
+		SetType("oidc_role_arn").
+		SetOIDCProviderArn("OIDCProviderArn").
+		SetOIDCTokenFilePath("OIDCTokenFilePath").
+		SetRoleSessionName("RoleSessionName").
+		SetPolicy("Policy").
+		SetRoleArn("RoleArn").
+		SetSessionExpiration(3600)
+	oidcCredential, err := credentials.NewCredential(config)
+	if err != nil {
+		return
+	}
+
+	credential, err := oidcCredential.GetCredential()
+	accessKeyId := credential.AccessKeyId
+	accessSecret := credential.AccessKeySecret
+	securityToken := credential.SecurityToken
+	credentialType := credential.Type
+
+	fmt.Println(accessKeyId, accessKeySecret, securityToken, credentialType)
 }
 ```
 
@@ -126,13 +166,16 @@ func main(){
 	if err != nil {
 		return
 	}
-	accessKeyId, err := arnCredential.GetAccessKeyId()
-	accessSecret, err := arnCredential.GetAccessKeySecret()
-	securityToken, err := arnCredential.GetSecurityToken()
-	credentialType := arnCredential.GetType()
-	fmt.Println(accessKeyId, accessSecret, securityToken, credentialType)
+	credential, err := arnCredential.GetCredential()
+	accessKeyId := credential.AccessKeyId
+	accessSecret := credential.AccessKeySecret
+	securityToken := credential.SecurityToken
+	credentialType := credential.Type
+
+	fmt.Println(accessKeyId, accessKeySecret, securityToken, credentialType)
 }
 ```
+
 #### uriCredential
 ```go
 import (
@@ -143,16 +186,20 @@ import (
 
 func main(){
 	config := new(credentials.Config).SetType("credentials_uri").SetURL("http://127.0.0.1")
-	credential, err := credentials.NewCredential(config)
+	uriCredential, err := credentials.NewCredential(config)
 	if err != nil {
 		return
 	}
-	accessKeyId, err := credential.GetAccessKeyId()
-	accessKeySecret, err := credential.GetAccessKeySecret()
-	fmt.Println(accessKeyId, accessKeySecret)
+
+	credential, err := uriCredential.GetCredential()
+	accessKeyId := credential.AccessKeyId
+	accessSecret := credential.AccessKeySecret
+	securityToken := credential.SecurityToken
+	credentialType := credential.Type
+
+	fmt.Println(accessKeyId, accessKeySecret, securityToken, credentialType)
 }
 ```
-
 
 #### EcsRamRole
 By specifying the role name, the credential will be able to automatically request maintenance of STS Token.
@@ -174,11 +221,14 @@ func main(){
 	if err != nil {
 		return
 	}
-	accessKeyId, err := ecsCredential.GetAccessKeyId()
-	accessSecret, err := ecsCredential.GetAccessKeySecret()
-	securityToken, err := ecsCredential.GetSecurityToken()
-	credentialType := ecsCredential.GetType()
-	fmt.Println(accessKeyId, accessSecret, securityToken, credentialType)
+
+	credential, err := ecsCredential.GetCredential()
+	accessKeyId := credential.AccessKeyId
+	accessSecret := credential.AccessKeySecret
+	securityToken := credential.SecurityToken
+	credentialType := credential.Type
+
+	fmt.Println(accessKeyId, accessKeySecret, securityToken, credentialType)
 }
 ```
 
@@ -204,11 +254,14 @@ func main(){
 	if err != nil {
 		return
 	}
-	accessKeyId, err := rsaCredential.GetAccessKeyId()
-	accessSecret, err := rsaCredential.GetAccessKeySecret()
-	securityToken, err := rsaCredential.GetSecurityToken()
-	credentialType := rsaCredential.GetType()
-	fmt.Println(accessKeyId, accessSecret, securityToken, credentialType)
+
+	credential, err := rsaCredential.GetCredential()
+	accessKeyId := credential.AccessKeyId
+	accessSecret := credential.AccessKeySecret
+	securityToken := credential.SecurityToken
+	credentialType := credential.Type
+
+	fmt.Println(accessKeyId, accessKeySecret, securityToken, credentialType)
 }
 ```
 
@@ -232,46 +285,16 @@ func main(){
 	if err != nil {
 		return
 	}
-	bearerToken := bearerCredential.GetBearerToken()
-	credentialType := bearerCredential.GetType()
+
+	credential, err := bearerCredential.GetCredential()
+
+	bearerToken := credential.BearerToken
+	credentialType := credential.Type
 	fmt.Println(bearerToken, credentialType)
 }
 ```
 
-#### AssumeRoleWithOIDC
-When performing oidc role SSO, obtain the temporary identity credential (STS Token) that plays the role of RAM by calling the AssumeRoleWithOIDC interface.
-``` go
-package main
-
-import (
-	"fmt"
-	"net/http"
-
-	"github.com/aliyun/credentials-go/credentials"
-)
-
-func main() {
-	config := new(credentials.Config).
-		SetType("oidc_role_arn").
-		SetOIDCProviderArn("OIDCProviderArn").
-		SetOIDCTokenFilePath("OIDCTokenFilePath").
-		SetRoleSessionName("RoleSessionName").
-		SetPolicy("Policy").
-		SetRoleArn("RoleArn").
-		SetSessionExpiration(3600)
-	oidcCredential, err := credentials.NewCredential(config)
-	if err != nil {
-		return
-	}
-	accessKeyId, err := oidcCredential.GetAccessKeyId()
-	accessKeySecret, err := oidcCredential.GetAccessKeySecret()
-	token, err := oidcCredential.GetSecurityToken()
-	fmt.Println(accessKeyId, accessKeySecret, token)
-}
-```
-
-
-### Provider
+### Credential Provider Chain
 If you call `NewCredential()` with nil, it will use provider chain to get credential for you.
 
 #### 1. Environment Credentials

@@ -13,8 +13,6 @@ import (
 	"github.com/aliyun/credentials-go/credentials/utils"
 )
 
-const defaultOIDCDurationSeconds = 3600
-
 // OIDCCredential is a kind of credentials
 type OIDCCredential struct {
 	*credentialUpdater
