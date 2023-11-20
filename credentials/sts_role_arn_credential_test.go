@@ -17,7 +17,7 @@ func mockResponse(statusCode int, content string, mockerr error) (res *http.Resp
 	res = &http.Response{
 		Proto:      "HTTP/1.1",
 		ProtoMajor: 1,
-		Header:     map[string][]string{"sdk": []string{"test"}},
+		Header:     map[string][]string{"sdk": {"test"}},
 		StatusCode: statusCode,
 		Status:     status + " " + http.StatusText(statusCode),
 	}
