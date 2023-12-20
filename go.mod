@@ -3,7 +3,7 @@ module github.com/aliyun/credentials-go
 go 1.14
 
 require (
-	github.com/alibabacloud-go/debug v0.0.0-20190504072949-9472017b5c68
+	github.com/alibabacloud-go/debug v1.0.0
 	github.com/alibabacloud-go/tea v1.1.8
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e // indirect
