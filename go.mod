@@ -4,8 +4,7 @@ go 1.14
 
 require (
 	github.com/alibabacloud-go/debug v1.0.0
-	github.com/alibabacloud-go/tea v1.1.8
-	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/alibabacloud-go/tea v1.2.1
 	github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e // indirect
 	github.com/stretchr/testify v1.5.1
 	golang.org/x/net v0.17.0 // indirect
