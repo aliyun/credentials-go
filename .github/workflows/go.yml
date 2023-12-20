@@ -15,6 +15,12 @@ jobs:
         # test against latest update of each major Java version, as well as specific updates of LTS versions:
         go: [1.12, 1.13, 1.14, 1.15, 1.16, 1.17, 1.18]
       fail-fast: false
+    env:
+      SUB_ALICLOUD_ACCESS_KEY: ${{ secrets.SUB_ALICLOUD_ACCESS_KEY }}
+      SUB_ALICLOUD_SECRET_KEY: ${{ secrets.SUB_ALICLOUD_SECRET_KEY }}
+      ALICLOUD_ROLE_ARN: ${{ secrets.ALICLOUD_ROLE_ARN }}
+      ALICLOUD_ROLE_SESSION_NAME: ${{ secrets.ALICLOUD_ROLE_SESSION_NAME }}
+      ALICLOUD_ROLE_SESSION_EXPIRATION: ${{ secrets.ALICLOUD_ROLE_SESSION_EXPIRATION }}
 
     steps:
     - uses: actions/checkout@v3
@@ -32,14 +38,9 @@ jobs:
     - name: Test
       run: go test -race -coverprofile=coverage.txt -covermode=atomic ./credentials/...
 
+    - name: Upload coverage infomartion
+      uses: codecov/codecov-action@v3
+
     - name: Integration Test
       run: go test -v -timeout 120s ./integration/...
-      env:
-          SUB_ALICLOUD_ACCESS_KEY: ${{ secrets.SUB_ALICLOUD_ACCESS_KEY }}
-          SUB_ALICLOUD_SECRET_KEY: ${{ secrets.SUB_ALICLOUD_SECRET_KEY }}
-          ALICLOUD_ROLE_ARN: ${{ secrets.ALICLOUD_ROLE_ARN }}
-          ALICLOUD_ROLE_SESSION_NAME: ${{ secrets.ALICLOUD_ROLE_SESSION_NAME }}
-          ALICLOUD_ROLE_SESSION_EXPIRATION: ${{ secrets.ALICLOUD_ROLE_SESSION_EXPIRATION }}
-
-    - name: CodeCov
-      run: bash <(curl -s https://codecov.io/bash) -cF credentials-go
+      if: env.SUB_ALICLOUD_ACCESS_KEY != ''
