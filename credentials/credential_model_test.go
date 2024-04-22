@@ -21,6 +21,9 @@ func Test_Credential(t *testing.T) {
 	assert.Equal(t, "BearerToken", *cred.BearerToken)
 	assert.Equal(t, "Type", *cred.Type)
 
+	assert.Equal(t, "{\n   \"accessKeyId\": \"AccessKeyId\",\n   \"accessKeySecret\": \"AccessKeySecret\",\n   \"securityToken\": \"SecurityToken\",\n   \"bearerToken\": \"BearerToken\",\n   \"type\": \"Type\"\n}", cred.String())
+	assert.Equal(t, "{\n   \"accessKeyId\": \"AccessKeyId\",\n   \"accessKeySecret\": \"AccessKeySecret\",\n   \"securityToken\": \"SecurityToken\",\n   \"bearerToken\": \"BearerToken\",\n   \"type\": \"Type\"\n}", cred.GoString())
+
 	cred = &CredentialModel{}
 	cred.SetAccessKeyId("")
 	cred.SetAccessKeySecret("")
@@ -30,4 +33,12 @@ func Test_Credential(t *testing.T) {
 	assert.Equal(t, "", *cred.SecurityToken)
 	assert.Nil(t, cred.BearerToken)
 	assert.Nil(t, cred.Type)
+}
+
+func Test_Credential2(t *testing.T) {
+	cred := &CredentialModel{}
+	cred.SetBearerToken("bearertoken")
+	assert.Equal(t, "bearertoken", *cred.BearerToken)
+	cred.SetType("bearertoken")
+	assert.Equal(t, "bearertoken", *cred.Type)
 }

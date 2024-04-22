@@ -27,4 +27,8 @@ func Test_BuildRpcStringToSign(t *testing.T) {
 	request.QueryParams["q"] = "http://domain/?q=value&q2=value2"
 	stringToSign = request.BuildStringToSign()
 	assert.Equal(t, "&%2F&q%3Dhttp%253A%252F%252Fdomain%252F%253Fq%253Dvalue%2526q2%253Dvalue2", stringToSign)
+
+	request.BodyParams["bq"] = "bq"
+	stringToSign = request.BuildStringToSign()
+	assert.Equal(t, "&%2F&bq%3Dbq%26q%3Dhttp%253A%252F%252Fdomain%252F%253Fq%253Dvalue%2526q2%253Dvalue2", stringToSign)
 }
