@@ -310,22 +310,26 @@ func checkoutAssumeRamoidc(config *Config) (err error) {
 }
 
 func checkRAMRoleArn(config *Config) (err error) {
-	if tea.StringValue(config.AccessKeySecret) == "" {
-		err = errors.New("AccessKeySecret cannot be empty")
-		return
-	}
-	if tea.StringValue(config.RoleArn) == "" {
-		err = errors.New("RoleArn cannot be empty")
-		return
-	}
-	if tea.StringValue(config.RoleSessionName) == "" {
-		err = errors.New("RoleSessionName cannot be empty")
-		return
-	}
 	if tea.StringValue(config.AccessKeyId) == "" {
 		err = errors.New("AccessKeyId cannot be empty")
 		return
 	}
+
+	if tea.StringValue(config.AccessKeySecret) == "" {
+		err = errors.New("AccessKeySecret cannot be empty")
+		return
+	}
+
+	if tea.StringValue(config.RoleArn) == "" {
+		err = errors.New("RoleArn cannot be empty")
+		return
+	}
+
+	if tea.StringValue(config.RoleSessionName) == "" {
+		err = errors.New("RoleSessionName cannot be empty")
+		return
+	}
+
 	return
 }
 
