@@ -25,8 +25,11 @@ var hookParse = func(err error) error {
 
 // Credential is an interface for getting actual credential
 type Credential interface {
+	// Deprecated: GetAccessKeyId is deprecated, use GetCredential instead of.
 	GetAccessKeyId() (*string, error)
+	// Deprecated: GetAccessKeySecret is deprecated, use GetCredential instead of.
 	GetAccessKeySecret() (*string, error)
+	// Deprecated: GetSecurityToken is deprecated, use GetCredential instead of.
 	GetSecurityToken() (*string, error)
 	GetBearerToken() *string
 	GetType() *string
