@@ -25,6 +25,33 @@ func TestInstanceCredentialsProvider(t *testing.T) {
 	assert.Equal(t, "role_name", tea.StringValue(c.RoleName))
 	assert.Equal(t, "ecs_ram_role", tea.StringValue(c.Type))
 
+	os.Setenv(ENVEcsMetadataIMDSv2Enable, "1")
+	c, err = p.resolve()
+	assert.Nil(t, err)
+	assert.Equal(t, "role_name", tea.StringValue(c.RoleName))
+	assert.Equal(t, "ecs_ram_role", tea.StringValue(c.Type))
+
+	os.Setenv(ENVEcsMetadataIMDSv2Enable, "1")
+	c, err = p.resolve()
+	assert.Nil(t, err)
+	assert.Equal(t, "role_name", tea.StringValue(c.RoleName))
+	assert.Equal(t, "ecs_ram_role", tea.StringValue(c.Type))
+	assert.False(t, tea.BoolValue(c.EnableIMDSv2))
+
+	os.Setenv(ENVEcsMetadataIMDSv2Enable, "false")
+	c, err = p.resolve()
+	assert.Nil(t, err)
+	assert.Equal(t, "role_name", tea.StringValue(c.RoleName))
+	assert.Equal(t, "ecs_ram_role", tea.StringValue(c.Type))
+	assert.False(t, tea.BoolValue(c.EnableIMDSv2))
+
+	os.Setenv(ENVEcsMetadataIMDSv2Enable, "true")
+	c, err = p.resolve()
+	assert.Nil(t, err)
+	assert.Equal(t, "role_name", tea.StringValue(c.RoleName))
+	assert.Equal(t, "ecs_ram_role", tea.StringValue(c.Type))
+	assert.True(t, tea.BoolValue(c.EnableIMDSv2))
+
 	os.Unsetenv(ENVEcsMetadata)
 	c, err = p.resolve()
 	assert.Nil(t, c)

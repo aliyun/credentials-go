@@ -47,6 +47,8 @@ type Config struct {
 	RoleSessionName       *string  `json:"role_session_name"`
 	PublicKeyId           *string  `json:"public_key_id"`
 	RoleName              *string  `json:"role_name"`
+	EnableIMDSv2          *bool    `json:"enable_imds_v2"`
+	MetadataTokenDuration *int     `json:"metadata_token_duration"`
 	SessionExpiration     *int     `json:"session_expiration"`
 	PrivateKeyFile        *string  `json:"private_key_file"`
 	BearerToken           *string  `json:"bearer_token"`
@@ -103,6 +105,16 @@ func (s *Config) SetPublicKeyId(v string) *Config {
 
 func (s *Config) SetRoleName(v string) *Config {
 	s.RoleName = &v
+	return s
+}
+
+func (s *Config) SetEnableIMDSv2(v bool) *Config {
+	s.EnableIMDSv2 = &v
+	return s
+}
+
+func (s *Config) SetMetadataTokenDuration(v int) *Config {
+	s.MetadataTokenDuration = &v
 	return s
 }
 
@@ -205,19 +217,33 @@ func NewCredential(config *Config) (credential Credential, err error) {
 			ConnectTimeout: tea.IntValue(config.ConnectTimeout),
 			STSEndpoint:    tea.StringValue(config.STSEndpoint),
 		}
-		credential = newOIDCRoleArnCredential(tea.StringValue(config.AccessKeyId), tea.StringValue(config.AccessKeySecret), tea.StringValue(config.RoleArn), tea.StringValue(config.OIDCProviderArn), tea.StringValue(config.OIDCTokenFilePath), tea.StringValue(config.RoleSessionName), tea.StringValue(config.Policy), tea.IntValue(config.RoleSessionExpiration), runtime)
+		credential = newOIDCRoleArnCredential(
+			tea.StringValue(config.AccessKeyId),
+			tea.StringValue(config.AccessKeySecret),
+			tea.StringValue(config.RoleArn),
+			tea.StringValue(config.OIDCProviderArn),
+			tea.StringValue(config.OIDCTokenFilePath),
+			tea.StringValue(config.RoleSessionName),
+			tea.StringValue(config.Policy),
+			tea.IntValue(config.RoleSessionExpiration),
+			runtime)
 	case "access_key":
 		err = checkAccessKey(config)
 		if err != nil {
 			return
 		}
-		credential = newAccessKeyCredential(tea.StringValue(config.AccessKeyId), tea.StringValue(config.AccessKeySecret))
+		credential = newAccessKeyCredential(
+			tea.StringValue(config.AccessKeyId),
+			tea.StringValue(config.AccessKeySecret))
 	case "sts":
 		err = checkSTS(config)
 		if err != nil {
 			return
 		}
-		credential = newStsTokenCredential(tea.StringValue(config.AccessKeyId), tea.StringValue(config.AccessKeySecret), tea.StringValue(config.SecurityToken))
+		credential = newStsTokenCredential(
+			tea.StringValue(config.AccessKeyId),
+			tea.StringValue(config.AccessKeySecret),
+			tea.StringValue(config.SecurityToken))
 	case "ecs_ram_role":
 		checkEcsRAMRole(config)
 		runtime := &utils.Runtime{
@@ -226,7 +252,12 @@ func NewCredential(config *Config) (credential Credential, err error) {
 			ReadTimeout:    tea.IntValue(config.Timeout),
 			ConnectTimeout: tea.IntValue(config.ConnectTimeout),
 		}
-		credential = newEcsRAMRoleCredential(tea.StringValue(config.RoleName), tea.Float64Value(config.InAdvanceScale), runtime)
+		credential = newEcsRAMRoleCredentialWithEnableIMDSv2(
+			tea.StringValue(config.RoleName),
+			tea.BoolValue(config.EnableIMDSv2),
+			tea.IntValue(config.MetadataTokenDuration),
+			tea.Float64Value(config.InAdvanceScale),
+			runtime)
 	case "ram_role_arn":
 		err = checkRAMRoleArn(config)
 		if err != nil {
@@ -274,7 +305,11 @@ func NewCredential(config *Config) (credential Credential, err error) {
 			ConnectTimeout: tea.IntValue(config.ConnectTimeout),
 			STSEndpoint:    tea.StringValue(config.STSEndpoint),
 		}
-		credential = newRsaKeyPairCredential(privateKey, tea.StringValue(config.PublicKeyId), tea.IntValue(config.SessionExpiration), runtime)
+		credential = newRsaKeyPairCredential(
+			privateKey,
+			tea.StringValue(config.PublicKeyId),
+			tea.IntValue(config.SessionExpiration),
+			runtime)
 	case "bearer":
 		if tea.StringValue(config.BearerToken) == "" {
 			err = errors.New("BearerToken cannot be empty")
