@@ -247,7 +247,6 @@ func NewCredential(config *Config) (credential Credential, err error) {
 	case "ecs_ram_role":
 		runtime := &utils.Runtime{
 			Host:           tea.StringValue(config.Host),
-			Proxy:          tea.StringValue(config.Proxy),
 			ReadTimeout:    tea.IntValue(config.Timeout),
 			ConnectTimeout: tea.IntValue(config.ConnectTimeout),
 		}
