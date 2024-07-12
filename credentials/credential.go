@@ -245,7 +245,6 @@ func NewCredential(config *Config) (credential Credential, err error) {
 			tea.StringValue(config.AccessKeySecret),
 			tea.StringValue(config.SecurityToken))
 	case "ecs_ram_role":
-		checkEcsRAMRole(config)
 		runtime := &utils.Runtime{
 			Host:           tea.StringValue(config.Host),
 			Proxy:          tea.StringValue(config.Proxy),
@@ -317,7 +316,7 @@ func NewCredential(config *Config) (credential Credential, err error) {
 		}
 		credential = newBearerTokenCredential(tea.StringValue(config.BearerToken))
 	default:
-		err = errors.New("Invalid type option, support: access_key, sts, ecs_ram_role, ram_role_arn, rsa_key_pair")
+		err = errors.New("invalid type option, support: access_key, sts, ecs_ram_role, ram_role_arn, rsa_key_pair")
 		return
 	}
 	return credential, nil
@@ -368,10 +367,6 @@ func checkRAMRoleArn(config *Config) (err error) {
 		return
 	}
 
-	return
-}
-
-func checkEcsRAMRole(config *Config) (err error) {
 	return
 }
 

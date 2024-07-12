@@ -179,7 +179,7 @@ func (e *EcsRAMRoleCredential) updateCredential() (err error) {
 	if e.EnableIMDSv2 {
 		err = e.getMetadataToken()
 		if err != nil {
-			return fmt.Errorf("Failed to get token from ECS Metadata Service: %s", err.Error())
+			return fmt.Errorf("failed to get token from ECS Metadata Service: %s", err.Error())
 		}
 		request.Headers["X-aliyun-ecs-metadata-token"] = e.metadataToken
 	}
