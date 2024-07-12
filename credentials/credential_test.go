@@ -38,7 +38,7 @@ func TestNewCredentialWithNil(t *testing.T) {
 	os.Unsetenv(EnvVarAccessKeySecret)
 	cred, err = NewCredential(nil)
 	assert.NotNil(t, err)
-	assert.Equal(t, "No credential found", err.Error())
+	assert.Equal(t, "no credential found", err.Error())
 	assert.Nil(t, cred)
 }
 
@@ -252,7 +252,7 @@ func TestNewCredentialWithInvalidType(t *testing.T) {
 	config.SetType("sdk")
 	cred, err := NewCredential(config)
 	assert.NotNil(t, err)
-	assert.Equal(t, "Invalid type option, support: access_key, sts, ecs_ram_role, ram_role_arn, rsa_key_pair", err.Error())
+	assert.Equal(t, "invalid type option, support: access_key, sts, ecs_ram_role, ram_role_arn, rsa_key_pair", err.Error())
 	assert.Nil(t, cred)
 }
 

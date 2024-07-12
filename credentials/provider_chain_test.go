@@ -43,7 +43,7 @@ func TestProviderChain(t *testing.T) {
 
 	c, err = pc.resolve()
 	assert.Nil(t, c)
-	assert.EqualError(t, err, "No credential found")
+	assert.EqualError(t, err, "no credential found")
 }
 
 func TestDefaultChainNoCred(t *testing.T) {
@@ -76,7 +76,7 @@ func TestDefaultChainNoCred(t *testing.T) {
 
 	chain, err := defaultChain.resolve()
 	assert.Nil(t, chain)
-	assert.Equal(t, "No credential found", err.Error())
+	assert.Equal(t, "no credential found", err.Error())
 }
 
 func TestDefaultChainHasCred(t *testing.T) {

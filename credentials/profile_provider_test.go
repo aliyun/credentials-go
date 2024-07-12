@@ -11,91 +11,91 @@ import (
 )
 
 var inistr = `
-[default]              
-enable = true                    
-type = access_key                
-access_key_id = foo               
-access_key_secret = bar            
-				   
-[notype]              
-access_key_id = foo               
+[default]
+enable = true
+type = access_key
+access_key_id = foo
+access_key_secret = bar
+
+[notype]
+access_key_id = foo
 access_key_secret = bar
 
 [noak]
-type = access_key                        
-access_key_secret = bar   
+type = access_key
+access_key_secret = bar
 
 [emptyak]
-type = access_key                
-access_key_id =                
-access_key_secret = bar 
+type = access_key
+access_key_id =
+access_key_secret = bar
 
 [noaksecret]
-type = access_key  
-access_key_id =  bar                       
+type = access_key
+access_key_id =  bar
 
 [emptyaksecret]
-type = access_key                
-access_key_id =  bar              
-access_key_secret =  
+type = access_key
+access_key_id =  bar
+access_key_secret =
 
-[ecs]                         
-type = ecs_ram_role                
+[ecs]
+type = ecs_ram_role
 role_name = EcsRamRoleTest
 
 [noecs]
-type = ecs_ram_role                
+type = ecs_ram_role
 
-[emptyecs]                         
-type = ecs_ram_role                
-role_name = 
+[emptyecs]
+type = ecs_ram_role
+role_name =
 
-[invalidRuntimeEcs]                         
-type = ecs_ram_role                
+[invalidRuntimeEcs]
+type = ecs_ram_role
 role_name = EcsRamRoleTest
 timeout = a
 
-[ram]                                         
-type = ram_role_arn                
+[ram]
+type = ram_role_arn
 access_key_id = foo
-access_key_secret = bar
-role_arn = role_arn
-role_session_name = session_name  
-
-[noramak]                                         
-type = ram_role_arn                
-access_key_secret = bar
-role_arn = role_arn
-role_session_name = session_name  
-
-[emptyramak]                                         
-type = ram_role_arn                
-access_key_id = 
 access_key_secret = bar
 role_arn = role_arn
 role_session_name = session_name
 
-[noramsecret]                                         
-type = ram_role_arn  
-access_key_id = id              
+[noramak]
+type = ram_role_arn
+access_key_secret = bar
+role_arn = role_arn
+role_session_name = session_name
+
+[emptyramak]
+type = ram_role_arn
+access_key_id =
+access_key_secret = bar
+role_arn = role_arn
+role_session_name = session_name
+
+[noramsecret]
+type = ram_role_arn
+access_key_id = id
 role_arn = role_arn
 role_session_name = session_name  
 
-[emptyramsecret]                                         
-type = ram_role_arn                
+[emptyramsecret]
+type = ram_role_arn
 access_key_id = id
 access_key_secret =
 role_arn = role_arn
 role_session_name = session_name
 
-[noramarn]                                         
+[noramarn]
 type = ram_role_arn
-access_key_id = id                
+access_key_id = id
 access_key_secret = bar
-role_session_name = session_name  
+role_session_name = session_name
 
-[emptyramarn]                                         
-type = ram_role_arn                
+[emptyramarn]
+type = ram_role_arn
 access_key_id = id
 access_key_secret = bar
 role_arn =
@@ -189,45 +189,45 @@ timeout = 10
 connect_timeout = 10
 host = www.aliyun.com
 
-[norsaprivate]                          
-type = rsa_key_pair               
-public_key_id = publicKeyId       
+[norsaprivate]
+type = rsa_key_pair
+public_key_id = publicKeyId
 
-[emptyrsaprivate]                          
-type = rsa_key_pair               
-public_key_id = publicKeyId       
+[emptyrsaprivate]
+type = rsa_key_pair
+public_key_id = publicKeyId
 private_key_file = 
 
-[norsapublic]                          
-type = rsa_key_pair  
-private_key_file = ./pk.pem             
-
-[emptyrsapublic]                          
-type = rsa_key_pair               
-public_key_id =       
+[norsapublic]
+type = rsa_key_pair
 private_key_file = ./pk.pem
 
-[invalidexpirationrsa]                                         
-type = rsa_key_pair               
-public_key_id = publicKeyId       
+[emptyrsapublic]
+type = rsa_key_pair
+public_key_id =
+private_key_file = ./pk.pem
+
+[invalidexpirationrsa]
+type = rsa_key_pair
+public_key_id = publicKeyId
 private_key_file = ./pk.pem
 session_expiration = a
 
-[invalidTimeoutrsa]                         
-type = rsa_key_pair               
-public_key_id = publicKeyId       
+[invalidTimeoutrsa]
+type = rsa_key_pair
+public_key_id = publicKeyId
 private_key_file = ./pk.pem
 timeout = a
 
-[invalidConnectTimeoutrsa]                         
-type = rsa_key_pair               
-public_key_id = publicKeyId       
+[invalidConnectTimeoutrsa]
+type = rsa_key_pair
+public_key_id = publicKeyId
 private_key_file = ./pk.pem
 connect_timeout = a
 
-[error_type]                          
-type = error_type               
-public_key_id = publicKeyId       
+[error_type]
+type = error_type
+public_key_id = publicKeyId
 private_key_file = ./pk_error.pem
 `
 
@@ -246,7 +246,7 @@ func TestProfileProvider(t *testing.T) {
 	p := newProfileProvider()
 	c, err := p.resolve()
 	assert.Nil(t, c)
-	assert.EqualError(t, err, "The default credential file path is invalid")
+	assert.EqualError(t, err, "the default credential file path is invalid")
 
 	originFilePath := os.Getenv(ENVCredentialFile)
 	os.Setenv(ENVCredentialFile, "")
@@ -295,13 +295,13 @@ func TestProfileProvider(t *testing.T) {
 	p = newProfileProvider("NonExist")
 	c, err = p.resolve()
 	assert.Nil(t, c)
-	assert.Contains(t, err.Error(), "ERROR: Can not load section section", "does not exist")
+	assert.Contains(t, err.Error(), "ERROR: Can not load section section")
 
 	// testcase 6, credential type does not set
 	p = newProfileProvider("notype")
 	c, err = p.resolve()
 	assert.Nil(t, c)
-	assert.Contains(t, err.Error(), "Missing required type option error when getting key of section", "not exists")
+	assert.Contains(t, err.Error(), "missing required type option error when getting key of section")
 
 	// testcase 7, normal AK
 	p = newProfileProvider()
@@ -312,7 +312,7 @@ func TestProfileProvider(t *testing.T) {
 	p = newProfileProvider("noak")
 	c, err = p.resolve()
 	assert.Nil(t, c)
-	assert.Equal(t, "Missing required access_key_id option in profile for access_key", err.Error())
+	assert.Equal(t, "missing required access_key_id option in profile for access_key", err.Error())
 	// testcase 9, access_key_id value is empty
 	p = newProfileProvider("emptyak")
 	c, err = p.resolve()
@@ -322,7 +322,7 @@ func TestProfileProvider(t *testing.T) {
 	p = newProfileProvider("noaksecret")
 	c, err = p.resolve()
 	assert.Nil(t, c)
-	assert.Equal(t, "Missing required access_key_secret option in profile for access_key", err.Error())
+	assert.Equal(t, "missing required access_key_secret option in profile for access_key", err.Error())
 	// testcase 11, access_key_secret value is empty
 	p = newProfileProvider("emptyaksecret")
 	c, err = p.resolve()
@@ -338,7 +338,7 @@ func TestProfileProvider(t *testing.T) {
 	p = newProfileProvider("invalidRuntimeEcs")
 	c, err = p.resolve()
 	assert.Nil(t, c)
-	assert.Equal(t, "Please set timeout with an int value", err.Error())
+	assert.Equal(t, "please set timeout with an int value", err.Error())
 
 	//testcase 16, normal RamRoleArn
 	p = newProfileProvider("ram")
@@ -349,7 +349,7 @@ func TestProfileProvider(t *testing.T) {
 	p = newProfileProvider("noramak")
 	c, err = p.resolve()
 	assert.Nil(t, c)
-	assert.Equal(t, "Missing required access_key_id option in profile for ram_role_arn", err.Error())
+	assert.Equal(t, "missing required access_key_id option in profile for ram_role_arn", err.Error())
 	//testcase 18, access_key_id value is empty
 	p = newProfileProvider("emptyramak")
 	c, err = p.resolve()
@@ -359,7 +359,7 @@ func TestProfileProvider(t *testing.T) {
 	p = newProfileProvider("noramsecret")
 	c, err = p.resolve()
 	assert.Nil(t, c)
-	assert.Equal(t, "Missing required access_key_secret option in profile for ram_role_arn", err.Error())
+	assert.Equal(t, "missing required access_key_secret option in profile for ram_role_arn", err.Error())
 	//testcase 20, access_key_secret value is empty
 	p = newProfileProvider("emptyramsecret")
 	c, err = p.resolve()
@@ -369,7 +369,7 @@ func TestProfileProvider(t *testing.T) {
 	p = newProfileProvider("noramarn")
 	c, err = p.resolve()
 	assert.Nil(t, c)
-	assert.Equal(t, "Missing required role_arn option in profile for ram_role_arn", err.Error())
+	assert.Equal(t, "missing required role_arn option in profile for ram_role_arn", err.Error())
 	//testcase 22, role_arn value is empty
 	p = newProfileProvider("emptyramarn")
 	c, err = p.resolve()
@@ -379,7 +379,7 @@ func TestProfileProvider(t *testing.T) {
 	p = newProfileProvider("noramsessionname")
 	c, err = p.resolve()
 	assert.Nil(t, c)
-	assert.Equal(t, "Missing required role_session_name option in profile for ram_role_arn", err.Error())
+	assert.Equal(t, "missing required role_session_name option in profile for ram_role_arn", err.Error())
 	//testcase 24, role_session_name value is empty
 	p = newProfileProvider("emptyramsessionname")
 	c, err = p.resolve()
@@ -394,7 +394,7 @@ func TestProfileProvider(t *testing.T) {
 	p = newProfileProvider("invalidRuntimeram")
 	c, err = p.resolve()
 	assert.Nil(t, c)
-	assert.Equal(t, "Please set timeout with an int value", err.Error())
+	assert.Equal(t, "please set timeout with an int value", err.Error())
 
 	//testase 27, normal RsaKeyPair
 	file, err = os.Create("./pk.pem")
@@ -412,7 +412,7 @@ func TestProfileProvider(t *testing.T) {
 	p = newProfileProvider("norsaprivate")
 	c, err = p.resolve()
 	assert.Nil(t, c)
-	assert.Equal(t, "Missing required private_key_file option in profile for rsa_key_pair", err.Error())
+	assert.Equal(t, "missing required private_key_file option in profile for rsa_key_pair", err.Error())
 	//testcase 29, private_key_file value is empty
 	p = newProfileProvider("emptyrsaprivate")
 	c, err = p.resolve()
@@ -422,7 +422,7 @@ func TestProfileProvider(t *testing.T) {
 	p = newProfileProvider("norsapublic")
 	c, err = p.resolve()
 	assert.Nil(t, c)
-	assert.Equal(t, "Missing required public_key_id option in profile for rsa_key_pair", err.Error())
+	assert.Equal(t, "missing required public_key_id option in profile for rsa_key_pair", err.Error())
 	//testcase 31, public_key_id value is empty
 	p = newProfileProvider("emptyrsapublic")
 	c, err = p.resolve()
@@ -437,12 +437,12 @@ func TestProfileProvider(t *testing.T) {
 	p = newProfileProvider("invalidTimeoutrsa")
 	c, err = p.resolve()
 	assert.Nil(t, c)
-	assert.Equal(t, "Please set timeout with an int value", err.Error())
+	assert.Equal(t, "please set timeout with an int value", err.Error())
 	//testcase 34, connect_timeout is not int
 	p = newProfileProvider("invalidConnectTimeoutrsa")
 	c, err = p.resolve()
 	assert.Nil(t, c)
-	assert.Equal(t, "Please set connect_timeout with an int value", err.Error())
+	assert.Equal(t, "please set connect_timeout with an int value", err.Error())
 
 	//testcase 35, normal RamRoleArn
 	p = newProfileProvider("sts")
@@ -453,7 +453,7 @@ func TestProfileProvider(t *testing.T) {
 	p = newProfileProvider("nostskey")
 	c, err = p.resolve()
 	assert.Nil(t, c)
-	assert.Equal(t, "Missing required access_key_id option in profile for sts", err.Error())
+	assert.Equal(t, "missing required access_key_id option in profile for sts", err.Error())
 	//testcase 37, access_key_id value is empty
 	p = newProfileProvider("emptystskey")
 	c, err = p.resolve()
@@ -463,7 +463,7 @@ func TestProfileProvider(t *testing.T) {
 	p = newProfileProvider("nostssecret")
 	c, err = p.resolve()
 	assert.Nil(t, c)
-	assert.Equal(t, "Missing required access_key_secret option in profile for sts", err.Error())
+	assert.Equal(t, "missing required access_key_secret option in profile for sts", err.Error())
 	//testcase 39, access_key_secret value is empty
 	p = newProfileProvider("emptystssecret")
 	c, err = p.resolve()
@@ -473,7 +473,7 @@ func TestProfileProvider(t *testing.T) {
 	p = newProfileProvider("noststoken")
 	c, err = p.resolve()
 	assert.Nil(t, c)
-	assert.Equal(t, "Missing required security_token option in profile for sts", err.Error())
+	assert.Equal(t, "missing required security_token option in profile for sts", err.Error())
 	//testcase 41, security_token value is empty
 	p = newProfileProvider("emptyststoken")
 	c, err = p.resolve()
@@ -489,7 +489,7 @@ func TestProfileProvider(t *testing.T) {
 	p = newProfileProvider("nobearer")
 	c, err = p.resolve()
 	assert.Nil(t, c)
-	assert.Equal(t, "Missing required bearer_token option in profile for bearer", err.Error())
+	assert.Equal(t, "missing required bearer_token option in profile for bearer", err.Error())
 	//testcase 44, value is empty
 	p = newProfileProvider("emptybearer")
 	c, err = p.resolve()
@@ -500,7 +500,7 @@ func TestProfileProvider(t *testing.T) {
 	p = newProfileProvider("error_type")
 	c, err = p.resolve()
 	assert.Nil(t, c)
-	assert.Equal(t, "Invalid type option, support: access_key, sts, ecs_ram_role, ram_role_arn, rsa_key_pair", err.Error())
+	assert.Equal(t, "invalid type option, support: access_key, sts, ecs_ram_role, ram_role_arn, rsa_key_pair", err.Error())
 }
 
 func TestHookOS(t *testing.T) {

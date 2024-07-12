@@ -53,7 +53,7 @@ func Test_EcsRAmRoleCredential(t *testing.T) {
 		}
 	}
 	auth.RoleName = ""
-	accesskeyId, err = auth.GetAccessKeyId()
+	_, err = auth.GetAccessKeyId()
 	assert.NotNil(t, err)
 	assert.Equal(t, "refresh Ecs sts token err: httpStatus: 400, message = role", err.Error())
 
@@ -62,7 +62,7 @@ func Test_EcsRAmRoleCredential(t *testing.T) {
 			return mockResponse(200, `role`, nil)
 		}
 	}
-	accesskeyId, err = auth.GetAccessKeyId()
+	_, err = auth.GetAccessKeyId()
 	assert.NotNil(t, err)
 	assert.Equal(t, "refresh Ecs sts token err: Json Unmarshal fail: invalid character 'r' looking for beginning of value", err.Error())
 	hookDo = func(fn func(req *http.Request) (*http.Response, error)) func(req *http.Request) (*http.Response, error) {
@@ -155,13 +155,13 @@ func Test_EcsRAmRoleCredentialEnableIMDSv2(t *testing.T) {
 	auth = newEcsRAMRoleCredentialWithEnableIMDSv2("go sdk", true, 0, 0.5, nil)
 	accesskeyId, err = auth.GetAccessKeyId()
 	assert.NotNil(t, err)
-	assert.Equal(t, "Failed to get token from ECS Metadata Service: sdk test", err.Error())
+	assert.Equal(t, "failed to get token from ECS Metadata Service: sdk test", err.Error())
 	assert.Equal(t, "", *accesskeyId)
 
 	auth = newEcsRAMRoleCredentialWithEnableIMDSv2("go sdk", true, 180, 0.5, nil)
 	accesskeyId, err = auth.GetAccessKeyId()
 	assert.NotNil(t, err)
-	assert.Equal(t, "Failed to get token from ECS Metadata Service: sdk test", err.Error())
+	assert.Equal(t, "failed to get token from ECS Metadata Service: sdk test", err.Error())
 	assert.Equal(t, "", *accesskeyId)
 
 	hookDo = func(fn func(req *http.Request) (*http.Response, error)) func(req *http.Request) (*http.Response, error) {
@@ -171,7 +171,7 @@ func Test_EcsRAmRoleCredentialEnableIMDSv2(t *testing.T) {
 	}
 	accesskeyId, err = auth.GetAccessKeyId()
 	assert.NotNil(t, err)
-	assert.Equal(t, "Failed to get token from ECS Metadata Service: httpStatus: 300, message = ", err.Error())
+	assert.Equal(t, "failed to get token from ECS Metadata Service: httpStatus: 300, message = ", err.Error())
 	assert.Equal(t, "", *accesskeyId)
 
 	hookDo = func(fn func(req *http.Request) (*http.Response, error)) func(req *http.Request) (*http.Response, error) {
@@ -180,7 +180,7 @@ func Test_EcsRAmRoleCredentialEnableIMDSv2(t *testing.T) {
 		}
 	}
 	auth.RoleName = ""
-	accesskeyId, err = auth.GetAccessKeyId()
+	_, err = auth.GetAccessKeyId()
 	assert.NotNil(t, err)
 	assert.Equal(t, "refresh Ecs sts token err: httpStatus: 400, message = role", err.Error())
 
@@ -189,7 +189,7 @@ func Test_EcsRAmRoleCredentialEnableIMDSv2(t *testing.T) {
 			return mockResponse(200, `role`, nil)
 		}
 	}
-	accesskeyId, err = auth.GetAccessKeyId()
+	_, err = auth.GetAccessKeyId()
 	assert.NotNil(t, err)
 	assert.Equal(t, "refresh Ecs sts token err: Json Unmarshal fail: invalid character 'r' looking for beginning of value", err.Error())
 	hookDo = func(fn func(req *http.Request) (*http.Response, error)) func(req *http.Request) (*http.Response, error) {
