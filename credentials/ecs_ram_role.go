@@ -36,18 +36,6 @@ type ecsRAMRoleResponse struct {
 	Expiration      string `json:"Expiration" xml:"Expiration"`
 }
 
-func newEcsRAMRoleCredential(roleName string, inAdvanceScale float64, runtime *utils.Runtime) *EcsRAMRoleCredential {
-	credentialUpdater := new(credentialUpdater)
-	if inAdvanceScale < 1 && inAdvanceScale > 0 {
-		credentialUpdater.inAdvanceScale = inAdvanceScale
-	}
-	return &EcsRAMRoleCredential{
-		RoleName:          roleName,
-		credentialUpdater: credentialUpdater,
-		runtime:           runtime,
-	}
-}
-
 func newEcsRAMRoleCredentialWithEnableIMDSv2(roleName string, enableIMDSv2 bool, metadataTokenDuration int, inAdvanceScale float64, runtime *utils.Runtime) *EcsRAMRoleCredential {
 	credentialUpdater := new(credentialUpdater)
 	if inAdvanceScale < 1 && inAdvanceScale > 0 {

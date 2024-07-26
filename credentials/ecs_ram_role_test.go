@@ -9,7 +9,13 @@ import (
 )
 
 func Test_EcsRAmRoleCredential(t *testing.T) {
-	auth := newEcsRAMRoleCredential("go sdk", 0.5, nil)
+	credentialUpdater := new(credentialUpdater)
+	credentialUpdater.inAdvanceScale = 0.5
+	auth := &EcsRAMRoleCredential{
+		RoleName:          "go sdk",
+		credentialUpdater: credentialUpdater,
+		runtime:           nil,
+	}
 	origTestHookDo := hookDo
 	defer func() { hookDo = origTestHookDo }()
 
