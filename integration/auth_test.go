@@ -62,19 +62,20 @@ func TestRAMRoleArn(t *testing.T) {
 	assert.NotNil(t, c2.SecurityToken)
 }
 
-func Test_Oidc(t *testing.T) {
-	path, _ := os.Getwd()
-	oidcTokenFilePath := path + "../credentials/oidc_token"
+func TestOidc(t *testing.T) {
 	config := &credentials.Config{
 		Type:              tea.String("oidc_role_arn"),
-		RoleArn:           tea.String("acs:ram::roleArn:role/roleArn"),
-		OIDCProviderArn:   tea.String("acs:ram::roleArn"),
-		OIDCTokenFilePath: tea.String(oidcTokenFilePath),
+		RoleArn:           tea.String(os.Getenv("ALIBABA_CLOUD_ROLE_ARN")),
+		OIDCProviderArn:   tea.String(os.Getenv("ALIBABA_CLOUD_OIDC_PROVIDER_ARN")),
+		OIDCTokenFilePath: tea.String(os.Getenv("ALIBABA_CLOUD_OIDC_TOKEN_FILE")),
+		RoleSessionName:   tea.String("credentials-go-test"),
 	}
 	cred, err := credentials.NewCredential(config)
 	assert.Nil(t, err)
 	assert.NotNil(t, cred)
-	_, err = cred.GetAccessKeyId()
-	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "AuthenticationFail.OIDCToken.Invalid")
+	c, err := cred.GetCredential()
+	assert.Nil(t, err)
+	assert.NotNil(t, c.AccessKeyId)
+	assert.NotNil(t, c.AccessKeySecret)
+	assert.NotNil(t, c.SecurityToken)
 }
