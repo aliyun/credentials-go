@@ -12,7 +12,7 @@ import (
 )
 
 // URLCredential is a kind of credential
-type URLCredential struct {
+type URLCredentialsProvider struct {
 	URL string
 	*credentialUpdater
 	*sessionCredential
@@ -26,18 +26,18 @@ type URLResponse struct {
 	Expiration      string `json:"Expiration" xml:"Expiration"`
 }
 
-func newURLCredential(URL string) *URLCredential {
+func newURLCredential(URL string) *URLCredentialsProvider {
 	credentialUpdater := new(credentialUpdater)
 	if URL == "" {
 		URL = os.Getenv("ALIBABA_CLOUD_CREDENTIALS_URI")
 	}
-	return &URLCredential{
+	return &URLCredentialsProvider{
 		URL:               URL,
 		credentialUpdater: credentialUpdater,
 	}
 }
 
-func (e *URLCredential) GetCredential() (*CredentialModel, error) {
+func (e *URLCredentialsProvider) GetCredential() (*CredentialModel, error) {
 	if e.sessionCredential == nil || e.needUpdateCredential() {
 		err := e.updateCredential()
 		if err != nil {
@@ -55,60 +55,48 @@ func (e *URLCredential) GetCredential() (*CredentialModel, error) {
 
 // GetAccessKeyId reutrns  URLCredential's AccessKeyId
 // if AccessKeyId is not exist or out of date, the function will update it.
-func (e *URLCredential) GetAccessKeyId() (*string, error) {
-	if e.sessionCredential == nil || e.needUpdateCredential() {
-		err := e.updateCredential()
-		if err != nil {
-			if e.credentialExpiration > (int(time.Now().Unix()) - int(e.lastUpdateTimestamp)) {
-				return &e.sessionCredential.AccessKeyId, nil
-			}
-			return tea.String(""), err
-		}
+func (e *URLCredentialsProvider) GetAccessKeyId() (accessKeyId *string, err error) {
+	c, err := e.GetCredential()
+	if err != nil {
+		return
 	}
-	return tea.String(e.sessionCredential.AccessKeyId), nil
+	accessKeyId = c.AccessKeyId
+	return
 }
 
 // GetAccessSecret reutrns  URLCredential's AccessKeySecret
 // if AccessKeySecret is not exist or out of date, the function will update it.
-func (e *URLCredential) GetAccessKeySecret() (*string, error) {
-	if e.sessionCredential == nil || e.needUpdateCredential() {
-		err := e.updateCredential()
-		if err != nil {
-			if e.credentialExpiration > (int(time.Now().Unix()) - int(e.lastUpdateTimestamp)) {
-				return &e.sessionCredential.AccessKeySecret, nil
-			}
-			return tea.String(""), err
-		}
+func (e *URLCredentialsProvider) GetAccessKeySecret() (accessKeySecret *string, err error) {
+	c, err := e.GetCredential()
+	if err != nil {
+		return
 	}
-	return tea.String(e.sessionCredential.AccessKeySecret), nil
+	accessKeySecret = c.AccessKeySecret
+	return
 }
 
 // GetSecurityToken reutrns  URLCredential's SecurityToken
 // if SecurityToken is not exist or out of date, the function will update it.
-func (e *URLCredential) GetSecurityToken() (*string, error) {
-	if e.sessionCredential == nil || e.needUpdateCredential() {
-		err := e.updateCredential()
-		if err != nil {
-			if e.credentialExpiration > (int(time.Now().Unix()) - int(e.lastUpdateTimestamp)) {
-				return &e.sessionCredential.SecurityToken, nil
-			}
-			return tea.String(""), err
-		}
+func (e *URLCredentialsProvider) GetSecurityToken() (securityToken *string, err error) {
+	c, err := e.GetCredential()
+	if err != nil {
+		return
 	}
-	return tea.String(e.sessionCredential.SecurityToken), nil
+	securityToken = c.SecurityToken
+	return
 }
 
 // GetBearerToken is useless for URLCredential
-func (e *URLCredential) GetBearerToken() *string {
+func (e *URLCredentialsProvider) GetBearerToken() *string {
 	return tea.String("")
 }
 
 // GetType reutrns  URLCredential's type
-func (e *URLCredential) GetType() *string {
+func (e *URLCredentialsProvider) GetType() *string {
 	return tea.String("credential_uri")
 }
 
-func (e *URLCredential) updateCredential() (err error) {
+func (e *URLCredentialsProvider) updateCredential() (err error) {
 	if e.runtime == nil {
 		e.runtime = new(utils.Runtime)
 	}
