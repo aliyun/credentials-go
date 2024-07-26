@@ -19,6 +19,7 @@ type RAMRoleArnCredential struct {
 	*credentialUpdater
 	AccessKeyId           string
 	AccessKeySecret       string
+	SecurityToken         string
 	RoleArn               string
 	RoleSessionName       string
 	RoleSessionExpiration int
@@ -37,6 +38,21 @@ type credentialsInResponse struct {
 	AccessKeySecret string `json:"AccessKeySecret" xml:"AccessKeySecret"`
 	SecurityToken   string `json:"SecurityToken" xml:"SecurityToken"`
 	Expiration      string `json:"Expiration" xml:"Expiration"`
+}
+
+func newRAMRoleArnl(accessKeyId, accessKeySecret, securityToken, roleArn, roleSessionName, policy string, roleSessionExpiration int, externalId string, runtime *utils.Runtime) *RAMRoleArnCredential {
+	return &RAMRoleArnCredential{
+		AccessKeyId:           accessKeyId,
+		AccessKeySecret:       accessKeySecret,
+		SecurityToken:         securityToken,
+		RoleArn:               roleArn,
+		RoleSessionName:       roleSessionName,
+		RoleSessionExpiration: roleSessionExpiration,
+		Policy:                policy,
+		ExternalId:            externalId,
+		credentialUpdater:     new(credentialUpdater),
+		runtime:               runtime,
+	}
 }
 
 func newRAMRoleArnCredential(accessKeyId, accessKeySecret, roleArn, roleSessionName, policy string, roleSessionExpiration int, runtime *utils.Runtime) *RAMRoleArnCredential {
@@ -140,6 +156,9 @@ func (r *RAMRoleArnCredential) updateCredential() (err error) {
 	request.Scheme = "HTTPS"
 	request.Method = "GET"
 	request.QueryParams["AccessKeyId"] = r.AccessKeyId
+	if r.SecurityToken != "" {
+		request.QueryParams["SecurityToken"] = r.SecurityToken
+	}
 	request.QueryParams["Action"] = "AssumeRole"
 	request.QueryParams["Format"] = "JSON"
 	if r.RoleSessionExpiration > 0 {

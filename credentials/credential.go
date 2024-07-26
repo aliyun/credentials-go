@@ -268,9 +268,10 @@ func NewCredential(config *Config) (credential Credential, err error) {
 			ConnectTimeout: tea.IntValue(config.ConnectTimeout),
 			STSEndpoint:    tea.StringValue(config.STSEndpoint),
 		}
-		credential = newRAMRoleArnWithExternalIdCredential(
+		credential = newRAMRoleArnl(
 			tea.StringValue(config.AccessKeyId),
 			tea.StringValue(config.AccessKeySecret),
+			tea.StringValue(config.SecurityToken),
 			tea.StringValue(config.RoleArn),
 			tea.StringValue(config.RoleSessionName),
 			tea.StringValue(config.Policy),
