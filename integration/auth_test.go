@@ -18,12 +18,13 @@ const (
 	EnvVarRoleSessionExpiration = "ALICLOUD_ROLE_SESSION_EXPIRATION"
 )
 
-func Test_Arn(t *testing.T) {
+func TestRAMRoleArn(t *testing.T) {
 	rawexpiration := os.Getenv(EnvVarRoleSessionExpiration)
 	expiration := 0
 	if rawexpiration != "" {
 		expiration, _ = strconv.Atoi(rawexpiration)
 	}
+	// assume role fisrt time
 	config := &credentials.Config{
 		Type:                  tea.String("ram_role_arn"),
 		AccessKeyId:           tea.String(os.Getenv(EnvVarSubAccessKeyId)),
@@ -35,9 +36,30 @@ func Test_Arn(t *testing.T) {
 	cred, err := credentials.NewCredential(config)
 	assert.Nil(t, err)
 	assert.NotNil(t, cred)
-	accesskey, err := cred.GetAccessKeyId()
+	c, err := cred.GetCredential()
 	assert.Nil(t, err)
-	assert.NotNil(t, accesskey)
+	assert.NotNil(t, c.AccessKeyId)
+	assert.NotNil(t, c.AccessKeySecret)
+	assert.NotNil(t, c.SecurityToken)
+
+	// asume role second time with pre sts
+	config2 := &credentials.Config{
+		Type:                  tea.String("ram_role_arn"),
+		AccessKeyId:           c.AccessKeyId,
+		AccessKeySecret:       c.AccessKeySecret,
+		SecurityToken:         c.SecurityToken,
+		RoleArn:               tea.String(os.Getenv(EnvVarRoleArn)),
+		RoleSessionName:       tea.String(os.Getenv(EnvVarRoleSessionName)),
+		RoleSessionExpiration: tea.Int(expiration),
+	}
+	cred2, err := credentials.NewCredential(config2)
+	assert.Nil(t, err)
+	assert.NotNil(t, cred2)
+	c2, err := cred.GetCredential()
+	assert.Nil(t, err)
+	assert.NotNil(t, c2.AccessKeyId)
+	assert.NotNil(t, c2.AccessKeySecret)
+	assert.NotNil(t, c2.SecurityToken)
 }
 
 func Test_Oidc(t *testing.T) {
