@@ -41,6 +41,7 @@ jobs:
       run: go test -v -timeout 120s ./integration/...
       if: env.SUB_ALICLOUD_ACCESS_KEY != ''
       env:
+        DEBUG: credential
         SUB_ALICLOUD_ACCESS_KEY: ${{ secrets.SUB_ALICLOUD_ACCESS_KEY }}
         SUB_ALICLOUD_SECRET_KEY: ${{ secrets.SUB_ALICLOUD_SECRET_KEY }}
         ALICLOUD_ROLE_ARN: ${{ secrets.ALICLOUD_ROLE_ARN }}
