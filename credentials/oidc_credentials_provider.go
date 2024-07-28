@@ -14,7 +14,7 @@ import (
 )
 
 // OIDCCredential is a kind of credentials
-type OIDCCredential struct {
+type OIDCCredentialsProvider struct {
 	*credentialUpdater
 	AccessKeyId           string
 	AccessKeySecret       string
@@ -39,8 +39,8 @@ type OIDCcredentialsInResponse struct {
 	Expiration      string `json:"Expiration" xml:"Expiration"`
 }
 
-func newOIDCRoleArnCredential(accessKeyId, accessKeySecret, roleArn, OIDCProviderArn, OIDCTokenFilePath, RoleSessionName, policy string, RoleSessionExpiration int, runtime *utils.Runtime) *OIDCCredential {
-	return &OIDCCredential{
+func newOIDCRoleArnCredential(accessKeyId, accessKeySecret, roleArn, OIDCProviderArn, OIDCTokenFilePath, RoleSessionName, policy string, RoleSessionExpiration int, runtime *utils.Runtime) *OIDCCredentialsProvider {
+	return &OIDCCredentialsProvider{
 		AccessKeyId:           accessKeyId,
 		AccessKeySecret:       accessKeySecret,
 		RoleArn:               roleArn,
@@ -54,7 +54,7 @@ func newOIDCRoleArnCredential(accessKeyId, accessKeySecret, roleArn, OIDCProvide
 	}
 }
 
-func (e *OIDCCredential) GetCredential() (*CredentialModel, error) {
+func (e *OIDCCredentialsProvider) GetCredential() (*CredentialModel, error) {
 	if e.sessionCredential == nil || e.needUpdateCredential() {
 		err := e.updateCredential()
 		if err != nil {
@@ -72,67 +72,66 @@ func (e *OIDCCredential) GetCredential() (*CredentialModel, error) {
 
 // GetAccessKeyId reutrns OIDCCredential's AccessKeyId
 // if AccessKeyId is not exist or out of date, the function will update it.
-func (r *OIDCCredential) GetAccessKeyId() (*string, error) {
-	if r.sessionCredential == nil || r.needUpdateCredential() {
-		err := r.updateCredential()
-		if err != nil {
-			return tea.String(""), err
-		}
+func (r *OIDCCredentialsProvider) GetAccessKeyId() (accessKeyId *string, err error) {
+	c, err := r.GetCredential()
+	if err != nil {
+		return
 	}
-	return tea.String(r.sessionCredential.AccessKeyId), nil
+
+	accessKeyId = c.AccessKeyId
+	return
 }
 
 // GetAccessSecret reutrns OIDCCredential's AccessKeySecret
 // if AccessKeySecret is not exist or out of date, the function will update it.
-func (r *OIDCCredential) GetAccessKeySecret() (*string, error) {
-	if r.sessionCredential == nil || r.needUpdateCredential() {
-		err := r.updateCredential()
-		if err != nil {
-			return tea.String(""), err
-		}
+func (r *OIDCCredentialsProvider) GetAccessKeySecret() (accessKeySecret *string, err error) {
+	c, err := r.GetCredential()
+	if err != nil {
+		return
 	}
-	return tea.String(r.sessionCredential.AccessKeySecret), nil
+
+	accessKeySecret = c.AccessKeySecret
+	return
 }
 
 // GetSecurityToken reutrns OIDCCredential's SecurityToken
 // if SecurityToken is not exist or out of date, the function will update it.
-func (r *OIDCCredential) GetSecurityToken() (*string, error) {
-	if r.sessionCredential == nil || r.needUpdateCredential() {
-		err := r.updateCredential()
-		if err != nil {
-			return tea.String(""), err
-		}
+func (r *OIDCCredentialsProvider) GetSecurityToken() (securityToken *string, err error) {
+	c, err := r.GetCredential()
+	if err != nil {
+		return
 	}
-	return tea.String(r.sessionCredential.SecurityToken), nil
+
+	securityToken = c.SecurityToken
+	return
 }
 
 // GetBearerToken is useless OIDCCredential
-func (r *OIDCCredential) GetBearerToken() *string {
+func (r *OIDCCredentialsProvider) GetBearerToken() *string {
 	return tea.String("")
 }
 
 // GetType reutrns OIDCCredential's type
-func (r *OIDCCredential) GetType() *string {
+func (r *OIDCCredentialsProvider) GetType() *string {
 	return tea.String("oidc_role_arn")
 }
 
-func (r *OIDCCredential) GetOIDCToken(OIDCTokenFilePath string) *string {
-	tokenPath := OIDCTokenFilePath
-	_, err := os.Stat(tokenPath)
+func getOIDCToken(tokenFilePath string) *string {
+	_, err := os.Stat(tokenFilePath)
 	if os.IsNotExist(err) {
-		tokenPath = os.Getenv("ALIBABA_CLOUD_OIDC_TOKEN_FILE")
-		if tokenPath == "" {
+		tokenFilePath = os.Getenv("ALIBABA_CLOUD_OIDC_TOKEN_FILE")
+		if tokenFilePath == "" {
 			return nil
 		}
 	}
-	byt, err := ioutil.ReadFile(tokenPath)
+	byt, err := ioutil.ReadFile(tokenFilePath)
 	if err != nil {
 		return nil
 	}
 	return tea.String(string(byt))
 }
 
-func (r *OIDCCredential) updateCredential() (err error) {
+func (r *OIDCCredentialsProvider) updateCredential() (err error) {
 	if r.runtime == nil {
 		r.runtime = new(utils.Runtime)
 	}
@@ -148,7 +147,7 @@ func (r *OIDCCredential) updateCredential() (err error) {
 	request.QueryParams["Format"] = "JSON"
 	request.BodyParams["RoleArn"] = r.RoleArn
 	request.BodyParams["OIDCProviderArn"] = r.OIDCProviderArn
-	token := r.GetOIDCToken(r.OIDCTokenFilePath)
+	token := getOIDCToken(r.OIDCTokenFilePath)
 	request.BodyParams["OIDCToken"] = tea.StringValue(token)
 	if r.Policy != "" {
 		request.QueryParams["Policy"] = r.Policy
