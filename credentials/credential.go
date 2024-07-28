@@ -240,7 +240,7 @@ func NewCredential(config *Config) (credential Credential, err error) {
 		if err != nil {
 			return
 		}
-		credential = newStsTokenCredential(
+		credential = NewStaticSTSCredentialsProvider(
 			tea.StringValue(config.AccessKeyId),
 			tea.StringValue(config.AccessKeySecret),
 			tea.StringValue(config.SecurityToken))
