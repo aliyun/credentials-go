@@ -105,15 +105,15 @@ func (e *URLCredentialsProvider) updateCredential() (err error) {
 	request.Method = "GET"
 	content, err := doAction(request, e.runtime)
 	if err != nil {
-		return fmt.Errorf("refresh Ecs sts token err: %s", err.Error())
+		return fmt.Errorf("get credentials from %s failed with error: %s", e.URL, err.Error())
 	}
 	var resp *URLResponse
 	err = json.Unmarshal(content, &resp)
 	if err != nil {
-		return fmt.Errorf("refresh Ecs sts token err: Json Unmarshal fail: %s", err.Error())
+		return fmt.Errorf("get credentials from %s failed with error, json unmarshal fail: %s", e.URL, err.Error())
 	}
 	if resp.AccessKeyId == "" || resp.AccessKeySecret == "" || resp.SecurityToken == "" || resp.Expiration == "" {
-		return fmt.Errorf("refresh Ecs sts token err: AccessKeyId: %s, AccessKeySecret: %s, SecurityToken: %s, Expiration: %s", resp.AccessKeyId, resp.AccessKeySecret, resp.SecurityToken, resp.Expiration)
+		return fmt.Errorf("get credentials failed: AccessKeyId: %s, AccessKeySecret: %s, SecurityToken: %s, Expiration: %s", resp.AccessKeyId, resp.AccessKeySecret, resp.SecurityToken, resp.Expiration)
 	}
 
 	expirationTime, err := time.Parse("2006-01-02T15:04:05Z", resp.Expiration)
