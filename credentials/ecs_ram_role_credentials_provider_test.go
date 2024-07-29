@@ -11,7 +11,7 @@ import (
 func Test_EcsRAmRoleCredential(t *testing.T) {
 	credentialUpdater := new(credentialUpdater)
 	credentialUpdater.inAdvanceScale = 0.5
-	auth := &EcsRAMRoleCredential{
+	auth := &ECSRAMRoleCredentialsProvider{
 		RoleName:          "go sdk",
 		credentialUpdater: credentialUpdater,
 		runtime:           nil,
