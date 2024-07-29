@@ -3,10 +3,10 @@ English | [简体中文](README-CN.md)
 # Alibaba Cloud Credentials for Go
 
 [![Latest Stable Version](https://badge.fury.io/gh/aliyun%2Fcredentials-go.svg)](https://badge.fury.io/gh/aliyun%2Fcredentials-go)
-[![Go Report Card](https://goreportcard.com/badge/github.com/aliyun/credentials-go)](https://goreportcard.com/report/github.com/aliyun/credentials-go)
+[![Go](https://github.com/aliyun/credentials-go/actions/workflows/go.yml/badge.svg)](https://github.com/aliyun/credentials-go/actions/workflows/go.yml)
 [![codecov](https://codecov.io/gh/aliyun/credentials-go/branch/master/graph/badge.svg)](https://codecov.io/gh/aliyun/credentials-go)
 [![License](https://poser.pugx.org/alibabacloud/credentials/license)](https://packagist.org/packages/alibabacloud/credentials)
-[![Go](https://github.com/aliyun/credentials-go/actions/workflows/go.yml/badge.svg)](https://github.com/aliyun/credentials-go/actions/workflows/go.yml)
+[![Go Report Card](https://goreportcard.com/badge/github.com/aliyun/credentials-go)](https://goreportcard.com/report/github.com/aliyun/credentials-go)
 [![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/aliyun/credentials-go/badges/quality-score.png?b=master)](https://scrutinizer-ci.com/g/aliyun/credentials-go/?branch=master)
 
 ![Alibaba Cloud Logo](https://aliyunsdk-pages.alicdn.com/icons/AlibabaCloud.svg)
@@ -17,7 +17,7 @@ This document introduces how to obtain and use Alibaba Cloud Credentials for Go.
 
 ## Requirements
 
-- It's necessary for you to make sure your system have installed a Go environment which is new than 1.10.x.
+- It's necessary for you to make sure your system have installed a Go environment which is 1.12.x or newer.
 
 ## Installation
 
@@ -25,12 +25,6 @@ Use `go get` to install SDK：
 
 ```sh
 go get -u github.com/aliyun/credentials-go
-```
-
-If you use `dep` to manage your dependence, you can use the following command:
-
-```sh
-dep ensure -add  github.com/aliyun/credentials-go
 ```
 
 ## Quick Examples
@@ -45,9 +39,9 @@ Setup access_key credential through [User Information Management][ak], it have f
 
 ```go
 import (
- "fmt"
+  "fmt"
 
- "github.com/aliyun/credentials-go/credentials"
+  "github.com/aliyun/credentials-go/credentials"
 )
 
 func main(){
@@ -59,11 +53,16 @@ func main(){
     // AccessKeySecret of your account
     SetAccessKeySecret("AccessKeySecret")
 
-  akCredential, err := credentials.NewCredential(config)
+  provider, err := credentials.NewCredential(config)
   if err != nil {
     return
   }
-  credential, err := cred.GetCredential()
+
+  credential, err := provider.GetCredential()
+  if err != nil {
+    return
+  }
+
   accessKeyId := credential.AccessKeyId
   accessSecret := credential.AccessKeySecret
   credentialType := credential.Type
@@ -93,12 +92,16 @@ func main() {
     // Temporary Security Token
     SetSecurityToken("SecurityToken")
 
-  stsCredential, err := credentials.NewCredential(config)
+  provider, err := credentials.NewCredential(config)
   if err != nil {
     return
   }
 
-  credential, err := stsCredential.GetCredential()
+  credential, err := provider.GetCredential()
+  if err != nil {
+    return
+  }
+
   accessKeyId := credential.AccessKeyId
   accessSecret := credential.AccessKeySecret
   securityToken := credential.SecurityToken
@@ -131,12 +134,16 @@ func main() {
     SetPolicy("Policy").
     SetRoleArn("RoleArn").
     SetSessionExpiration(3600)
-  oidcCredential, err := credentials.NewCredential(config)
+  provider, err := credentials.NewCredential(config)
   if err != nil {
     return
   }
 
-  credential, err := oidcCredential.GetCredential()
+  credential, err := provider.GetCredential()
+  if err != nil {
+    return
+  }
+
   accessKeyId := credential.AccessKeyId
   accessSecret := credential.AccessKeySecret
   securityToken := credential.SecurityToken
@@ -152,9 +159,9 @@ By specifying [RAM Role][RAM Role], the credential will be able to automatically
 
 ```go
 import (
- "fmt"
+  "fmt"
 
- "github.com/aliyun/credentials-go/credentials"
+  "github.com/aliyun/credentials-go/credentials"
 )
 
 func main(){
@@ -174,11 +181,15 @@ func main(){
     // Not required, limit the Valid time of STS Token
     SetRoleSessionExpiration(3600)
 
-  arnCredential, err := credentials.NewCredential(config)
+  provider, err := credentials.NewCredential(config)
   if err != nil {
     return
   }
-  credential, err := arnCredential.GetCredential()
+  credential, err := provider.GetCredential()
+  if err != nil {
+    return
+  }
+
   accessKeyId := credential.AccessKeyId
   accessSecret := credential.AccessKeySecret
   securityToken := credential.SecurityToken
@@ -198,13 +209,19 @@ import (
 )
 
 func main(){
-  config := new(credentials.Config).SetType("credentials_uri").SetURL("http://127.0.0.1")
-  uriCredential, err := credentials.NewCredential(config)
+  config := new(credentials.Config).
+    SetType("credentials_uri").
+    SetURL("http://127.0.0.1")
+  provider, err := credentials.NewCredential(config)
   if err != nil {
     return
   }
 
-  credential, err := uriCredential.GetCredential()
+  credential, err := provider.GetCredential()
+  if err != nil {
+    return
+  }
+
   accessKeyId := credential.AccessKeyId
   accessSecret := credential.AccessKeySecret
   securityToken := credential.SecurityToken
@@ -226,7 +243,7 @@ import (
 )
 
 func main(){
-    config := new(credentials.Config).
+  config := new(credentials.Config).
     // Which type of credential you want
     SetType("ecs_ram_role").
     // `roleName` is optional. It will be retrieved automatically if not set. It is highly recommended to set it up to reduce requests
@@ -234,12 +251,12 @@ func main(){
     // `EnableIMDSv2` is optional and is recommended to be turned on. It can be replaced by setting environment variable: ALIBABA_CLOUD_ECS_IMDSV2_ENABLE
     SetEnableIMDSv2(true)
 
-  ecsCredential, err := credentials.NewCredential(config)
+  provider, err := credentials.NewCredential(config)
   if err != nil {
     return
   }
 
-  credential, err := ecsCredential.GetCredential()
+  credential, err := provider.GetCredential()
   accessKeyId := credential.AccessKeyId
   accessSecret := credential.AccessKeySecret
   securityToken := credential.SecurityToken
@@ -267,12 +284,12 @@ func main(){
     // BearerToken of your account
     SetBearerToken("BearerToken")
 
-  bearerCredential, err := credentials.NewCredential(config)
+  provider, err := credentials.NewCredential(config)
   if err != nil {
     return
   }
 
-  credential, err := bearerCredential.GetCredential()
+  credential, err := provider.GetCredential()
 
   bearerToken := credential.BearerToken
   credentialType := credential.Type

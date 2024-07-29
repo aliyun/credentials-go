@@ -3,10 +3,10 @@
 # Alibaba Cloud Credentials for Go
 
 [![Latest Stable Version](https://badge.fury.io/gh/aliyun%2Fcredentials-go.svg)](https://badge.fury.io/gh/aliyun%2Fcredentials-go)
-[![Go Report Card](https://goreportcard.com/badge/github.com/aliyun/credentials-go)](https://goreportcard.com/report/github.com/aliyun/credentials-go)
+[![Go](https://github.com/aliyun/credentials-go/actions/workflows/go.yml/badge.svg)](https://github.com/aliyun/credentials-go/actions/workflows/go.yml)
 [![codecov](https://codecov.io/gh/aliyun/credentials-go/branch/master/graph/badge.svg)](https://codecov.io/gh/aliyun/credentials-go)
 [![License](https://poser.pugx.org/alibabacloud/credentials/license)](https://packagist.org/packages/alibabacloud/credentials)
-[![Go](https://github.com/aliyun/credentials-go/actions/workflows/go.yml/badge.svg)](https://github.com/aliyun/credentials-go/actions/workflows/go.yml)
+[![Go Report Card](https://goreportcard.com/badge/github.com/aliyun/credentials-go)](https://goreportcard.com/report/github.com/aliyun/credentials-go)
 [![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/aliyun/credentials-go/badges/quality-score.png?b=master)](https://scrutinizer-ci.com/g/aliyun/credentials-go/?branch=master)
 
 ![Alibaba Cloud Logo](https://aliyunsdk-pages.alicdn.com/icons/AlibabaCloud.svg)
@@ -17,7 +17,7 @@ Alibaba Cloud Credentials for Go 是帮助 GO 开发者管理凭据的工具。
 
 ## 要求
 
-- 请确保你的系统安装了不低于 1.10.x 版本的 Go 环境。
+- 请确保你的系统安装了 1.12.x 或更新版本的 Go 环境。
 
 ## 安装
 
@@ -25,12 +25,6 @@ Alibaba Cloud Credentials for Go 是帮助 GO 开发者管理凭据的工具。
 
 ```sh
 go get -u github.com/aliyun/credentials-go
-```
-
-如果你使用 `dep` 来管理你的依赖包，你可以使用以下命令:
-
-```sh
-dep ensure -add  github.com/aliyun/credentials-go
 ```
 
 ## 快速使用
@@ -59,11 +53,11 @@ func main(){
     // AccessKeySecret of your account
     SetAccessKeySecret("AccessKeySecret")
 
-  akCredential, err := credentials.NewCredential(config)
+  provider, err := credentials.NewCredential(config)
   if err != nil {
     return
   }
-  credential, err := cred.GetCredential()
+  credential, err := provider.GetCredential()
   accessKeyId := credential.AccessKeyId
   accessSecret := credential.AccessKeySecret
   credentialType := credential.Type
@@ -93,12 +87,12 @@ func main() {
     // Temporary Security Token
     SetSecurityToken("SecurityToken")
 
-  stsCredential, err := credentials.NewCredential(config)
+  provider, err := credentials.NewCredential(config)
   if err != nil {
     return
   }
 
-  credential, err := stsCredential.GetCredential()
+  credential, err := provider.GetCredential()
   accessKeyId := credential.AccessKeyId
   accessSecret := credential.AccessKeySecret
   securityToken := credential.SecurityToken
@@ -130,12 +124,13 @@ func main() {
     SetPolicy("Policy").
     SetRoleArn("RoleArn").
     SetSessionExpiration(3600)
-  oidcCredential, err := credentials.NewCredential(config)
+
+  provider, err := credentials.NewCredential(config)
   if err != nil {
     return
   }
 
-  credential, err := oidcCredential.GetCredential()
+  credential, err := provider.GetCredential()
   accessKeyId := credential.AccessKeyId
   accessSecret := credential.AccessKeySecret
   securityToken := credential.SecurityToken
@@ -173,11 +168,11 @@ func main(){
     // Not required, limit the Valid time of STS Token
     SetRoleSessionExpiration(3600)
 
-  arnCredential, err := credentials.NewCredential(config)
+  provider, err := credentials.NewCredential(config)
   if err != nil {
     return
   }
-  credential, err := arnCredential.GetCredential()
+  credential, err := provider.GetCredential()
   accessKeyId := credential.AccessKeyId
   accessSecret := credential.AccessKeySecret
   securityToken := credential.SecurityToken
@@ -198,12 +193,16 @@ import (
 
 func main(){
   config := new(credentials.Config).SetType("credentials_uri").SetURL("http://127.0.0.1")
-  uriCredential, err := credentials.NewCredential(config)
+  provider, err := credentials.NewCredential(config)
   if err != nil {
     return
   }
 
-  credential, err := uriCredential.GetCredential()
+  credential, err := provider.GetCredential()
+  if err != nil {
+    return
+  }
+
   accessKeyId := credential.AccessKeyId
   accessSecret := credential.AccessKeySecret
   securityToken := credential.SecurityToken
@@ -233,12 +232,12 @@ func main(){
     // `EnableIMDSv2` is optional and is recommended to be turned on. It can be replaced by setting environment variable: ALIBABA_CLOUD_ECS_IMDSV2_ENABLE
     SetEnableIMDSv2(true)
 
-  ecsCredential, err := credentials.NewCredential(config)
+  provider, err := credentials.NewCredential(config)
   if err != nil {
     return
   }
 
-  credential, err := ecsCredential.GetCredential()
+  credential, err := provider.GetCredential()
   accessKeyId := credential.AccessKeyId
   accessSecret := credential.AccessKeySecret
   securityToken := credential.SecurityToken
@@ -266,12 +265,15 @@ func main(){
     // BearerToken of your account
     SetBearerToken("BearerToken")
 
-  bearerCredential, err := credentials.NewCredential(config)
+  provider, err := credentials.NewCredential(config)
   if err != nil {
     return
   }
 
-  credential, err := bearerCredential.GetCredential()
+  credential, err := provider.GetCredential()
+  if err != nil {
+    return
+  }
 
   bearerToken := credential.BearerToken
   credentialType := credential.Type
