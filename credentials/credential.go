@@ -268,16 +268,19 @@ func NewCredential(config *Config) (credential Credential, err error) {
 			ConnectTimeout: tea.IntValue(config.ConnectTimeout),
 			STSEndpoint:    tea.StringValue(config.STSEndpoint),
 		}
-		credential = newRAMRoleArnl(
-			tea.StringValue(config.AccessKeyId),
-			tea.StringValue(config.AccessKeySecret),
-			tea.StringValue(config.SecurityToken),
-			tea.StringValue(config.RoleArn),
-			tea.StringValue(config.RoleSessionName),
-			tea.StringValue(config.Policy),
-			tea.IntValue(config.RoleSessionExpiration),
-			tea.StringValue(config.ExternalId),
-			runtime)
+
+		credential = NewRAMRoleArnCredentialsProvider(
+			NewRAMRoleArnCredentialsProviderOptions().
+				SetAccessKeyId(tea.StringValue(config.AccessKeyId)).
+				SetAccessKeySecret(tea.StringValue(config.AccessKeySecret)).
+				SetSecurityToken(tea.StringValue(config.SecurityToken)).
+				SetRoleArn(tea.StringValue(config.RoleArn)).
+				SetRoleSessionName(tea.StringValue(config.RoleSessionName)).
+				SetPolicy(tea.StringValue(config.Policy)).
+				SetRoleSessionExpiration(tea.IntValue(config.RoleSessionExpiration)).
+				SetExternalId(tea.StringValue(config.ExternalId)).
+				SetRuntime(runtime))
+
 	case "rsa_key_pair":
 		err = checkRSAKeyPair(config)
 		if err != nil {

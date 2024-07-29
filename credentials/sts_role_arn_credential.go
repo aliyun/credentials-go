@@ -14,9 +14,91 @@ import (
 
 const defaultDurationSeconds = 3600
 
-// RAMRoleArnCredential is a kind of credentials
-type RAMRoleArnCredential struct {
+func getDurationSeconds(roleSessionExpiration int) (string, error) {
+	if roleSessionExpiration > 0 {
+		if roleSessionExpiration >= 900 && roleSessionExpiration <= 3600 {
+			return strconv.Itoa(roleSessionExpiration), nil
+		} else {
+			return "", errors.New("[InvalidParam]:Assume Role session duration should be in the range of 15min - 1hr")
+		}
+	}
+
+	return strconv.Itoa(defaultDurationSeconds), nil
+}
+
+type RAMRoleArnCredentialsProvider struct {
 	*credentialUpdater
+	sessionCredential *sessionCredential
+	options           *RAMRoleArnCredentialsProviderOptions
+}
+
+// Deprecated: GetAccessKeyId is deprecated, use GetCredential instead of.
+func (p *RAMRoleArnCredentialsProvider) GetAccessKeyId() (accessKeyId *string, err error) {
+	c, err := p.GetCredential()
+	if err != nil {
+		return
+	}
+
+	accessKeyId = c.AccessKeyId
+	return
+}
+
+// Deprecated: GetAccessKeySecret is deprecated, use GetCredential instead of.
+func (p *RAMRoleArnCredentialsProvider) GetAccessKeySecret() (accessKeySecret *string, err error) {
+	c, err := p.GetCredential()
+	if err != nil {
+		return
+	}
+
+	accessKeySecret = c.AccessKeySecret
+	return
+}
+
+// Deprecated: GetSecurityToken is deprecated, use GetCredential instead of.
+func (p *RAMRoleArnCredentialsProvider) GetSecurityToken() (securityToken *string, err error) {
+	c, err := p.GetCredential()
+	if err != nil {
+		return
+	}
+
+	securityToken = c.SecurityToken
+	return
+}
+
+// GetBearerToken is useless for RamRoleArnCredential
+func (p *RAMRoleArnCredentialsProvider) GetBearerToken() *string {
+	return tea.String("")
+}
+
+// GetType reutrns provider type
+func (p *RAMRoleArnCredentialsProvider) GetType() *string {
+	return tea.String("ram_role_arn")
+}
+
+func (p *RAMRoleArnCredentialsProvider) GetCredential() (*CredentialModel, error) {
+	if p.sessionCredential == nil || p.needUpdateCredential() {
+		err := p.updateCredential()
+		if err != nil {
+			return nil, err
+		}
+	}
+	credential := &CredentialModel{
+		AccessKeyId:     tea.String(p.sessionCredential.AccessKeyId),
+		AccessKeySecret: tea.String(p.sessionCredential.AccessKeySecret),
+		SecurityToken:   tea.String(p.sessionCredential.SecurityToken),
+		Type:            tea.String("ram_role_arn"),
+	}
+	return credential, nil
+}
+
+func NewRAMRoleArnCredentialsProvider(options *RAMRoleArnCredentialsProviderOptions) *RAMRoleArnCredentialsProvider {
+	return &RAMRoleArnCredentialsProvider{
+		credentialUpdater: new(credentialUpdater),
+		options:           options,
+	}
+}
+
+type RAMRoleArnCredentialsProviderOptions struct {
 	AccessKeyId           string
 	AccessKeySecret       string
 	SecurityToken         string
@@ -25,171 +107,101 @@ type RAMRoleArnCredential struct {
 	RoleSessionExpiration int
 	Policy                string
 	ExternalId            string
-	sessionCredential     *sessionCredential
 	runtime               *utils.Runtime
 }
 
-type ramRoleArnResponse struct {
-	Credentials *credentialsInResponse `json:"Credentials" xml:"Credentials"`
+func NewRAMRoleArnCredentialsProviderOptions() *RAMRoleArnCredentialsProviderOptions {
+	return &RAMRoleArnCredentialsProviderOptions{}
 }
 
-type credentialsInResponse struct {
-	AccessKeyId     string `json:"AccessKeyId" xml:"AccessKeyId"`
-	AccessKeySecret string `json:"AccessKeySecret" xml:"AccessKeySecret"`
-	SecurityToken   string `json:"SecurityToken" xml:"SecurityToken"`
-	Expiration      string `json:"Expiration" xml:"Expiration"`
+func (o *RAMRoleArnCredentialsProviderOptions) SetAccessKeyId(accessKeyId string) *RAMRoleArnCredentialsProviderOptions {
+	o.AccessKeyId = accessKeyId
+	return o
 }
 
-func newRAMRoleArnl(accessKeyId, accessKeySecret, securityToken, roleArn, roleSessionName, policy string, roleSessionExpiration int, externalId string, runtime *utils.Runtime) *RAMRoleArnCredential {
-	return &RAMRoleArnCredential{
-		AccessKeyId:           accessKeyId,
-		AccessKeySecret:       accessKeySecret,
-		SecurityToken:         securityToken,
-		RoleArn:               roleArn,
-		RoleSessionName:       roleSessionName,
-		RoleSessionExpiration: roleSessionExpiration,
-		Policy:                policy,
-		ExternalId:            externalId,
-		credentialUpdater:     new(credentialUpdater),
-		runtime:               runtime,
-	}
+func (c *RAMRoleArnCredentialsProviderOptions) SetAccessKeySecret(accessKeyId string) *RAMRoleArnCredentialsProviderOptions {
+	c.AccessKeySecret = accessKeyId
+	return c
 }
 
-func newRAMRoleArnCredential(accessKeyId, accessKeySecret, roleArn, roleSessionName, policy string, roleSessionExpiration int, runtime *utils.Runtime) *RAMRoleArnCredential {
-	return &RAMRoleArnCredential{
-		AccessKeyId:           accessKeyId,
-		AccessKeySecret:       accessKeySecret,
-		RoleArn:               roleArn,
-		RoleSessionName:       roleSessionName,
-		RoleSessionExpiration: roleSessionExpiration,
-		Policy:                policy,
-		credentialUpdater:     new(credentialUpdater),
-		runtime:               runtime,
-	}
+func (c *RAMRoleArnCredentialsProviderOptions) SetSecurityToken(securityToken string) *RAMRoleArnCredentialsProviderOptions {
+	c.SecurityToken = securityToken
+	return c
 }
 
-func newRAMRoleArnWithExternalIdCredential(accessKeyId, accessKeySecret, roleArn, roleSessionName, policy string, roleSessionExpiration int, externalId string, runtime *utils.Runtime) *RAMRoleArnCredential {
-	return &RAMRoleArnCredential{
-		AccessKeyId:           accessKeyId,
-		AccessKeySecret:       accessKeySecret,
-		RoleArn:               roleArn,
-		RoleSessionName:       roleSessionName,
-		RoleSessionExpiration: roleSessionExpiration,
-		Policy:                policy,
-		ExternalId:            externalId,
-		credentialUpdater:     new(credentialUpdater),
-		runtime:               runtime,
-	}
+func (c *RAMRoleArnCredentialsProviderOptions) SetRoleArn(roleArn string) *RAMRoleArnCredentialsProviderOptions {
+	c.RoleArn = roleArn
+	return c
 }
 
-func (e *RAMRoleArnCredential) GetCredential() (*CredentialModel, error) {
-	if e.sessionCredential == nil || e.needUpdateCredential() {
-		err := e.updateCredential()
-		if err != nil {
-			return nil, err
-		}
-	}
-	credential := &CredentialModel{
-		AccessKeyId:     tea.String(e.sessionCredential.AccessKeyId),
-		AccessKeySecret: tea.String(e.sessionCredential.AccessKeySecret),
-		SecurityToken:   tea.String(e.sessionCredential.SecurityToken),
-		Type:            tea.String("ram_role_arn"),
-	}
-	return credential, nil
+func (c *RAMRoleArnCredentialsProviderOptions) SetRoleSessionName(roleSessionName string) *RAMRoleArnCredentialsProviderOptions {
+	c.RoleSessionName = roleSessionName
+	return c
 }
 
-// GetAccessKeyId reutrns RamRoleArnCredential's AccessKeyId
-// if AccessKeyId is not exist or out of date, the function will update it.
-func (r *RAMRoleArnCredential) GetAccessKeyId() (*string, error) {
-	if r.sessionCredential == nil || r.needUpdateCredential() {
-		err := r.updateCredential()
-		if err != nil {
-			return tea.String(""), err
-		}
-	}
-	return tea.String(r.sessionCredential.AccessKeyId), nil
+func (c *RAMRoleArnCredentialsProviderOptions) SetPolicy(policy string) *RAMRoleArnCredentialsProviderOptions {
+	c.Policy = policy
+	return c
 }
 
-// GetAccessSecret reutrns RamRoleArnCredential's AccessKeySecret
-// if AccessKeySecret is not exist or out of date, the function will update it.
-func (r *RAMRoleArnCredential) GetAccessKeySecret() (*string, error) {
-	if r.sessionCredential == nil || r.needUpdateCredential() {
-		err := r.updateCredential()
-		if err != nil {
-			return tea.String(""), err
-		}
-	}
-	return tea.String(r.sessionCredential.AccessKeySecret), nil
+func (c *RAMRoleArnCredentialsProviderOptions) SetRoleSessionExpiration(roleSessionExpiration int) *RAMRoleArnCredentialsProviderOptions {
+	c.RoleSessionExpiration = roleSessionExpiration
+	return c
 }
 
-// GetSecurityToken reutrns RamRoleArnCredential's SecurityToken
-// if SecurityToken is not exist or out of date, the function will update it.
-func (r *RAMRoleArnCredential) GetSecurityToken() (*string, error) {
-	if r.sessionCredential == nil || r.needUpdateCredential() {
-		err := r.updateCredential()
-		if err != nil {
-			return tea.String(""), err
-		}
-	}
-	return tea.String(r.sessionCredential.SecurityToken), nil
+func (c *RAMRoleArnCredentialsProviderOptions) SetRuntime(runtime *utils.Runtime) *RAMRoleArnCredentialsProviderOptions {
+	c.runtime = runtime
+	return c
 }
 
-// GetBearerToken is useless RamRoleArnCredential
-func (r *RAMRoleArnCredential) GetBearerToken() *string {
-	return tea.String("")
+func (c *RAMRoleArnCredentialsProviderOptions) SetExternalId(externalId string) *RAMRoleArnCredentialsProviderOptions {
+	c.ExternalId = externalId
+	return c
 }
 
-// GetType reutrns RamRoleArnCredential's type
-func (r *RAMRoleArnCredential) GetType() *string {
-	return tea.String("ram_role_arn")
-}
-
-func (r *RAMRoleArnCredential) updateCredential() (err error) {
-	if r.runtime == nil {
-		r.runtime = new(utils.Runtime)
+func (p *RAMRoleArnCredentialsProvider) updateCredential() (err error) {
+	options := p.options
+	if options.runtime == nil {
+		options.runtime = new(utils.Runtime)
 	}
 	request := request.NewCommonRequest()
 	request.Domain = "sts.aliyuncs.com"
-	if r.runtime.STSEndpoint != "" {
-		request.Domain = r.runtime.STSEndpoint
+	if options.runtime.STSEndpoint != "" {
+		request.Domain = options.runtime.STSEndpoint
 	}
 	request.Scheme = "HTTPS"
 	request.Method = "GET"
-	request.QueryParams["AccessKeyId"] = r.AccessKeyId
-	if r.SecurityToken != "" {
-		request.QueryParams["SecurityToken"] = r.SecurityToken
+	request.QueryParams["AccessKeyId"] = options.AccessKeyId
+	if options.SecurityToken != "" {
+		request.QueryParams["SecurityToken"] = options.SecurityToken
 	}
 	request.QueryParams["Action"] = "AssumeRole"
 	request.QueryParams["Format"] = "JSON"
-	if r.RoleSessionExpiration > 0 {
-		if r.RoleSessionExpiration >= 900 && r.RoleSessionExpiration <= 3600 {
-			request.QueryParams["DurationSeconds"] = strconv.Itoa(r.RoleSessionExpiration)
-		} else {
-			err = errors.New("[InvalidParam]:Assume Role session duration should be in the range of 15min - 1Hr")
-			return
-		}
-	} else {
-		request.QueryParams["DurationSeconds"] = strconv.Itoa(defaultDurationSeconds)
+	durationSeconds, err := getDurationSeconds(options.RoleSessionExpiration)
+	if err != nil {
+		return
 	}
-	request.QueryParams["RoleArn"] = r.RoleArn
-	if r.Policy != "" {
-		request.QueryParams["Policy"] = r.Policy
+
+	request.QueryParams["DurationSeconds"] = durationSeconds
+	request.QueryParams["RoleArn"] = options.RoleArn
+	if options.Policy != "" {
+		request.QueryParams["Policy"] = options.Policy
 	}
-	if r.ExternalId != "" {
-		request.QueryParams["ExternalId"] = r.ExternalId
+	if options.ExternalId != "" {
+		request.QueryParams["ExternalId"] = options.ExternalId
 	}
-	request.QueryParams["RoleSessionName"] = r.RoleSessionName
+	request.QueryParams["RoleSessionName"] = options.RoleSessionName
 	request.QueryParams["SignatureMethod"] = "HMAC-SHA1"
 	request.QueryParams["SignatureVersion"] = "1.0"
 	request.QueryParams["Version"] = "2015-04-01"
 	request.QueryParams["Timestamp"] = utils.GetTimeInFormatISO8601()
 	request.QueryParams["SignatureNonce"] = utils.GetUUID()
-	signature := utils.ShaHmac1(request.BuildStringToSign(), r.AccessKeySecret+"&")
+	signature := utils.ShaHmac1(request.BuildStringToSign(), options.AccessKeySecret+"&")
 	request.QueryParams["Signature"] = signature
 	request.Headers["Host"] = request.Domain
 	request.Headers["Accept-Encoding"] = "identity"
 	request.URL = request.BuildURL()
-	content, err := doAction(request, r.runtime)
+	content, err := doAction(request, options.runtime)
 	if err != nil {
 		return fmt.Errorf("refresh RoleArn sts token err: %s", err.Error())
 	}
@@ -207,13 +219,24 @@ func (r *RAMRoleArnCredential) updateCredential() (err error) {
 	}
 
 	expirationTime, err := time.Parse("2006-01-02T15:04:05Z", respCredentials.Expiration)
-	r.lastUpdateTimestamp = time.Now().Unix()
-	r.credentialExpiration = int(expirationTime.Unix() - time.Now().Unix())
-	r.sessionCredential = &sessionCredential{
+	p.lastUpdateTimestamp = time.Now().Unix()
+	p.credentialExpiration = int(expirationTime.Unix() - time.Now().Unix())
+	p.sessionCredential = &sessionCredential{
 		AccessKeyId:     respCredentials.AccessKeyId,
 		AccessKeySecret: respCredentials.AccessKeySecret,
 		SecurityToken:   respCredentials.SecurityToken,
 	}
 
 	return
+}
+
+type ramRoleArnResponse struct {
+	Credentials *credentialsInResponse `json:"Credentials" xml:"Credentials"`
+}
+
+type credentialsInResponse struct {
+	AccessKeyId     string `json:"AccessKeyId" xml:"AccessKeyId"`
+	AccessKeySecret string `json:"AccessKeySecret" xml:"AccessKeySecret"`
+	SecurityToken   string `json:"SecurityToken" xml:"SecurityToken"`
+	Expiration      string `json:"Expiration" xml:"Expiration"`
 }
