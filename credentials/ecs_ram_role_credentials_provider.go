@@ -50,65 +50,62 @@ func newEcsRAMRoleCredentialWithEnableIMDSv2(roleName string, enableIMDSv2 bool,
 	}
 }
 
-func (e *ECSRAMRoleCredentialsProvider) GetCredential() (*CredentialModel, error) {
+func (e *ECSRAMRoleCredentialsProvider) GetCredential() (credentials *CredentialModel, err error) {
 	if e.sessionCredential == nil || e.needUpdateCredential() {
-		err := e.updateCredential()
+		err = e.updateCredential()
 		if err != nil {
-			return nil, err
+			if e.credentialExpiration > (int(time.Now().Unix()) - int(e.lastUpdateTimestamp)) {
+				// 虽然有错误，但是已有的 credentials 还有效
+			} else {
+				return
+			}
 		}
 	}
-	credential := &CredentialModel{
+
+	credentials = &CredentialModel{
 		AccessKeyId:     tea.String(e.sessionCredential.AccessKeyId),
 		AccessKeySecret: tea.String(e.sessionCredential.AccessKeySecret),
 		SecurityToken:   tea.String(e.sessionCredential.SecurityToken),
 		Type:            tea.String("ecs_ram_role"),
 	}
-	return credential, nil
+
+	return
 }
 
 // GetAccessKeyId reutrns  EcsRAMRoleCredential's AccessKeyId
 // if AccessKeyId is not exist or out of date, the function will update it.
-func (e *ECSRAMRoleCredentialsProvider) GetAccessKeyId() (*string, error) {
-	if e.sessionCredential == nil || e.needUpdateCredential() {
-		err := e.updateCredential()
-		if err != nil {
-			if e.credentialExpiration > (int(time.Now().Unix()) - int(e.lastUpdateTimestamp)) {
-				return &e.sessionCredential.AccessKeyId, nil
-			}
-			return tea.String(""), err
-		}
+func (e *ECSRAMRoleCredentialsProvider) GetAccessKeyId() (accessKeyId *string, err error) {
+	c, err := e.GetCredential()
+	if err != nil {
+		return
 	}
-	return tea.String(e.sessionCredential.AccessKeyId), nil
+
+	accessKeyId = c.AccessKeyId
+	return
 }
 
 // GetAccessSecret reutrns  EcsRAMRoleCredential's AccessKeySecret
 // if AccessKeySecret is not exist or out of date, the function will update it.
-func (e *ECSRAMRoleCredentialsProvider) GetAccessKeySecret() (*string, error) {
-	if e.sessionCredential == nil || e.needUpdateCredential() {
-		err := e.updateCredential()
-		if err != nil {
-			if e.credentialExpiration > (int(time.Now().Unix()) - int(e.lastUpdateTimestamp)) {
-				return &e.sessionCredential.AccessKeySecret, nil
-			}
-			return tea.String(""), err
-		}
+func (e *ECSRAMRoleCredentialsProvider) GetAccessKeySecret() (accessKeySecret *string, err error) {
+	c, err := e.GetCredential()
+	if err != nil {
+		return
 	}
-	return tea.String(e.sessionCredential.AccessKeySecret), nil
+
+	accessKeySecret = c.AccessKeySecret
+	return
 }
 
 // GetSecurityToken reutrns  EcsRAMRoleCredential's SecurityToken
 // if SecurityToken is not exist or out of date, the function will update it.
-func (e *ECSRAMRoleCredentialsProvider) GetSecurityToken() (*string, error) {
-	if e.sessionCredential == nil || e.needUpdateCredential() {
-		err := e.updateCredential()
-		if err != nil {
-			if e.credentialExpiration > (int(time.Now().Unix()) - int(e.lastUpdateTimestamp)) {
-				return &e.sessionCredential.SecurityToken, nil
-			}
-			return tea.String(""), err
-		}
+func (e *ECSRAMRoleCredentialsProvider) GetSecurityToken() (securityToken *string, err error) {
+	c, err := e.GetCredential()
+	if err != nil {
+		return
 	}
-	return tea.String(e.sessionCredential.SecurityToken), nil
+
+	securityToken = c.SecurityToken
+	return
 }
 
 // GetBearerToken is useless for EcsRAMRoleCredential

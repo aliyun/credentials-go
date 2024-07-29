@@ -27,7 +27,7 @@ func Test_EcsRAmRoleCredential(t *testing.T) {
 	accesskeyId, err := auth.GetAccessKeyId()
 	assert.NotNil(t, err)
 	assert.Equal(t, "refresh Ecs sts token err: sdk test", err.Error())
-	assert.Equal(t, "", *accesskeyId)
+	assert.Nil(t, accesskeyId)
 
 	hookDo = func(fn func(req *http.Request) (*http.Response, error)) func(req *http.Request) (*http.Response, error) {
 		return func(req *http.Request) (*http.Response, error) {
@@ -37,17 +37,17 @@ func Test_EcsRAmRoleCredential(t *testing.T) {
 	accesskeyId, err = auth.GetAccessKeyId()
 	assert.NotNil(t, err)
 	assert.Equal(t, "refresh Ecs sts token err: httpStatus: 300, message = ", err.Error())
-	assert.Equal(t, "", *accesskeyId)
+	assert.Nil(t, accesskeyId)
 
 	accesskeySecret, err := auth.GetAccessKeySecret()
 	assert.NotNil(t, err)
 	assert.Equal(t, "refresh Ecs sts token err: httpStatus: 300, message = ", err.Error())
-	assert.Equal(t, "", *accesskeySecret)
+	assert.Nil(t, accesskeySecret)
 
 	ststoken, err := auth.GetSecurityToken()
 	assert.NotNil(t, err)
 	assert.Equal(t, "refresh Ecs sts token err: httpStatus: 300, message = ", err.Error())
-	assert.Equal(t, "", *ststoken)
+	assert.Nil(t, ststoken)
 
 	assert.Equal(t, "", *auth.GetBearerToken())
 
@@ -80,7 +80,7 @@ func Test_EcsRAmRoleCredential(t *testing.T) {
 	accesskeyId, err = auth.GetAccessKeyId()
 	assert.NotNil(t, err)
 	assert.Equal(t, "refresh Ecs sts token err: Json Unmarshal fail: invalid character ':' after top-level value", err.Error())
-	assert.Equal(t, "", *accesskeyId)
+	assert.Nil(t, accesskeyId)
 
 	hookDo = func(fn func(req *http.Request) (*http.Response, error)) func(req *http.Request) (*http.Response, error) {
 		return func(req *http.Request) (*http.Response, error) {
@@ -90,7 +90,7 @@ func Test_EcsRAmRoleCredential(t *testing.T) {
 	accesskeyId, err = auth.GetAccessKeyId()
 	assert.NotNil(t, err)
 	assert.Equal(t, "refresh Ecs sts token err: Code is not Success", err.Error())
-	assert.Equal(t, "", *accesskeyId)
+	assert.Nil(t, accesskeyId)
 
 	hookDo = func(fn func(req *http.Request) (*http.Response, error)) func(req *http.Request) (*http.Response, error) {
 		return func(req *http.Request) (*http.Response, error) {
@@ -100,7 +100,7 @@ func Test_EcsRAmRoleCredential(t *testing.T) {
 	accesskeyId, err = auth.GetAccessKeyId()
 	assert.NotNil(t, err)
 	assert.Equal(t, "refresh Ecs sts token err: AccessKeyId: , AccessKeySecret: accessKeySecret, SecurityToken: securitytoken, Expiration: expiration", err.Error())
-	assert.Equal(t, "", *accesskeyId)
+	assert.Nil(t, accesskeyId)
 
 	hookDo = func(fn func(req *http.Request) (*http.Response, error)) func(req *http.Request) (*http.Response, error) {
 		return func(req *http.Request) (*http.Response, error) {
@@ -140,7 +140,7 @@ func Test_EcsRAmRoleCredential(t *testing.T) {
 	}()
 	accesskeyId, err = auth.GetAccessKeyId()
 	assert.Equal(t, "refresh Ecs sts token err: error parse", err.Error())
-	assert.Equal(t, "", *accesskeyId)
+	assert.Nil(t, accesskeyId)
 }
 
 func Test_EcsRAmRoleCredentialEnableIMDSv2(t *testing.T) {
@@ -156,19 +156,19 @@ func Test_EcsRAmRoleCredentialEnableIMDSv2(t *testing.T) {
 	accesskeyId, err := auth.GetAccessKeyId()
 	assert.NotNil(t, err)
 	assert.Equal(t, "refresh Ecs sts token err: sdk test", err.Error())
-	assert.Equal(t, "", *accesskeyId)
+	assert.Nil(t, accesskeyId)
 
 	auth = newEcsRAMRoleCredentialWithEnableIMDSv2("go sdk", true, 0, 0.5, nil)
 	accesskeyId, err = auth.GetAccessKeyId()
 	assert.NotNil(t, err)
 	assert.Equal(t, "failed to get token from ECS Metadata Service: sdk test", err.Error())
-	assert.Equal(t, "", *accesskeyId)
+	assert.Nil(t, accesskeyId)
 
 	auth = newEcsRAMRoleCredentialWithEnableIMDSv2("go sdk", true, 180, 0.5, nil)
 	accesskeyId, err = auth.GetAccessKeyId()
 	assert.NotNil(t, err)
 	assert.Equal(t, "failed to get token from ECS Metadata Service: sdk test", err.Error())
-	assert.Equal(t, "", *accesskeyId)
+	assert.Nil(t, accesskeyId)
 
 	hookDo = func(fn func(req *http.Request) (*http.Response, error)) func(req *http.Request) (*http.Response, error) {
 		return func(req *http.Request) (*http.Response, error) {
@@ -178,7 +178,7 @@ func Test_EcsRAmRoleCredentialEnableIMDSv2(t *testing.T) {
 	accesskeyId, err = auth.GetAccessKeyId()
 	assert.NotNil(t, err)
 	assert.Equal(t, "failed to get token from ECS Metadata Service: httpStatus: 300, message = ", err.Error())
-	assert.Equal(t, "", *accesskeyId)
+	assert.Nil(t, accesskeyId)
 
 	hookDo = func(fn func(req *http.Request) (*http.Response, error)) func(req *http.Request) (*http.Response, error) {
 		return func(req *http.Request) (*http.Response, error) {
@@ -207,7 +207,7 @@ func Test_EcsRAmRoleCredentialEnableIMDSv2(t *testing.T) {
 	accesskeyId, err = auth.GetAccessKeyId()
 	assert.NotNil(t, err)
 	assert.Equal(t, "refresh Ecs sts token err: Json Unmarshal fail: invalid character ':' after top-level value", err.Error())
-	assert.Equal(t, "", *accesskeyId)
+	assert.Nil(t, accesskeyId)
 
 	hookDo = func(fn func(req *http.Request) (*http.Response, error)) func(req *http.Request) (*http.Response, error) {
 		return func(req *http.Request) (*http.Response, error) {
@@ -217,7 +217,7 @@ func Test_EcsRAmRoleCredentialEnableIMDSv2(t *testing.T) {
 	accesskeyId, err = auth.GetAccessKeyId()
 	assert.NotNil(t, err)
 	assert.Equal(t, "refresh Ecs sts token err: Code is not Success", err.Error())
-	assert.Equal(t, "", *accesskeyId)
+	assert.Nil(t, accesskeyId)
 
 	hookDo = func(fn func(req *http.Request) (*http.Response, error)) func(req *http.Request) (*http.Response, error) {
 		return func(req *http.Request) (*http.Response, error) {
@@ -227,7 +227,7 @@ func Test_EcsRAmRoleCredentialEnableIMDSv2(t *testing.T) {
 	accesskeyId, err = auth.GetAccessKeyId()
 	assert.NotNil(t, err)
 	assert.Equal(t, "refresh Ecs sts token err: AccessKeyId: , AccessKeySecret: accessKeySecret, SecurityToken: securitytoken, Expiration: expiration", err.Error())
-	assert.Equal(t, "", *accesskeyId)
+	assert.Nil(t, accesskeyId)
 
 	hookDo = func(fn func(req *http.Request) (*http.Response, error)) func(req *http.Request) (*http.Response, error) {
 		return func(req *http.Request) (*http.Response, error) {
@@ -267,5 +267,5 @@ func Test_EcsRAmRoleCredentialEnableIMDSv2(t *testing.T) {
 	}()
 	accesskeyId, err = auth.GetAccessKeyId()
 	assert.Equal(t, "refresh Ecs sts token err: error parse", err.Error())
-	assert.Equal(t, "", *accesskeyId)
+	assert.Nil(t, accesskeyId)
 }
