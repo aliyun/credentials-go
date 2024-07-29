@@ -2,6 +2,7 @@ package credentials
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -39,8 +40,17 @@ type OIDCcredentialsInResponse struct {
 	Expiration      string `json:"Expiration" xml:"Expiration"`
 }
 
-func newOIDCRoleArnCredential(accessKeyId, accessKeySecret, roleArn, OIDCProviderArn, OIDCTokenFilePath, RoleSessionName, policy string, RoleSessionExpiration int, runtime *utils.Runtime) *OIDCCredentialsProvider {
-	return &OIDCCredentialsProvider{
+func newOIDCRoleArnCredential(accessKeyId, accessKeySecret, roleArn, OIDCProviderArn, OIDCTokenFilePath, RoleSessionName, policy string, RoleSessionExpiration int, runtime *utils.Runtime) (provider *OIDCCredentialsProvider, err error) {
+	if OIDCTokenFilePath == "" {
+		OIDCTokenFilePath = os.Getenv("ALIBABA_CLOUD_OIDC_TOKEN_FILE")
+	}
+
+	if OIDCTokenFilePath == "" {
+		err = errors.New("the OIDC token file path is empty")
+		return
+	}
+
+	provider = &OIDCCredentialsProvider{
 		AccessKeyId:           accessKeyId,
 		AccessKeySecret:       accessKeySecret,
 		RoleArn:               roleArn,
@@ -52,6 +62,7 @@ func newOIDCRoleArnCredential(accessKeyId, accessKeySecret, roleArn, OIDCProvide
 		credentialUpdater:     new(credentialUpdater),
 		runtime:               runtime,
 	}
+	return
 }
 
 func (e *OIDCCredentialsProvider) GetCredential() (*CredentialModel, error) {
@@ -116,19 +127,18 @@ func (r *OIDCCredentialsProvider) GetType() *string {
 	return tea.String("oidc_role_arn")
 }
 
-func getOIDCToken(tokenFilePath string) *string {
-	_, err := os.Stat(tokenFilePath)
-	if os.IsNotExist(err) {
-		tokenFilePath = os.Getenv("ALIBABA_CLOUD_OIDC_TOKEN_FILE")
-		if tokenFilePath == "" {
-			return nil
-		}
-	}
-	byt, err := ioutil.ReadFile(tokenFilePath)
+var getFileContent = func(filePath string) (content string, err error) {
+	bytes, err := ioutil.ReadFile(filePath)
 	if err != nil {
-		return nil
+		return
 	}
-	return tea.String(string(byt))
+
+	if len(bytes) == 0 {
+		err = fmt.Errorf("the content of %s is empty", filePath)
+	}
+
+	content = string(bytes)
+	return
 }
 
 func (r *OIDCCredentialsProvider) updateCredential() (err error) {
@@ -147,8 +157,12 @@ func (r *OIDCCredentialsProvider) updateCredential() (err error) {
 	request.QueryParams["Format"] = "JSON"
 	request.BodyParams["RoleArn"] = r.RoleArn
 	request.BodyParams["OIDCProviderArn"] = r.OIDCProviderArn
-	token := getOIDCToken(r.OIDCTokenFilePath)
-	request.BodyParams["OIDCToken"] = tea.StringValue(token)
+	token, err := getFileContent(r.OIDCTokenFilePath)
+	if err != nil {
+		return fmt.Errorf("read oidc token file failed: %s", err.Error())
+	}
+
+	request.BodyParams["OIDCToken"] = token
 	if r.Policy != "" {
 		request.QueryParams["Policy"] = r.Policy
 	}
@@ -164,19 +178,19 @@ func (r *OIDCCredentialsProvider) updateCredential() (err error) {
 	request.URL = request.BuildURL()
 	content, err := doAction(request, r.runtime)
 	if err != nil {
-		return fmt.Errorf("refresh RoleArn sts token err: %s", err.Error())
+		return fmt.Errorf("get sts token failed with: %s", err.Error())
 	}
 	var resp *OIDCResponse
 	err = json.Unmarshal(content, &resp)
 	if err != nil {
-		return fmt.Errorf("refresh RoleArn sts token err: Json.Unmarshal fail: %s", err.Error())
+		return fmt.Errorf("get sts token failed with: Json.Unmarshal fail: %s", err.Error())
 	}
 	if resp == nil || resp.Credentials == nil {
-		return fmt.Errorf("refresh RoleArn sts token err: Credentials is empty")
+		return fmt.Errorf("get sts token failed with: credentials is empty")
 	}
 	respCredentials := resp.Credentials
 	if respCredentials.AccessKeyId == "" || respCredentials.AccessKeySecret == "" || respCredentials.SecurityToken == "" || respCredentials.Expiration == "" {
-		return fmt.Errorf("refresh RoleArn sts token err: AccessKeyId: %s, AccessKeySecret: %s, SecurityToken: %s, Expiration: %s", respCredentials.AccessKeyId, respCredentials.AccessKeySecret, respCredentials.SecurityToken, respCredentials.Expiration)
+		return fmt.Errorf("get sts token failed with: AccessKeyId: %s, AccessKeySecret: %s, SecurityToken: %s, Expiration: %s", respCredentials.AccessKeyId, respCredentials.AccessKeySecret, respCredentials.SecurityToken, respCredentials.Expiration)
 	}
 
 	expirationTime, err := time.Parse("2006-01-02T15:04:05Z", respCredentials.Expiration)

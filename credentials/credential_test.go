@@ -220,6 +220,13 @@ func TestNewCredentialWithOIDC(t *testing.T) {
 	assert.Nil(t, cred)
 
 	config.SetOIDCProviderArn("oidc_provider_arn_test").
+		SetRoleArn("role_arn_test")
+	cred, err = NewCredential(config)
+	assert.NotNil(t, err)
+	assert.Equal(t, "the OIDC token file path is empty", err.Error())
+	assert.Nil(t, cred)
+
+	config.SetOIDCProviderArn("oidc_provider_arn_test").
 		SetOIDCTokenFilePath("oidc_token_file_path_test").
 		SetRoleArn("role_arn_test")
 	cred, err = NewCredential(config)

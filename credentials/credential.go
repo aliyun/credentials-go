@@ -217,7 +217,7 @@ func NewCredential(config *Config) (credential Credential, err error) {
 			ConnectTimeout: tea.IntValue(config.ConnectTimeout),
 			STSEndpoint:    tea.StringValue(config.STSEndpoint),
 		}
-		credential = newOIDCRoleArnCredential(
+		credential, err = newOIDCRoleArnCredential(
 			tea.StringValue(config.AccessKeyId),
 			tea.StringValue(config.AccessKeySecret),
 			tea.StringValue(config.RoleArn),
@@ -227,6 +227,9 @@ func NewCredential(config *Config) (credential Credential, err error) {
 			tea.StringValue(config.Policy),
 			tea.IntValue(config.RoleSessionExpiration),
 			runtime)
+		if err != nil {
+			return
+		}
 	case "access_key":
 		err = checkAccessKey(config)
 		if err != nil {
