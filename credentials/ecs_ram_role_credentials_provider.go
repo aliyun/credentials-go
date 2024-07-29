@@ -16,8 +16,8 @@ var securityCredTokenURL = "http://100.100.100.200/latest/api/token"
 
 const defaultMetadataTokenDuration = int(21600)
 
-// EcsRAMRoleCredential is a kind of credential
-type EcsRAMRoleCredential struct {
+// ECSRAMRoleCredentialsProvider is a kind of credentials provider
+type ECSRAMRoleCredentialsProvider struct {
 	*credentialUpdater
 	RoleName              string
 	EnableIMDSv2          bool
@@ -36,12 +36,12 @@ type ecsRAMRoleResponse struct {
 	Expiration      string `json:"Expiration" xml:"Expiration"`
 }
 
-func newEcsRAMRoleCredentialWithEnableIMDSv2(roleName string, enableIMDSv2 bool, metadataTokenDuration int, inAdvanceScale float64, runtime *utils.Runtime) *EcsRAMRoleCredential {
+func newEcsRAMRoleCredentialWithEnableIMDSv2(roleName string, enableIMDSv2 bool, metadataTokenDuration int, inAdvanceScale float64, runtime *utils.Runtime) *ECSRAMRoleCredentialsProvider {
 	credentialUpdater := new(credentialUpdater)
 	if inAdvanceScale < 1 && inAdvanceScale > 0 {
 		credentialUpdater.inAdvanceScale = inAdvanceScale
 	}
-	return &EcsRAMRoleCredential{
+	return &ECSRAMRoleCredentialsProvider{
 		RoleName:              roleName,
 		EnableIMDSv2:          enableIMDSv2,
 		MetadataTokenDuration: metadataTokenDuration,
@@ -50,7 +50,7 @@ func newEcsRAMRoleCredentialWithEnableIMDSv2(roleName string, enableIMDSv2 bool,
 	}
 }
 
-func (e *EcsRAMRoleCredential) GetCredential() (*CredentialModel, error) {
+func (e *ECSRAMRoleCredentialsProvider) GetCredential() (*CredentialModel, error) {
 	if e.sessionCredential == nil || e.needUpdateCredential() {
 		err := e.updateCredential()
 		if err != nil {
@@ -68,7 +68,7 @@ func (e *EcsRAMRoleCredential) GetCredential() (*CredentialModel, error) {
 
 // GetAccessKeyId reutrns  EcsRAMRoleCredential's AccessKeyId
 // if AccessKeyId is not exist or out of date, the function will update it.
-func (e *EcsRAMRoleCredential) GetAccessKeyId() (*string, error) {
+func (e *ECSRAMRoleCredentialsProvider) GetAccessKeyId() (*string, error) {
 	if e.sessionCredential == nil || e.needUpdateCredential() {
 		err := e.updateCredential()
 		if err != nil {
@@ -83,7 +83,7 @@ func (e *EcsRAMRoleCredential) GetAccessKeyId() (*string, error) {
 
 // GetAccessSecret reutrns  EcsRAMRoleCredential's AccessKeySecret
 // if AccessKeySecret is not exist or out of date, the function will update it.
-func (e *EcsRAMRoleCredential) GetAccessKeySecret() (*string, error) {
+func (e *ECSRAMRoleCredentialsProvider) GetAccessKeySecret() (*string, error) {
 	if e.sessionCredential == nil || e.needUpdateCredential() {
 		err := e.updateCredential()
 		if err != nil {
@@ -98,7 +98,7 @@ func (e *EcsRAMRoleCredential) GetAccessKeySecret() (*string, error) {
 
 // GetSecurityToken reutrns  EcsRAMRoleCredential's SecurityToken
 // if SecurityToken is not exist or out of date, the function will update it.
-func (e *EcsRAMRoleCredential) GetSecurityToken() (*string, error) {
+func (e *ECSRAMRoleCredentialsProvider) GetSecurityToken() (*string, error) {
 	if e.sessionCredential == nil || e.needUpdateCredential() {
 		err := e.updateCredential()
 		if err != nil {
@@ -112,12 +112,12 @@ func (e *EcsRAMRoleCredential) GetSecurityToken() (*string, error) {
 }
 
 // GetBearerToken is useless for EcsRAMRoleCredential
-func (e *EcsRAMRoleCredential) GetBearerToken() *string {
+func (e *ECSRAMRoleCredentialsProvider) GetBearerToken() *string {
 	return tea.String("")
 }
 
 // GetType reutrns  EcsRAMRoleCredential's type
-func (e *EcsRAMRoleCredential) GetType() *string {
+func (e *ECSRAMRoleCredentialsProvider) GetType() *string {
 	return tea.String("ecs_ram_role")
 }
 
@@ -133,7 +133,7 @@ func getRoleName() (string, error) {
 	return string(content), nil
 }
 
-func (e *EcsRAMRoleCredential) getMetadataToken() (err error) {
+func (e *ECSRAMRoleCredentialsProvider) getMetadataToken() (err error) {
 	if e.needToRefresh() {
 		if e.MetadataTokenDuration <= 0 {
 			e.MetadataTokenDuration = defaultMetadataTokenDuration
@@ -153,7 +153,7 @@ func (e *EcsRAMRoleCredential) getMetadataToken() (err error) {
 	return
 }
 
-func (e *EcsRAMRoleCredential) updateCredential() (err error) {
+func (e *ECSRAMRoleCredentialsProvider) updateCredential() (err error) {
 	if e.runtime == nil {
 		e.runtime = new(utils.Runtime)
 	}
@@ -201,7 +201,7 @@ func (e *EcsRAMRoleCredential) updateCredential() (err error) {
 	return
 }
 
-func (e *EcsRAMRoleCredential) needToRefresh() (needToRefresh bool) {
+func (e *ECSRAMRoleCredentialsProvider) needToRefresh() (needToRefresh bool) {
 	needToRefresh = time.Now().Unix() >= e.staleTime
 	return
 }
