@@ -100,38 +100,38 @@ func (e *RAMRoleArnCredential) GetCredential() (*CredentialModel, error) {
 
 // GetAccessKeyId reutrns RamRoleArnCredential's AccessKeyId
 // if AccessKeyId is not exist or out of date, the function will update it.
-func (r *RAMRoleArnCredential) GetAccessKeyId() (*string, error) {
-	if r.sessionCredential == nil || r.needUpdateCredential() {
-		err := r.updateCredential()
-		if err != nil {
-			return tea.String(""), err
-		}
+func (r *RAMRoleArnCredential) GetAccessKeyId() (accessKeyId *string, err error) {
+	c, err := r.GetCredential()
+	if err != nil {
+		return
 	}
-	return tea.String(r.sessionCredential.AccessKeyId), nil
+
+	accessKeyId = c.AccessKeyId
+	return
 }
 
 // GetAccessSecret reutrns RamRoleArnCredential's AccessKeySecret
 // if AccessKeySecret is not exist or out of date, the function will update it.
-func (r *RAMRoleArnCredential) GetAccessKeySecret() (*string, error) {
-	if r.sessionCredential == nil || r.needUpdateCredential() {
-		err := r.updateCredential()
-		if err != nil {
-			return tea.String(""), err
-		}
+func (r *RAMRoleArnCredential) GetAccessKeySecret() (accessKeySecret *string, err error) {
+	c, err := r.GetCredential()
+	if err != nil {
+		return
 	}
-	return tea.String(r.sessionCredential.AccessKeySecret), nil
+
+	accessKeySecret = c.AccessKeySecret
+	return
 }
 
 // GetSecurityToken reutrns RamRoleArnCredential's SecurityToken
 // if SecurityToken is not exist or out of date, the function will update it.
-func (r *RAMRoleArnCredential) GetSecurityToken() (*string, error) {
-	if r.sessionCredential == nil || r.needUpdateCredential() {
-		err := r.updateCredential()
-		if err != nil {
-			return tea.String(""), err
-		}
+func (r *RAMRoleArnCredential) GetSecurityToken() (securityToken *string, err error) {
+	c, err := r.GetCredential()
+	if err != nil {
+		return
 	}
-	return tea.String(r.sessionCredential.SecurityToken), nil
+
+	securityToken = c.SecurityToken
+	return
 }
 
 // GetBearerToken is useless RamRoleArnCredential
