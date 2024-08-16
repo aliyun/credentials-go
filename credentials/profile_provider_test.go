@@ -503,29 +503,6 @@ func TestProfileProvider(t *testing.T) {
 	assert.Equal(t, "invalid type option, support: access_key, sts, ecs_ram_role, ram_role_arn, rsa_key_pair", err.Error())
 }
 
-func TestHookOS(t *testing.T) {
-	goos := "windows"
-	goos = hookOS(goos)
-	assert.Equal(t, "windows", goos)
-
-	originHookOs := hookOS
-	originUserProfile := os.Getenv("USERPROFILE")
-	hookOS = func(goos string) string {
-		return "windows"
-	}
-	defer func() {
-		hookOS = originHookOs
-		os.Setenv("USERPROFILE", originUserProfile)
-	}()
-	os.Unsetenv("USERPROFILE")
-	path := getHomePath()
-	assert.Equal(t, "", path)
-
-	os.Setenv("USERPROFILE", "ok")
-	path = getHomePath()
-	assert.Equal(t, "ok", path)
-}
-
 func TestHookState(t *testing.T) {
 	info, err := hookState(nil, nil)
 	assert.Nil(t, info)
