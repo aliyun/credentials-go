@@ -4,10 +4,10 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"runtime"
 	"strings"
 
 	"github.com/alibabacloud-go/tea/tea"
+	"github.com/aliyun/credentials-go/credentials/internal/utils"
 	ini "gopkg.in/ini.v1"
 )
 
@@ -16,10 +16,6 @@ type profileProvider struct {
 }
 
 var providerProfile = newProfileProvider()
-
-var hookOS = func(goos string) string {
-	return goos
-}
 
 var hookState = func(info os.FileInfo, err error) (os.FileInfo, error) {
 	return info, err
@@ -294,23 +290,8 @@ func getType(path, profile string) (*ini.Key, *ini.Section, error) {
 	return value, section, nil
 }
 
-func getHomePath() string {
-	if hookOS(runtime.GOOS) == "windows" {
-		path, ok := os.LookupEnv("USERPROFILE")
-		if !ok {
-			return ""
-		}
-		return path
-	}
-	path, ok := os.LookupEnv("HOME")
-	if !ok {
-		return ""
-	}
-	return path
-}
-
 func checkDefaultPath() (path string, err error) {
-	path = getHomePath()
+	path = utils.GetHomePath()
 	if path == "" {
 		return "", errors.New("the default credential file path is invalid")
 	}
