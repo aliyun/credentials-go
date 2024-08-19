@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"bytes"
 	"crypto"
 	"crypto/hmac"
 	"crypto/md5"
@@ -10,10 +11,14 @@ import (
 	"crypto/x509"
 	"encoding/base64"
 	"encoding/hex"
+	"fmt"
 	"hash"
 	"io"
-	rand2 "math/rand"
+	mathrand "math/rand"
 	"net/url"
+	"runtime"
+	"strconv"
+	"sync/atomic"
 	"time"
 )
 
@@ -40,7 +45,7 @@ func GetUUID() (uuidHex string) {
 func RandStringBytes(n int) string {
 	b := make([]byte, n)
 	for i := range b {
-		b[i] = letterBytes[rand2.Intn(len(letterBytes))]
+		b[i] = letterBytes[mathrand.Intn(len(letterBytes))]
 	}
 	return string(b)
 }
@@ -143,4 +148,28 @@ func (u uuid) String() string {
 	hex.Encode(buf[24:], u[10:])
 
 	return string(buf)
+}
+
+var processStartTime int64 = time.Now().UnixNano() / 1e6
+var seqId int64 = 0
+
+func getGID() uint64 {
+	// https://blog.sgmansfield.com/2015/12/goroutine-ids/
+	b := make([]byte, 64)
+	b = b[:runtime.Stack(b, false)]
+	b = bytes.TrimPrefix(b, []byte("goroutine "))
+	b = b[:bytes.IndexByte(b, ' ')]
+	n, _ := strconv.ParseUint(string(b), 10, 64)
+	return n
+}
+
+func GetNonce() (uuidHex string) {
+	routineId := getGID()
+	currentTime := time.Now().UnixNano() / 1e6
+	seq := atomic.AddInt64(&seqId, 1)
+	randNum := mathrand.Int63()
+	msg := fmt.Sprintf("%d-%d-%d-%d-%d", processStartTime, routineId, currentTime, seq, randNum)
+	h := md5.New()
+	h.Write([]byte(msg))
+	return hex.EncodeToString(h.Sum(nil))
 }
