@@ -47,14 +47,23 @@ func TestNewCredentialWithAK(t *testing.T) {
 	config.SetType("access_key")
 	cred, err := NewCredential(config)
 	assert.NotNil(t, err)
-	assert.Equal(t, "AccessKeyId cannot be empty", err.Error())
+	assert.Equal(t, "the access key id is empty", err.Error())
 	assert.Nil(t, cred)
 
 	config.SetAccessKeyId("AccessKeyId")
 	cred, err = NewCredential(config)
 	assert.NotNil(t, err)
-	assert.Equal(t, "AccessKeySecret cannot be empty", err.Error())
+	assert.Equal(t, "the access key secret is empty", err.Error())
 	assert.Nil(t, cred)
+
+	config.SetAccessKeySecret("AccessKeySecret")
+	cred, err = NewCredential(config)
+	assert.Nil(t, err)
+	cm, err := cred.GetCredential()
+	assert.Nil(t, err)
+	assert.Equal(t, "AccessKeyId", *cm.AccessKeyId)
+	assert.Equal(t, "AccessKeySecret", *cm.AccessKeySecret)
+	assert.Equal(t, "", *cm.SecurityToken)
 }
 
 func TestNewCredentialWithSts(t *testing.T) {
@@ -64,19 +73,19 @@ func TestNewCredentialWithSts(t *testing.T) {
 	config.SetAccessKeyId("")
 	cred, err := NewCredential(config)
 	assert.NotNil(t, err)
-	assert.Equal(t, "AccessKeyId cannot be empty", err.Error())
+	assert.Equal(t, "the access key id is empty", err.Error())
 	assert.Nil(t, cred)
 
 	config.SetAccessKeyId("akid")
 	cred, err = NewCredential(config)
 	assert.NotNil(t, err)
-	assert.Equal(t, "AccessKeySecret cannot be empty", err.Error())
+	assert.Equal(t, "the access key secret is empty", err.Error())
 	assert.Nil(t, cred)
 
 	config.SetAccessKeySecret("aksecret")
 	cred, err = NewCredential(config)
 	assert.NotNil(t, err)
-	assert.Equal(t, "SecurityToken cannot be empty", err.Error())
+	assert.Equal(t, "the security token is empty", err.Error())
 	assert.Nil(t, cred)
 
 	config.SetSecurityToken("SecurityToken")
