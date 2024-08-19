@@ -265,27 +265,43 @@ func NewCredential(config *Config) (credential Credential, err error) {
 			tea.Float64Value(config.InAdvanceScale),
 			runtime)
 	case "ram_role_arn":
-		err = checkRAMRoleArn(config)
+		var credentialsProvider providers.CredentialsProvider
+		if config.SecurityToken != nil {
+			credentialsProvider, err = providers.NewStaticSTSCredentialsProviderBuilder().
+				WithAccessKeyId(tea.StringValue(config.AccessKeyId)).
+				WithAccessKeySecret(tea.StringValue(config.AccessKeySecret)).
+				WithSecurityToken(tea.StringValue(config.SecurityToken)).
+				Build()
+		} else {
+			credentialsProvider, err = providers.NewStaticAKCredentialsProviderBuilder().
+				WithAccessKeyId(tea.StringValue(config.AccessKeyId)).
+				WithAccessKeySecret(tea.StringValue(config.AccessKeySecret)).
+				Build()
+		}
+
 		if err != nil {
-			return
+			return nil, err
 		}
-		runtime := &utils.Runtime{
-			Host:           tea.StringValue(config.Host),
-			Proxy:          tea.StringValue(config.Proxy),
-			ReadTimeout:    tea.IntValue(config.Timeout),
-			ConnectTimeout: tea.IntValue(config.ConnectTimeout),
-			STSEndpoint:    tea.StringValue(config.STSEndpoint),
+
+		provider, err := providers.NewRAMRoleARNCredentialsProviderBuilder().
+			WithCredentialsProvider(credentialsProvider).
+			WithRoleArn(tea.StringValue(config.RoleArn)).
+			WithRoleSessionName(tea.StringValue(config.RoleSessionName)).
+			WithPolicy(tea.StringValue(config.Policy)).
+			WithDurationSeconds(tea.IntValue(config.RoleSessionExpiration)).
+			WithExternalId(tea.StringValue(config.ExternalId)).
+			WithStsEndpoint(tea.StringValue(config.STSEndpoint)).
+			WithHttpOptions(&providers.HttpOptions{
+				Proxy:          tea.StringValue(config.Proxy),
+				ReadTimeout:    tea.IntValue(config.Timeout),
+				ConnectTimeout: tea.IntValue(config.ConnectTimeout),
+			}).
+			Build()
+		if err != nil {
+			return nil, err
 		}
-		credential = newRAMRoleArnl(
-			tea.StringValue(config.AccessKeyId),
-			tea.StringValue(config.AccessKeySecret),
-			tea.StringValue(config.SecurityToken),
-			tea.StringValue(config.RoleArn),
-			tea.StringValue(config.RoleSessionName),
-			tea.StringValue(config.Policy),
-			tea.IntValue(config.RoleSessionExpiration),
-			tea.StringValue(config.ExternalId),
-			runtime)
+
+		credential = fromCredentialsProvider("ram_role_arn", provider)
 	case "rsa_key_pair":
 		err = checkRSAKeyPair(config)
 		if err != nil {
@@ -351,30 +367,6 @@ func checkoutAssumeRamoidc(config *Config) (err error) {
 		err = errors.New("OIDCProviderArn cannot be empty")
 		return
 	}
-	return
-}
-
-func checkRAMRoleArn(config *Config) (err error) {
-	if tea.StringValue(config.AccessKeyId) == "" {
-		err = errors.New("AccessKeyId cannot be empty")
-		return
-	}
-
-	if tea.StringValue(config.AccessKeySecret) == "" {
-		err = errors.New("AccessKeySecret cannot be empty")
-		return
-	}
-
-	if tea.StringValue(config.RoleArn) == "" {
-		err = errors.New("RoleArn cannot be empty")
-		return
-	}
-
-	if tea.StringValue(config.RoleSessionName) == "" {
-		err = errors.New("RoleSessionName cannot be empty")
-		return
-	}
-
 	return
 }
 
