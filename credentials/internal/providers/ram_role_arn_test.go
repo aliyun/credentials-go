@@ -65,7 +65,7 @@ func TestNewRAMRoleARNCredentialsProvider(t *testing.T) {
 	p, err = NewRAMRoleARNCredentialsProviderBuilder().
 		WithCredentialsProvider(akProvider).
 		WithRoleArn("roleArn").
-		WithStsRegion("cn-hangzhou").
+		WithStsRegionId("cn-hangzhou").
 		WithPolicy("policy").
 		WithExternalId("externalId").
 		WithRoleSessionName("rsn").
@@ -76,8 +76,47 @@ func TestNewRAMRoleARNCredentialsProvider(t *testing.T) {
 	assert.Equal(t, "roleArn", p.roleArn)
 	assert.Equal(t, "policy", p.policy)
 	assert.Equal(t, "externalId", p.externalId)
-	assert.Equal(t, "cn-hangzhou", p.stsRegion)
+	assert.Equal(t, "cn-hangzhou", p.stsRegionId)
 	assert.Equal(t, 1000, p.durationSeconds)
+	// sts endpoint with sts region
+	assert.Equal(t, "sts.cn-hangzhou.aliyuncs.com", p.stsEndpoint)
+
+	// sts endpoint with sts endpoint
+	p, err = NewRAMRoleARNCredentialsProviderBuilder().
+		WithCredentialsProvider(akProvider).
+		WithRoleArn("roleArn").
+		WithStsEndpoint("sts.cn-shanghai.aliyuncs.com").
+		WithPolicy("policy").
+		WithExternalId("externalId").
+		WithRoleSessionName("rsn").
+		WithDurationSeconds(1000).
+		Build()
+	assert.Nil(t, err)
+	assert.Equal(t, "rsn", p.roleSessionName)
+	assert.Equal(t, "roleArn", p.roleArn)
+	assert.Equal(t, "policy", p.policy)
+	assert.Equal(t, "externalId", p.externalId)
+	assert.Equal(t, "", p.stsRegionId)
+	assert.Equal(t, 1000, p.durationSeconds)
+	assert.Equal(t, "sts.cn-shanghai.aliyuncs.com", p.stsEndpoint)
+
+	// default sts endpoint
+	p, err = NewRAMRoleARNCredentialsProviderBuilder().
+		WithCredentialsProvider(akProvider).
+		WithRoleArn("roleArn").
+		WithPolicy("policy").
+		WithExternalId("externalId").
+		WithRoleSessionName("rsn").
+		WithDurationSeconds(1000).
+		Build()
+	assert.Nil(t, err)
+	assert.Equal(t, "rsn", p.roleSessionName)
+	assert.Equal(t, "roleArn", p.roleArn)
+	assert.Equal(t, "policy", p.policy)
+	assert.Equal(t, "externalId", p.externalId)
+	assert.Equal(t, "", p.stsRegionId)
+	assert.Equal(t, 1000, p.durationSeconds)
+	assert.Equal(t, "sts.aliyuncs.com", p.stsEndpoint)
 }
 
 func TestRAMRoleARNCredentialsProvider_getCredentials(t *testing.T) {
@@ -228,7 +267,7 @@ func TestRAMRoleARNCredentialsProvider_getCredentialsWithRequestCheck(t *testing
 		WithRoleSessionName("rsn").
 		WithDurationSeconds(1000).
 		WithPolicy("policy").
-		WithStsRegion("cn-beijing").
+		WithStsRegionId("cn-beijing").
 		WithExternalId("externalId").
 		Build()
 	assert.Nil(t, err)
@@ -333,6 +372,15 @@ func TestRAMRoleARNCredentialsProviderGetCredentials(t *testing.T) {
 	assert.Equal(t, "akid", cc.AccessKeyId)
 	assert.Equal(t, "aksecret", cc.AccessKeySecret)
 	assert.Equal(t, "ststoken", cc.SecurityToken)
+	assert.Equal(t, "ram_role_arn/static_ak", cc.ProviderName)
+	assert.True(t, p.needUpdateCredential())
+	// get credentials again
+	cc, err = p.GetCredentials()
+	assert.Nil(t, err)
+	assert.Equal(t, "akid", cc.AccessKeyId)
+	assert.Equal(t, "aksecret", cc.AccessKeySecret)
+	assert.Equal(t, "ststoken", cc.SecurityToken)
+	assert.Equal(t, "ram_role_arn/static_ak", cc.ProviderName)
 	assert.True(t, p.needUpdateCredential())
 }
 

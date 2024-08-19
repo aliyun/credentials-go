@@ -37,14 +37,24 @@ type sessionCredentials struct {
 	Expiration      string
 }
 
+type HttpOptions struct {
+	Proxy          string
+	ConnectTimeout int
+	ReadTimeout    int
+}
+
 type RAMRoleARNCredentialsProvider struct {
 	credentialsProvider CredentialsProvider
 	roleArn             string
 	roleSessionName     string
 	durationSeconds     int
 	policy              string
-	stsRegion           string
 	externalId          string
+	// for sts endpoint
+	stsRegionId string
+	stsEndpoint string
+	// for http options
+	httpOptions *HttpOptions
 	// inner
 	expirationTimestamp int64
 	lastUpdateTimestamp int64
@@ -71,8 +81,13 @@ func (builder *RAMRoleARNCredentialsProviderBuilder) WithRoleArn(roleArn string)
 	return builder
 }
 
-func (builder *RAMRoleARNCredentialsProviderBuilder) WithStsRegion(regionId string) *RAMRoleARNCredentialsProviderBuilder {
-	builder.provider.stsRegion = regionId
+func (builder *RAMRoleARNCredentialsProviderBuilder) WithStsRegionId(regionId string) *RAMRoleARNCredentialsProviderBuilder {
+	builder.provider.stsRegionId = regionId
+	return builder
+}
+
+func (builder *RAMRoleARNCredentialsProviderBuilder) WithStsEndpoint(endpoint string) *RAMRoleARNCredentialsProviderBuilder {
+	builder.provider.stsEndpoint = endpoint
 	return builder
 }
 
@@ -93,6 +108,11 @@ func (builder *RAMRoleARNCredentialsProviderBuilder) WithExternalId(externalId s
 
 func (builder *RAMRoleARNCredentialsProviderBuilder) WithDurationSeconds(durationSeconds int) *RAMRoleARNCredentialsProviderBuilder {
 	builder.provider.durationSeconds = durationSeconds
+	return builder
+}
+
+func (builder *RAMRoleARNCredentialsProviderBuilder) WithHttpOptions(httpOptions *HttpOptions) *RAMRoleARNCredentialsProviderBuilder {
+	builder.provider.httpOptions = httpOptions
 	return builder
 }
 
@@ -122,19 +142,22 @@ func (builder *RAMRoleARNCredentialsProviderBuilder) Build() (provider *RAMRoleA
 		return
 	}
 
+	// sts endpoint
+	if builder.provider.stsEndpoint == "" {
+		if builder.provider.stsRegionId != "" {
+			builder.provider.stsEndpoint = fmt.Sprintf("sts.%s.aliyuncs.com", builder.provider.stsRegionId)
+		} else {
+			builder.provider.stsEndpoint = "sts.aliyuncs.com"
+		}
+	}
+
 	provider = builder.provider
 	return
 }
 
 func (provider *RAMRoleARNCredentialsProvider) getCredentials(cc *Credentials) (session *sessionCredentials, err error) {
 	method := "POST"
-	var host string
-	if provider.stsRegion != "" {
-		host = fmt.Sprintf("sts.%s.aliyuncs.com", provider.stsRegion)
-	} else {
-		host = "sts.aliyuncs.com"
-	}
-
+	host := provider.stsEndpoint
 	queries := make(map[string]string)
 	queries["Version"] = "2015-04-01"
 	queries["Action"] = "AssumeRole"
@@ -193,6 +216,23 @@ func (provider *RAMRoleARNCredentialsProvider) getCredentials(cc *Credentials) (
 	httpRequest.Header["Content-Type"] = []string{"application/x-www-form-urlencoded"}
 	httpRequest.Header["x-credentials-provider"] = []string{cc.ProviderName}
 	httpClient := &http.Client{}
+
+	if provider.httpOptions != nil {
+		httpClient.Timeout = time.Duration(provider.httpOptions.ReadTimeout) * time.Second
+		proxy := &url.URL{}
+		if provider.httpOptions.Proxy != "" {
+			proxy, err = url.Parse(provider.httpOptions.Proxy)
+			if err != nil {
+				return
+			}
+		}
+		trans := &http.Transport{}
+		if proxy != nil && provider.httpOptions.Proxy != "" {
+			trans.Proxy = http.ProxyURL(proxy)
+		}
+		trans.DialContext = utils.Timeout(time.Duration(provider.httpOptions.ConnectTimeout) * time.Second)
+		httpClient.Transport = trans
+	}
 
 	httpResponse, err := hookDo(httpClient.Do)(httpRequest)
 	if err != nil {
@@ -269,6 +309,11 @@ func (provider *RAMRoleARNCredentialsProvider) GetCredentials() (cc *Credentials
 		AccessKeyId:     provider.sessionCredentials.AccessKeyId,
 		AccessKeySecret: provider.sessionCredentials.AccessKeySecret,
 		SecurityToken:   provider.sessionCredentials.SecurityToken,
+		ProviderName:    fmt.Sprintf("%s/%s", provider.GetProviderName(), provider.credentialsProvider.GetProviderName()),
 	}
 	return
+}
+
+func (provider *RAMRoleARNCredentialsProvider) GetProviderName() string {
+	return "ram_role_arn"
 }
