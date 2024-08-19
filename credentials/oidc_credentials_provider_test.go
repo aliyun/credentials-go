@@ -9,7 +9,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/aliyun/credentials-go/credentials/utils"
+	"github.com/aliyun/credentials-go/credentials/internal/utils"
 )
 
 func TestNewOidcCredentialsProvider(t *testing.T) {

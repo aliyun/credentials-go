@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/alibabacloud-go/tea/tea"
+	"github.com/aliyun/credentials-go/credentials/internal/utils"
 	"github.com/aliyun/credentials-go/credentials/request"
-	"github.com/aliyun/credentials-go/credentials/utils"
 )
 
 // URLCredential is a kind of credential

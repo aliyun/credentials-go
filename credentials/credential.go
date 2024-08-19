@@ -12,9 +12,9 @@ import (
 
 	"github.com/alibabacloud-go/debug/debug"
 	"github.com/alibabacloud-go/tea/tea"
+	"github.com/aliyun/credentials-go/credentials/internal/utils"
 	"github.com/aliyun/credentials-go/credentials/request"
 	"github.com/aliyun/credentials-go/credentials/response"
-	"github.com/aliyun/credentials-go/credentials/utils"
 )
 
 var debuglog = debug.Init("credential")

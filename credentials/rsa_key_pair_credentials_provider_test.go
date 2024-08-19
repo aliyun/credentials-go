@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/aliyun/credentials-go/credentials/utils"
+	"github.com/aliyun/credentials-go/credentials/internal/utils"
 
 	"github.com/stretchr/testify/assert"
 )

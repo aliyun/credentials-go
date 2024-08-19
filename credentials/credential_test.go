@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/alibabacloud-go/tea/tea"
+	"github.com/aliyun/credentials-go/credentials/internal/utils"
 	"github.com/aliyun/credentials-go/credentials/request"
-	"github.com/aliyun/credentials-go/credentials/utils"
 	"github.com/stretchr/testify/assert"
 )
 
