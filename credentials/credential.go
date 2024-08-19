@@ -253,17 +253,17 @@ func NewCredential(config *Config) (credential Credential, err error) {
 
 		credential = fromCredentialsProvider("sts", provider)
 	case "ecs_ram_role":
-		runtime := &utils.Runtime{
-			Host:           tea.StringValue(config.Host),
-			ReadTimeout:    tea.IntValue(config.Timeout),
-			ConnectTimeout: tea.IntValue(config.ConnectTimeout),
+		provider, err := providers.NewECSRAMRoleCredentialsProviderBuilder().
+			WithRoleName(tea.StringValue(config.RoleName)).
+			WithEnableIMDSv2(tea.BoolValue(config.EnableIMDSv2)).
+			WithMetadataTokenDurationSeconds(tea.IntValue(config.MetadataTokenDuration)).
+			Build()
+
+		if err != nil {
+			return nil, err
 		}
-		credential = newEcsRAMRoleCredentialWithEnableIMDSv2(
-			tea.StringValue(config.RoleName),
-			tea.BoolValue(config.EnableIMDSv2),
-			tea.IntValue(config.MetadataTokenDuration),
-			tea.Float64Value(config.InAdvanceScale),
-			runtime)
+
+		credential = fromCredentialsProvider("ecs_ram_role", provider)
 	case "ram_role_arn":
 		err = checkRAMRoleArn(config)
 		if err != nil {
