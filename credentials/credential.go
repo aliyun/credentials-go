@@ -12,6 +12,7 @@ import (
 
 	"github.com/alibabacloud-go/debug/debug"
 	"github.com/alibabacloud-go/tea/tea"
+	"github.com/aliyun/credentials-go/credentials/internal/providers"
 	"github.com/aliyun/credentials-go/credentials/internal/utils"
 	"github.com/aliyun/credentials-go/credentials/request"
 	"github.com/aliyun/credentials-go/credentials/response"
@@ -231,22 +232,26 @@ func NewCredential(config *Config) (credential Credential, err error) {
 			return
 		}
 	case "access_key":
-		err = checkAccessKey(config)
+		provider, err := providers.NewStaticAKCredentialsProviderBuilder().
+			WithAccessKeyId(tea.StringValue(config.AccessKeyId)).
+			WithAccessKeySecret(tea.StringValue(config.AccessKeySecret)).
+			Build()
 		if err != nil {
-			return
+			return nil, err
 		}
-		credential = newAccessKeyCredential(
-			tea.StringValue(config.AccessKeyId),
-			tea.StringValue(config.AccessKeySecret))
+
+		credential = fromCredentialsProvider("access_key", provider)
 	case "sts":
-		err = checkSTS(config)
+		provider, err := providers.NewStaticSTSCredentialsProviderBuilder().
+			WithAccessKeyId(tea.StringValue(config.AccessKeyId)).
+			WithAccessKeySecret(tea.StringValue(config.AccessKeySecret)).
+			WithSecurityToken(tea.StringValue(config.SecurityToken)).
+			Build()
 		if err != nil {
-			return
+			return nil, err
 		}
-		credential = NewStaticSTSCredentialsProvider(
-			tea.StringValue(config.AccessKeyId),
-			tea.StringValue(config.AccessKeySecret),
-			tea.StringValue(config.SecurityToken))
+
+		credential = fromCredentialsProvider("sts", provider)
 	case "ecs_ram_role":
 		runtime := &utils.Runtime{
 			Host:           tea.StringValue(config.Host),
@@ -373,34 +378,6 @@ func checkRAMRoleArn(config *Config) (err error) {
 	return
 }
 
-func checkSTS(config *Config) (err error) {
-	if tea.StringValue(config.AccessKeyId) == "" {
-		err = errors.New("AccessKeyId cannot be empty")
-		return
-	}
-	if tea.StringValue(config.AccessKeySecret) == "" {
-		err = errors.New("AccessKeySecret cannot be empty")
-		return
-	}
-	if tea.StringValue(config.SecurityToken) == "" {
-		err = errors.New("SecurityToken cannot be empty")
-		return
-	}
-	return
-}
-
-func checkAccessKey(config *Config) (err error) {
-	if tea.StringValue(config.AccessKeyId) == "" {
-		err = errors.New("AccessKeyId cannot be empty")
-		return
-	}
-	if tea.StringValue(config.AccessKeySecret) == "" {
-		err = errors.New("AccessKeySecret cannot be empty")
-		return
-	}
-	return
-}
-
 func doAction(request *request.CommonRequest, runtime *utils.Runtime) (content []byte, err error) {
 	var urlEncoded string
 	if request.BodyParams != nil {
@@ -457,4 +434,66 @@ func doAction(request *request.CommonRequest, runtime *utils.Runtime) (content [
 		return
 	}
 	return resp.GetHTTPContentBytes(), nil
+}
+
+type credentialsProviderWrap struct {
+	typeName string
+	provider providers.CredentialsProvider
+}
+
+func (cp *credentialsProviderWrap) GetAccessKeyId() (accessKeyId *string, err error) {
+	cc, err := cp.provider.GetCredentials()
+	if err != nil {
+		return
+	}
+	accessKeyId = &cc.AccessKeyId
+	return
+}
+
+func (cp *credentialsProviderWrap) GetAccessKeySecret() (accessKeySecret *string, err error) {
+	cc, err := cp.provider.GetCredentials()
+	if err != nil {
+		return
+	}
+	accessKeySecret = &cc.AccessKeySecret
+	return
+}
+
+func (cp *credentialsProviderWrap) GetSecurityToken() (securityToken *string, err error) {
+	cc, err := cp.provider.GetCredentials()
+	if err != nil {
+		return
+	}
+	securityToken = &cc.SecurityToken
+	return
+}
+
+func (cp *credentialsProviderWrap) GetBearerToken() (bearerToken *string) {
+	return tea.String("")
+}
+
+func (cp *credentialsProviderWrap) GetCredential() (cm *CredentialModel, err error) {
+	c, err := cp.provider.GetCredentials()
+	if err != nil {
+		return
+	}
+
+	cm = &CredentialModel{
+		AccessKeyId:     &c.AccessKeyId,
+		AccessKeySecret: &c.AccessKeySecret,
+		SecurityToken:   &c.SecurityToken,
+		Type:            &c.ProviderName,
+	}
+	return
+}
+
+func (cp *credentialsProviderWrap) GetType() *string {
+	return &cp.typeName
+}
+
+func fromCredentialsProvider(typeName string, cp providers.CredentialsProvider) Credential {
+	return &credentialsProviderWrap{
+		typeName: typeName,
+		provider: cp,
+	}
 }
