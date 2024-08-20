@@ -5,6 +5,7 @@ import (
 	"crypto/rsa"
 	"errors"
 	"io"
+	"os"
 	"regexp"
 	"testing"
 
@@ -149,4 +150,24 @@ bLbtzL2MbwbXlbOztF7ssgzUWAHgKI6hK3g0LhsqBuo3jzmSVO43giZvAkEA08Nm
 2TI9EvX6DfCVfPOiKZM+Pijh0xLN4Dn8qUgt3Tcew/vfj4WA2ZV6qiJqL01vMsHc
 vftlY0Hs1vNXcaBgEA==`
 	Sha256WithRsa("source", secret)
+}
+
+func TestGetDefaultString(t *testing.T) {
+	assert.Equal(t, "default", GetDefaultString("", "default"))
+	assert.Equal(t, "custom", GetDefaultString("custom", "default"))
+	assert.Equal(t, "", GetDefaultString("", "", ""))
+}
+
+func TestMemoryAndRollback(t *testing.T) {
+	os.Setenv("test", "old")
+	rollback := Memory("test")
+	os.Setenv("test", "new")
+	rollback()
+
+	assert.Equal(t, "old", os.Getenv("test"))
+}
+
+func TestGetNonce(t *testing.T) {
+	assert.Equal(t, 32, len(GetNonce()))
+	assert.NotEqual(t, GetNonce(), GetNonce())
 }
