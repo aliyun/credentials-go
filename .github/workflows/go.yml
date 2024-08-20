@@ -28,9 +28,6 @@ jobs:
     - name: Go Mod
       run: go mod tidy
 
-    - name: Build
-      run: go build ./credentials
-
     - name: Test
       run: go test -race -coverprofile=coverage.txt -covermode=atomic ./credentials/...
 
