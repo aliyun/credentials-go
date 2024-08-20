@@ -19,9 +19,9 @@ jobs:
       fail-fast: false
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Setup Go
-      uses: actions/setup-go@v4
+      uses: actions/setup-go@v5
       with:
         go-version: ${{ matrix.go }}
 
@@ -40,7 +40,7 @@ jobs:
       run: npm install @actions/core@1.6.0 @actions/http-client
 
     - name: Get Id Token
-      uses: actions/github-script@v6
+      uses: actions/github-script@v7
       id: idtoken
       with:
         script: |
