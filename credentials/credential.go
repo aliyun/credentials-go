@@ -193,7 +193,7 @@ func (s *Config) SetSTSEndpoint(v string) *Config {
 }
 
 // NewCredential return a credential according to the type in config.
-// if config is nil, the function will use default provider chain to get credential.
+// if config is nil, the function will use default provider chain to get credentials.
 // please see README.md for detail.
 func NewCredential(config *Config) (credential Credential, err error) {
 	if config == nil {
@@ -383,12 +383,12 @@ func doAction(request *request.CommonRequest, runtime *utils.Runtime) (content [
 			return
 		}
 	}
-	trans := &http.Transport{}
+	transport := &http.Transport{}
 	if proxy != nil && runtime.Proxy != "" {
-		trans.Proxy = http.ProxyURL(proxy)
+		transport.Proxy = http.ProxyURL(proxy)
 	}
-	trans.DialContext = utils.Timeout(time.Duration(runtime.ConnectTimeout) * time.Second)
-	httpClient.Transport = trans
+	transport.DialContext = utils.Timeout(time.Duration(runtime.ConnectTimeout) * time.Second)
+	httpClient.Transport = transport
 	httpResponse, err := hookDo(httpClient.Do)(httpRequest)
 	if err != nil {
 		return
@@ -417,6 +417,7 @@ type credentialsProviderWrap struct {
 	provider providers.CredentialsProvider
 }
 
+// Deprecated: use GetCredential() instead of
 func (cp *credentialsProviderWrap) GetAccessKeyId() (accessKeyId *string, err error) {
 	cc, err := cp.provider.GetCredentials()
 	if err != nil {
@@ -426,6 +427,7 @@ func (cp *credentialsProviderWrap) GetAccessKeyId() (accessKeyId *string, err er
 	return
 }
 
+// Deprecated: use GetCredential() instead of
 func (cp *credentialsProviderWrap) GetAccessKeySecret() (accessKeySecret *string, err error) {
 	cc, err := cp.provider.GetCredentials()
 	if err != nil {
@@ -435,6 +437,7 @@ func (cp *credentialsProviderWrap) GetAccessKeySecret() (accessKeySecret *string
 	return
 }
 
+// Deprecated: use GetCredential() instead of
 func (cp *credentialsProviderWrap) GetSecurityToken() (securityToken *string, err error) {
 	cc, err := cp.provider.GetCredentials()
 	if err != nil {
@@ -444,10 +447,12 @@ func (cp *credentialsProviderWrap) GetSecurityToken() (securityToken *string, er
 	return
 }
 
+// Deprecated: don't use it
 func (cp *credentialsProviderWrap) GetBearerToken() (bearerToken *string) {
 	return tea.String("")
 }
 
+// Get credentials
 func (cp *credentialsProviderWrap) GetCredential() (cm *CredentialModel, err error) {
 	c, err := cp.provider.GetCredentials()
 	if err != nil {
