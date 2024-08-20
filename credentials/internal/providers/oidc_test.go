@@ -360,5 +360,6 @@ func TestOIDCCredentialsProviderGetCredentials(t *testing.T) {
 	assert.Equal(t, "akid", cc.AccessKeyId)
 	assert.Equal(t, "aksecret", cc.AccessKeySecret)
 	assert.Equal(t, "ststoken", cc.SecurityToken)
+	assert.Equal(t, "oidc_role_arn", cc.ProviderName)
 	assert.True(t, p.needUpdateCredential())
 }
