@@ -67,6 +67,17 @@ func TestNewCredentialWithAK(t *testing.T) {
 	assert.Equal(t, "AccessKeyId", *cm.AccessKeyId)
 	assert.Equal(t, "AccessKeySecret", *cm.AccessKeySecret)
 	assert.Equal(t, "", *cm.SecurityToken)
+
+	// test deprecated methods
+	accessKeyId, err := cred.GetAccessKeyId()
+	assert.Nil(t, err)
+	assert.Equal(t, "AccessKeyId", *accessKeyId)
+	accessKeySecret, err := cred.GetAccessKeySecret()
+	assert.Nil(t, err)
+	assert.Equal(t, "AccessKeySecret", *accessKeySecret)
+	securityToken, err := cred.GetSecurityToken()
+	assert.Nil(t, err)
+	assert.Equal(t, "", *securityToken)
 }
 
 func TestNewCredentialWithSts(t *testing.T) {
@@ -191,6 +202,11 @@ func TestNewCredentialWithRAMRoleARN(t *testing.T) {
 	assert.Nil(t, cred)
 
 	config.SetRoleArn("roleArn")
+	cred, err = NewCredential(config)
+	assert.Nil(t, err)
+	assert.NotNil(t, cred)
+
+	config.SetRoleSessionName("role_session_name")
 	cred, err = NewCredential(config)
 	assert.Nil(t, err)
 	assert.NotNil(t, cred)
