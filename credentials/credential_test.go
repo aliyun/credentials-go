@@ -213,25 +213,22 @@ func TestNewCredentialWithOIDC(t *testing.T) {
 	config.SetType("oidc_role_arn")
 	cred, err := NewCredential(config)
 	assert.NotNil(t, err)
-	assert.Equal(t, "RoleArn cannot be empty", err.Error())
+	assert.Equal(t, "the OIDCTokenFilePath is empty", err.Error())
 	assert.Nil(t, cred)
 
-	config.SetRoleArn("role_arn")
+	config.SetOIDCTokenFilePath("oidc_token_file_path_test")
 	cred, err = NewCredential(config)
 	assert.NotNil(t, err)
-	assert.Equal(t, "OIDCProviderArn cannot be empty", err.Error())
+	assert.Equal(t, "the OIDCProviderARN is empty", err.Error())
 	assert.Nil(t, cred)
 
-	config.SetOIDCProviderArn("oidc_provider_arn_test").
-		SetRoleArn("role_arn_test")
+	config.SetOIDCProviderArn("oidc_provider_arn_test")
 	cred, err = NewCredential(config)
 	assert.NotNil(t, err)
-	assert.Equal(t, "the OIDC token file path is empty", err.Error())
+	assert.Equal(t, "the RoleArn is empty", err.Error())
 	assert.Nil(t, cred)
 
-	config.SetOIDCProviderArn("oidc_provider_arn_test").
-		SetOIDCTokenFilePath("oidc_token_file_path_test").
-		SetRoleArn("role_arn_test")
+	config.SetRoleArn("role_arn_test")
 	cred, err = NewCredential(config)
 	assert.Nil(t, err)
 	assert.NotNil(t, cred)
