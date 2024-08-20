@@ -2,6 +2,7 @@ package providers
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -24,7 +25,7 @@ func (b *CLIProfileCredentialsProviderBuilder) WithProfileName(profileName strin
 	return b
 }
 
-func (b *CLIProfileCredentialsProviderBuilder) Build() *CLIProfileCredentialsProvider {
+func (b *CLIProfileCredentialsProviderBuilder) Build() (provider *CLIProfileCredentialsProvider, err error) {
 	// 优先级：
 	// 1. 使用显示指定的 profileName
 	// 2. 使用环境变量（ALIBABA_CLOUD_PROFILE）制定的 profileName
@@ -33,7 +34,13 @@ func (b *CLIProfileCredentialsProviderBuilder) Build() *CLIProfileCredentialsPro
 		b.provider.profileName = os.Getenv("ALIBABA_CLOUD_PROFILE")
 	}
 
-	return b.provider
+	if os.Getenv("ALIBABA_CLOUD_CLI_PROFILE_DISABLED") == "true" {
+		err = errors.New("the CLI profile is disabled")
+		return
+	}
+
+	provider = b.provider
+	return
 }
 
 func NewCLIProfileCredentialsProviderBuilder() *CLIProfileCredentialsProviderBuilder {

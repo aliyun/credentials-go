@@ -13,15 +13,23 @@ import (
 func TestCLIProfileCredentialsProvider(t *testing.T) {
 	rollback := utils.Memory("ALIBABA_CLOUD_PROFILE")
 	defer rollback()
-	b := NewCLIProfileCredentialsProviderBuilder().Build()
+
+	b, err := NewCLIProfileCredentialsProviderBuilder().
+		Build()
+	assert.Nil(t, err)
 	assert.Equal(t, "", b.profileName)
 
 	// get from env
 	os.Setenv("ALIBABA_CLOUD_PROFILE", "custom_profile")
-	b = NewCLIProfileCredentialsProviderBuilder().Build()
+	b, err = NewCLIProfileCredentialsProviderBuilder().
+		Build()
+	assert.Nil(t, err)
 	assert.Equal(t, "custom_profile", b.profileName)
 
-	b = NewCLIProfileCredentialsProviderBuilder().WithProfileName("profilename").Build()
+	b, err = NewCLIProfileCredentialsProviderBuilder().
+		WithProfileName("profilename").
+		Build()
+	assert.Nil(t, err)
 	assert.Equal(t, "profilename", b.profileName)
 }
 
@@ -118,8 +126,9 @@ func TestCLIProfileCredentialsProvider_getCredentialsProvider(t *testing.T) {
 		},
 	}
 
-	provider := NewCLIProfileCredentialsProviderBuilder().Build()
-	_, err := provider.getCredentialsProvider(conf, "inexist")
+	provider, err := NewCLIProfileCredentialsProviderBuilder().Build()
+	assert.Nil(t, err)
+	_, err = provider.getCredentialsProvider(conf, "inexist")
 	assert.EqualError(t, err, "unable to get profile with 'inexist'")
 
 	// AK
@@ -172,14 +181,16 @@ func TestCLIProfileCredentialsProvider_GetCredentials(t *testing.T) {
 	getHomePath = func() string {
 		return ""
 	}
-	provider := NewCLIProfileCredentialsProviderBuilder().Build()
-	_, err := provider.GetCredentials()
+	provider, err := NewCLIProfileCredentialsProviderBuilder().Build()
+	assert.Nil(t, err)
+	_, err = provider.GetCredentials()
 	assert.EqualError(t, err, "cannot found home dir")
 
 	getHomePath = func() string {
 		return "/path/invalid/home/dir"
 	}
-	provider = NewCLIProfileCredentialsProviderBuilder().Build()
+	provider, err = NewCLIProfileCredentialsProviderBuilder().Build()
+	assert.Nil(t, err)
 	_, err = provider.GetCredentials()
 	assert.EqualError(t, err, "reading aliyun cli config from '/path/invalid/home/dir/.aliyun/config.json' failed open /path/invalid/home/dir/.aliyun/config.json: no such file or directory")
 
@@ -189,17 +200,20 @@ func TestCLIProfileCredentialsProvider_GetCredentials(t *testing.T) {
 	}
 
 	// get credentials by current profile
-	provider = NewCLIProfileCredentialsProviderBuilder().Build()
+	provider, err = NewCLIProfileCredentialsProviderBuilder().Build()
+	assert.Nil(t, err)
 	cc, err := provider.GetCredentials()
 	assert.Nil(t, err)
 	assert.Equal(t, &Credentials{AccessKeyId: "akid", AccessKeySecret: "secret", SecurityToken: "", ProviderName: "cli_profile/static_ak"}, cc)
 
-	provider = NewCLIProfileCredentialsProviderBuilder().WithProfileName("inexist").Build()
+	provider, err = NewCLIProfileCredentialsProviderBuilder().WithProfileName("inexist").Build()
+	assert.Nil(t, err)
 	_, err = provider.GetCredentials()
 	assert.EqualError(t, err, "unable to get profile with 'inexist'")
 
 	// The get_credentials_error profile is invalid
-	provider = NewCLIProfileCredentialsProviderBuilder().WithProfileName("get_credentials_error").Build()
+	provider, err = NewCLIProfileCredentialsProviderBuilder().WithProfileName("get_credentials_error").Build()
+	assert.Nil(t, err)
 	_, err = provider.GetCredentials()
 	assert.Contains(t, err.Error(), "InvalidAccessKeyId.NotFound")
 }

@@ -27,11 +27,16 @@ func NewDefaultCredentialsProvider() (provider *DefaultCredentialsProvider) {
 	}
 
 	// cli credentials provider
-	providers = append(providers, NewCLIProfileCredentialsProviderBuilder().Build())
+	cliProfileProvider, err := NewCLIProfileCredentialsProviderBuilder().Build()
+	if err == nil {
+		providers = append(providers, cliProfileProvider)
+	}
 
 	// profile credentials provider
-	// providers = append(providers)
-	providers = append(providers, NewProfileCredentialsProviderBuilder().Build())
+	profileProvider, err := NewProfileCredentialsProviderBuilder().Build()
+	if err == nil {
+		providers = append(providers, profileProvider)
+	}
 
 	// Add IMDS
 	if os.Getenv("ALIBABA_CLOUD_ECS_METADATA") != "" {

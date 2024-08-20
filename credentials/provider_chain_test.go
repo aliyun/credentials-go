@@ -116,8 +116,9 @@ func TestDefaultChainHasCred(t *testing.T) {
 	assert.Equal(t, "roleSessionName", tea.StringValue(config.RoleSessionName))
 	assert.Equal(t, "oidc_role_arn", tea.StringValue(config.Type))
 
+	os.Setenv("ALIBABA_CLOUD_CLI_PROFILE_DISABLED", "true")
 	cred, err := NewCredential(nil)
 	assert.Nil(t, err)
 	assert.NotNil(t, cred)
-	assert.Contains(t, "oidc_role_arn", tea.StringValue(cred.GetType()))
+	assert.Equal(t, "default", *cred.GetType())
 }

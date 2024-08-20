@@ -197,11 +197,9 @@ func (s *Config) SetSTSEndpoint(v string) *Config {
 // please see README.md for detail.
 func NewCredential(config *Config) (credential Credential, err error) {
 	if config == nil {
-		config, err = defaultChain.resolve()
-		if err != nil {
-			return
-		}
-		return NewCredential(config)
+		provider := providers.NewDefaultCredentialsProvider()
+		credential = fromCredentialsProvider("default", provider)
+		return
 	}
 	switch tea.StringValue(config.Type) {
 	case "credentials_uri":

@@ -23,23 +23,26 @@ func TestConfig(t *testing.T) {
 }
 
 func TestNewCredentialWithNil(t *testing.T) {
-	originAccessKey := os.Getenv(EnvVarAccessKeyId)
-	originAccessSecret := os.Getenv(EnvVarAccessKeySecret)
+	rollback := utils.Memory(EnvVarAccessKeyId, EnvVarAccessKeySecret, "ALIBABA_CLOUD_CLI_PROFILE_DISABLED")
+	defer func() {
+		rollback()
+	}()
+
 	os.Setenv(EnvVarAccessKeyId, "accesskey")
 	os.Setenv(EnvVarAccessKeySecret, "accesssecret")
-	defer func() {
-		os.Setenv(EnvVarAccessKeyId, originAccessKey)
-		os.Setenv(EnvVarAccessKeySecret, originAccessSecret)
-	}()
+
 	cred, err := NewCredential(nil)
 	assert.Nil(t, err)
 	assert.NotNil(t, cred)
+
 	os.Unsetenv(EnvVarAccessKeyId)
 	os.Unsetenv(EnvVarAccessKeySecret)
+	os.Setenv("ALIBABA_CLOUD_CLI_PROFILE_DISABLED", "true")
+
 	cred, err = NewCredential(nil)
-	assert.NotNil(t, err)
-	assert.Equal(t, "no credential found", err.Error())
-	assert.Nil(t, cred)
+	assert.Nil(t, err)
+	_, err = cred.GetCredential()
+	assert.Contains(t, err.Error(), "unable to get credentials from any of the providers in the chain:")
 }
 
 func TestNewCredentialWithAK(t *testing.T) {
