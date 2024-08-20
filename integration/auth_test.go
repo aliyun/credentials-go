@@ -78,4 +78,17 @@ func TestOidc(t *testing.T) {
 	assert.NotNil(t, c.AccessKeyId)
 	assert.NotNil(t, c.AccessKeySecret)
 	assert.NotNil(t, c.SecurityToken)
+	assert.Equal(t, "oidc_role_arn", *c.Type)
+}
+
+func TestDefaultProvider(t *testing.T) {
+	cred, err := credentials.NewCredential(nil)
+	assert.Nil(t, err)
+	assert.NotNil(t, cred)
+	c, err := cred.GetCredential()
+	assert.Nil(t, err)
+	assert.NotNil(t, c.AccessKeyId)
+	assert.NotNil(t, c.AccessKeySecret)
+	assert.NotNil(t, c.SecurityToken)
+	assert.Equal(t, "default/oidc_role_arn", *c.Type)
 }

@@ -263,5 +263,5 @@ func (provider *OIDCCredentialsProvider) GetCredentials() (cc *Credentials, err 
 }
 
 func (provider *OIDCCredentialsProvider) GetProviderName() string {
-	return "oidc"
+	return "oidc_role_arn"
 }
