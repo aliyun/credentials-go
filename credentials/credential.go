@@ -207,30 +207,28 @@ func NewCredential(config *Config) (credential Credential, err error) {
 	case "credentials_uri":
 		credential = newURLCredential(tea.StringValue(config.Url))
 	case "oidc_role_arn":
-		err = checkoutAssumeRamoidc(config)
-		if err != nil {
-			return
-		}
 		runtime := &utils.Runtime{
 			Host:           tea.StringValue(config.Host),
 			Proxy:          tea.StringValue(config.Proxy),
 			ReadTimeout:    tea.IntValue(config.Timeout),
 			ConnectTimeout: tea.IntValue(config.ConnectTimeout),
-			STSEndpoint:    tea.StringValue(config.STSEndpoint),
 		}
-		credential, err = newOIDCRoleArnCredential(
-			tea.StringValue(config.AccessKeyId),
-			tea.StringValue(config.AccessKeySecret),
-			tea.StringValue(config.RoleArn),
-			tea.StringValue(config.OIDCProviderArn),
-			tea.StringValue(config.OIDCTokenFilePath),
-			tea.StringValue(config.RoleSessionName),
-			tea.StringValue(config.Policy),
-			tea.IntValue(config.RoleSessionExpiration),
-			runtime)
+
+		provider, err := providers.NewOIDCCredentialsProviderBuilder().
+			WithRoleArn(tea.StringValue(config.RoleArn)).
+			WithOIDCTokenFilePath(tea.StringValue(config.OIDCTokenFilePath)).
+			WithOIDCProviderARN(tea.StringValue(config.OIDCProviderArn)).
+			WithDurationSeconds(tea.IntValue(config.RoleSessionExpiration)).
+			WithPolicy(tea.StringValue(config.Policy)).
+			WithRoleSessionName(tea.StringValue(config.RoleSessionName)).
+			WithSTSEndpoint(tea.StringValue(config.STSEndpoint)).
+			WithRuntime(runtime).
+			Build()
+
 		if err != nil {
-			return
+			return nil, err
 		}
+		credential = fromCredentialsProvider("oidc_role_arn", provider)
 	case "access_key":
 		provider, err := providers.NewStaticAKCredentialsProviderBuilder().
 			WithAccessKeyId(tea.StringValue(config.AccessKeyId)).
@@ -353,18 +351,6 @@ func checkRSAKeyPair(config *Config) (err error) {
 	}
 	if tea.StringValue(config.PublicKeyId) == "" {
 		err = errors.New("PublicKeyId cannot be empty")
-		return
-	}
-	return
-}
-
-func checkoutAssumeRamoidc(config *Config) (err error) {
-	if tea.StringValue(config.RoleArn) == "" {
-		err = errors.New("RoleArn cannot be empty")
-		return
-	}
-	if tea.StringValue(config.OIDCProviderArn) == "" {
-		err = errors.New("OIDCProviderArn cannot be empty")
 		return
 	}
 	return
