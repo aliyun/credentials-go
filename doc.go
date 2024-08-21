@@ -1,2 +1,2 @@
-// Package doc is created for depping ensure.
-package doc
+// Package credentials-go
+package credentials_go
