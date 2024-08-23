@@ -4,19 +4,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
-	"net/http"
 	"os"
 	"strconv"
 	"strings"
 	"time"
 
+	httputil "github.com/aliyun/credentials-go/credentials/internal/http"
 	"github.com/aliyun/credentials-go/credentials/internal/utils"
-	"github.com/aliyun/credentials-go/credentials/request"
 )
-
-const securityCredURL = "http://100.100.100.200/latest/meta-data/ram/security-credentials/"
-const apiTokenURL = "http://100.100.100.200/latest/api/token"
 
 type ECSRAMRoleCredentialsProvider struct {
 	roleName                     string
@@ -100,10 +95,14 @@ func (provider *ECSRAMRoleCredentialsProvider) needUpdateCredential() bool {
 }
 
 func (provider *ECSRAMRoleCredentialsProvider) getRoleName() (roleName string, err error) {
-	httpRequest, err := hookNewRequest(http.NewRequest)("GET", securityCredURL, strings.NewReader(""))
-	if err != nil {
-		err = fmt.Errorf("get role name failed: %s", err.Error())
-		return
+	req := &httputil.Request{
+		Method:         "GET",
+		Protocol:       "http",
+		Host:           "100.100.100.200",
+		Path:           "/latest/meta-data/ram/security-credentials/",
+		ConnectTimeout: 5 * time.Second,
+		ReadTimeout:    5 * time.Second,
+		Headers:        map[string]string{},
 	}
 
 	if provider.enableIMDSv2 {
@@ -111,31 +110,21 @@ func (provider *ECSRAMRoleCredentialsProvider) getRoleName() (roleName string, e
 		if err != nil {
 			return "", err
 		}
-		httpRequest.Header.Set("x-aliyun-ecs-metadata-token", metadataToken)
+		req.Headers["x-aliyun-ecs-metadata-token"] = metadataToken
 	}
 
-	httpClient := &http.Client{
-		Timeout: 5 * time.Second,
-	}
-	httpResponse, err := hookDo(httpClient.Do)(httpRequest)
+	res, err := httpDo(req)
 	if err != nil {
 		err = fmt.Errorf("get role name failed: %s", err.Error())
 		return
 	}
 
-	if httpResponse.StatusCode != http.StatusOK {
-		err = fmt.Errorf("get role name failed: request %s %d", securityCredURL, httpResponse.StatusCode)
+	if res.StatusCode != 200 {
+		err = fmt.Errorf("get role name failed: %s %d", req.BuildRequestURL(), res.StatusCode)
 		return
 	}
 
-	defer httpResponse.Body.Close()
-
-	responseBody, err := ioutil.ReadAll(httpResponse.Body)
-	if err != nil {
-		return
-	}
-
-	roleName = strings.TrimSpace(string(responseBody))
+	roleName = strings.TrimSpace(string(res.Body))
 	return
 }
 
@@ -148,11 +137,14 @@ func (provider *ECSRAMRoleCredentialsProvider) getCredentials() (session *sessio
 		}
 	}
 
-	requestUrl := securityCredURL + roleName
-	httpRequest, err := hookNewRequest(http.NewRequest)("GET", requestUrl, strings.NewReader(""))
-	if err != nil {
-		err = fmt.Errorf("refresh Ecs sts token err: %s", err.Error())
-		return
+	req := &httputil.Request{
+		Method:         "GET",
+		Protocol:       "http",
+		Host:           "100.100.100.200",
+		Path:           "/latest/meta-data/ram/security-credentials/" + roleName,
+		ConnectTimeout: 5 * time.Second,
+		ReadTimeout:    5 * time.Second,
+		Headers:        map[string]string{},
 	}
 
 	if provider.enableIMDSv2 {
@@ -160,32 +152,22 @@ func (provider *ECSRAMRoleCredentialsProvider) getCredentials() (session *sessio
 		if err != nil {
 			return nil, err
 		}
-		httpRequest.Header.Set("x-aliyun-ecs-metadata-token", metadataToken)
+		req.Headers["x-aliyun-ecs-metadata-token"] = metadataToken
 	}
 
-	httpClient := &http.Client{
-		Timeout: 5 * time.Second,
-	}
-	httpResponse, err := hookDo(httpClient.Do)(httpRequest)
+	res, err := httpDo(req)
 	if err != nil {
 		err = fmt.Errorf("refresh Ecs sts token err: %s", err.Error())
 		return
 	}
 
-	defer httpResponse.Body.Close()
-
-	responseBody, err := ioutil.ReadAll(httpResponse.Body)
-	if err != nil {
-		return
-	}
-
-	if httpResponse.StatusCode != http.StatusOK {
-		err = fmt.Errorf("refresh Ecs sts token err, httpStatus: %d, message = %s", httpResponse.StatusCode, string(responseBody))
+	if res.StatusCode != 200 {
+		err = fmt.Errorf("refresh Ecs sts token err, httpStatus: %d, message = %s", res.StatusCode, string(res.Body))
 		return
 	}
 
 	var data ecsRAMRoleResponse
-	err = json.Unmarshal(responseBody, &data)
+	err = json.Unmarshal(res.Body, &data)
 	if err != nil {
 		err = fmt.Errorf("refresh Ecs sts token err, json.Unmarshal fail: %s", err.Error())
 		return
@@ -239,15 +221,23 @@ func (provider *ECSRAMRoleCredentialsProvider) GetProviderName() string {
 }
 
 func (provider *ECSRAMRoleCredentialsProvider) getMetadataToken() (metadataToken string, err error) {
-	request := request.NewCommonRequest()
-	request.URL = apiTokenURL
-	request.Method = "PUT"
-	request.Headers["X-aliyun-ecs-metadata-token-ttl-seconds"] = strconv.Itoa(provider.metadataTokenDurationSeconds)
-	content, err := doAction(request, provider.runtime)
+	// PUT http://100.100.100.200/latest/api/token
+	req := &httputil.Request{
+		Method:   "PUT",
+		Protocol: "http",
+		Host:     "100.100.100.200",
+		Path:     "/latest/api/token",
+		Headers: map[string]string{
+			"X-aliyun-ecs-metadata-token-ttl-seconds": strconv.Itoa(provider.metadataTokenDurationSeconds),
+		},
+		ConnectTimeout: 5 * time.Second,
+		ReadTimeout:    5 * time.Second,
+	}
+	res, err := httpDo(req)
 	if err != nil {
 		err = fmt.Errorf("get metadata token failed: %s", err.Error())
 		return
 	}
-	metadataToken = string(content)
+	metadataToken = string(res.Body)
 	return
 }
