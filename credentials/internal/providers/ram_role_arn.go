@@ -4,13 +4,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
 	"time"
 
+	httputil "github.com/aliyun/credentials-go/credentials/internal/http"
 	"github.com/aliyun/credentials-go/credentials/internal/utils"
 )
 
@@ -157,7 +157,13 @@ func (builder *RAMRoleARNCredentialsProviderBuilder) Build() (provider *RAMRoleA
 
 func (provider *RAMRoleARNCredentialsProvider) getCredentials(cc *Credentials) (session *sessionCredentials, err error) {
 	method := "POST"
-	host := provider.stsEndpoint
+	req := &httputil.Request{
+		Method:   method,
+		Protocol: "https",
+		Host:     provider.stsEndpoint,
+		Headers:  map[string]string{},
+	}
+
 	queries := make(map[string]string)
 	queries["Version"] = "2015-04-01"
 	queries["Action"] = "AssumeRole"
@@ -167,6 +173,7 @@ func (provider *RAMRoleARNCredentialsProvider) getCredentials(cc *Credentials) (
 	queries["SignatureVersion"] = "1.0"
 	queries["SignatureNonce"] = utils.GetNonce()
 	queries["AccessKeyId"] = cc.AccessKeyId
+
 	if cc.SecurityToken != "" {
 		queries["SecurityToken"] = cc.SecurityToken
 	}
@@ -181,6 +188,7 @@ func (provider *RAMRoleARNCredentialsProvider) getCredentials(cc *Credentials) (
 	}
 	bodyForm["RoleSessionName"] = provider.roleSessionName
 	bodyForm["DurationSeconds"] = strconv.Itoa(provider.durationSeconds)
+	req.Form = bodyForm
 
 	// caculate signature
 	signParams := make(map[string]string)
@@ -200,58 +208,30 @@ func (provider *RAMRoleARNCredentialsProvider) getCredentials(cc *Credentials) (
 	secret := cc.AccessKeySecret + "&"
 	queries["Signature"] = utils.ShaHmac1(stringToSign, secret)
 
-	querystring := utils.GetURLFormedMap(queries)
-	// do request
-	httpUrl := fmt.Sprintf("https://%s/?%s", host, querystring)
-
-	body := utils.GetURLFormedMap(bodyForm)
-
-	httpRequest, err := hookNewRequest(http.NewRequest)(method, httpUrl, strings.NewReader(body))
-	if err != nil {
-		return
-	}
+	req.Queries = queries
 
 	// set headers
-	httpRequest.Header["Accept-Encoding"] = []string{"identity"}
-	httpRequest.Header["Content-Type"] = []string{"application/x-www-form-urlencoded"}
-	httpRequest.Header["x-credentials-provider"] = []string{cc.ProviderName}
-	httpClient := &http.Client{}
+	req.Headers["Accept-Encoding"] = "identity"
+	req.Headers["Content-Type"] = "application/x-www-form-urlencoded"
+	req.Headers["x-acs-credentials-provider"] = cc.ProviderName
 
 	if provider.httpOptions != nil {
-		httpClient.Timeout = time.Duration(provider.httpOptions.ReadTimeout) * time.Second
-		proxy := &url.URL{}
-		if provider.httpOptions.Proxy != "" {
-			proxy, err = url.Parse(provider.httpOptions.Proxy)
-			if err != nil {
-				return
-			}
-		}
-		trans := &http.Transport{}
-		if proxy != nil && provider.httpOptions.Proxy != "" {
-			trans.Proxy = http.ProxyURL(proxy)
-		}
-		trans.DialContext = utils.Timeout(time.Duration(provider.httpOptions.ConnectTimeout) * time.Second)
-		httpClient.Transport = trans
+		req.ConnectTimeout = time.Duration(provider.httpOptions.ConnectTimeout) * time.Second
+		req.ReadTimeout = time.Duration(provider.httpOptions.ReadTimeout) * time.Second
+		req.Proxy = provider.httpOptions.Proxy
 	}
 
-	httpResponse, err := hookDo(httpClient.Do)(httpRequest)
+	res, err := httpDo(req)
 	if err != nil {
 		return
 	}
 
-	defer httpResponse.Body.Close()
-
-	responseBody, err := ioutil.ReadAll(httpResponse.Body)
-	if err != nil {
-		return
-	}
-
-	if httpResponse.StatusCode != http.StatusOK {
-		err = errors.New("refresh session token failed: " + string(responseBody))
+	if res.StatusCode != http.StatusOK {
+		err = errors.New("refresh session token failed: " + string(res.Body))
 		return
 	}
 	var data assumeRoleResponse
-	err = json.Unmarshal(responseBody, &data)
+	err = json.Unmarshal(res.Body, &data)
 	if err != nil {
 		err = fmt.Errorf("refresh RoleArn sts token err, json.Unmarshal fail: %s", err.Error())
 		return
