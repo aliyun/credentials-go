@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -26,7 +27,8 @@ type OIDCCredentialsProvider struct {
 	lastUpdateTimestamp int64
 	expirationTimestamp int64
 	sessionCredentials  *sessionCredentials
-	runtime             *utils.Runtime
+	// for http options
+	httpOptions *HttpOptions
 }
 
 type OIDCCredentialsProviderBuilder struct {
@@ -79,8 +81,8 @@ func (b *OIDCCredentialsProviderBuilder) WithSTSEndpoint(stsEndpoint string) *OI
 	return b
 }
 
-func (b *OIDCCredentialsProviderBuilder) WithRuntime(runtime *utils.Runtime) *OIDCCredentialsProviderBuilder {
-	b.provider.runtime = runtime
+func (b *OIDCCredentialsProviderBuilder) WithHttpOptions(httpOptions *HttpOptions) *OIDCCredentialsProviderBuilder {
+	b.provider.httpOptions = httpOptions
 	return b
 }
 
@@ -185,6 +187,23 @@ func (provider *OIDCCredentialsProvider) getCredentials() (session *sessionCrede
 	httpRequest.Header["Accept-Encoding"] = []string{"identity"}
 	httpRequest.Header["Content-Type"] = []string{"application/x-www-form-urlencoded"}
 	httpClient := &http.Client{}
+
+	if provider.httpOptions != nil {
+		httpClient.Timeout = time.Duration(provider.httpOptions.ReadTimeout) * time.Second
+		proxy := &url.URL{}
+		if provider.httpOptions.Proxy != "" {
+			proxy, err = url.Parse(provider.httpOptions.Proxy)
+			if err != nil {
+				return
+			}
+		}
+		trans := &http.Transport{}
+		if proxy != nil && provider.httpOptions.Proxy != "" {
+			trans.Proxy = http.ProxyURL(proxy)
+		}
+		trans.DialContext = utils.Timeout(time.Duration(provider.httpOptions.ConnectTimeout) * time.Second)
+		httpClient.Transport = trans
+	}
 
 	httpResponse, err := hookDo(httpClient.Do)(httpRequest)
 	if err != nil {
