@@ -10,14 +10,12 @@ import (
 	"time"
 
 	httputil "github.com/aliyun/credentials-go/credentials/internal/http"
-	"github.com/aliyun/credentials-go/credentials/internal/utils"
 )
 
 type ECSRAMRoleCredentialsProvider struct {
 	roleName                     string
 	metadataTokenDurationSeconds int
 	enableIMDSv2                 bool
-	runtime                      *utils.Runtime
 	// for sts
 	session             *sessionCredentials
 	expirationTimestamp int64
@@ -66,11 +64,6 @@ func (builder *ECSRAMRoleCredentialsProviderBuilder) Build() (provider *ECSRAMRo
 	if builder.provider.metadataTokenDurationSeconds < 1 || builder.provider.metadataTokenDurationSeconds > 21600 {
 		err = errors.New("the metadata token duration seconds must be 1-21600")
 		return
-	}
-
-	builder.provider.runtime = &utils.Runtime{
-		ConnectTimeout: 5,
-		ReadTimeout:    5,
 	}
 
 	provider = builder.provider
