@@ -205,13 +205,6 @@ func NewCredential(config *Config) (credential Credential, err error) {
 	case "credentials_uri":
 		credential = newURLCredential(tea.StringValue(config.Url))
 	case "oidc_role_arn":
-		runtime := &utils.Runtime{
-			Host:           tea.StringValue(config.Host),
-			Proxy:          tea.StringValue(config.Proxy),
-			ReadTimeout:    tea.IntValue(config.Timeout),
-			ConnectTimeout: tea.IntValue(config.ConnectTimeout),
-		}
-
 		provider, err := providers.NewOIDCCredentialsProviderBuilder().
 			WithRoleArn(tea.StringValue(config.RoleArn)).
 			WithOIDCTokenFilePath(tea.StringValue(config.OIDCTokenFilePath)).
@@ -220,7 +213,11 @@ func NewCredential(config *Config) (credential Credential, err error) {
 			WithPolicy(tea.StringValue(config.Policy)).
 			WithRoleSessionName(tea.StringValue(config.RoleSessionName)).
 			WithSTSEndpoint(tea.StringValue(config.STSEndpoint)).
-			WithRuntime(runtime).
+			WithHttpOptions(&providers.HttpOptions{
+				Proxy:          tea.StringValue(config.Proxy),
+				ReadTimeout:    tea.IntValue(config.Timeout),
+				ConnectTimeout: tea.IntValue(config.ConnectTimeout),
+			}).
 			Build()
 
 		if err != nil {
