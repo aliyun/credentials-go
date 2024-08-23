@@ -2,16 +2,14 @@ package providers
 
 import (
 	"errors"
-	"io"
-	"io/ioutil"
-	"net/http"
 	"os"
 	"path"
-	"strconv"
 	"strings"
 	"testing"
 	"time"
 
+	httputil "github.com/aliyun/credentials-go/credentials/internal/http"
+	"github.com/aliyun/credentials-go/credentials/internal/utils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -25,15 +23,24 @@ func TestOIDCCredentialsProviderGetCredentialsWithError(t *testing.T) {
 		WithRoleSessionName("rsn").
 		WithPolicy("policy").
 		WithDurationSeconds(1000).
+		WithHttpOptions(&HttpOptions{
+			ConnectTimeout: 10,
+		}).
 		Build()
 
 	assert.Nil(t, err)
+	assert.Equal(t, 10, p.httpOptions.ConnectTimeout)
 	_, err = p.GetCredentials()
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "AuthenticationFail.NoPermission")
 }
 
 func TestNewOIDCCredentialsProvider(t *testing.T) {
+	rollback := utils.Memory("ALIBABA_CLOUD_OIDC_TOKEN_FILE", "ALIBABA_CLOUD_OIDC_PROVIDER_ARN", "ALIBABA_CLOUD_ROLE_ARN")
+	defer func() {
+		rollback()
+	}()
+
 	_, err := NewOIDCCredentialsProviderBuilder().Build()
 	assert.NotNil(t, err)
 	assert.Equal(t, "the OIDCTokenFilePath is empty", err.Error())
@@ -72,12 +79,6 @@ func TestNewOIDCCredentialsProvider(t *testing.T) {
 	os.Setenv("ALIBABA_CLOUD_OIDC_TOKEN_FILE", "/path/from/env")
 	os.Setenv("ALIBABA_CLOUD_OIDC_PROVIDER_ARN", "provider_arn_from_env")
 	os.Setenv("ALIBABA_CLOUD_ROLE_ARN", "role_arn_from_env")
-
-	defer func() {
-		os.Unsetenv("ALIBABA_CLOUD_OIDC_TOKEN_FILE")
-		os.Unsetenv("ALIBABA_CLOUD_OIDC_PROVIDER_ARN")
-		os.Unsetenv("ALIBABA_CLOUD_ROLE_ARN")
-	}()
 
 	p, err = NewOIDCCredentialsProviderBuilder().
 		Build()
@@ -123,6 +124,9 @@ func TestNewOIDCCredentialsProvider(t *testing.T) {
 }
 
 func TestOIDCCredentialsProvider_getCredentials(t *testing.T) {
+	originHttpDo := httpDo
+	defer func() { httpDo = originHttpDo }()
+
 	// case 0: invalid oidc token file path
 	p, err := NewOIDCCredentialsProviderBuilder().
 		WithOIDCTokenFilePath("/path/to/invalid/oidc.token").
@@ -151,105 +155,70 @@ func TestOIDCCredentialsProvider_getCredentials(t *testing.T) {
 		Build()
 	assert.Nil(t, err)
 
-	originNewRequest := hookNewRequest
-	defer func() { hookNewRequest = originNewRequest }()
-
-	hookNewRequest = func(fn newReuqest) newReuqest {
-		return func(method, url string, body io.Reader) (*http.Request, error) {
-			return nil, errors.New("new http request failed")
-		}
-	}
-
-	_, err = p.getCredentials()
-	assert.NotNil(t, err)
-	assert.Equal(t, "new http request failed", err.Error())
-
-	// reset new request
-	hookNewRequest = originNewRequest
-
-	originDo := hookDo
-	defer func() { hookDo = originDo }()
-
 	// case 2: server error
-	hookDo = func(fn do) do {
-		return func(req *http.Request) (res *http.Response, err error) {
-			err = errors.New("mock server error")
-			return
-		}
+	httpDo = func(req *httputil.Request) (res *httputil.Response, err error) {
+		err = errors.New("mock server error")
+		return
 	}
 	_, err = p.getCredentials()
 	assert.NotNil(t, err)
 	assert.Equal(t, "mock server error", err.Error())
 
-	// case 3: mock read response error
-	hookDo = func(fn do) do {
-		return func(req *http.Request) (res *http.Response, err error) {
-			status := strconv.Itoa(200)
-			res = &http.Response{
-				Proto:      "HTTP/1.1",
-				ProtoMajor: 1,
-				Header:     map[string][]string{},
-				StatusCode: 200,
-				Status:     status + " " + http.StatusText(200),
-			}
-			res.Body = ioutil.NopCloser(&errorReader{})
-			return
+	// case 3: 4xx error
+	httpDo = func(req *httputil.Request) (res *httputil.Response, err error) {
+		res = &httputil.Response{
+			StatusCode: 400,
+			Body:       []byte("4xx error"),
 		}
-	}
-	_, err = p.getCredentials()
-	assert.NotNil(t, err)
-	assert.Equal(t, "read failed", err.Error())
-
-	// case 4: 4xx error
-	hookDo = func(fn do) do {
-		return func(req *http.Request) (res *http.Response, err error) {
-			res = mockResponse(400, "4xx error")
-			return
-		}
+		return
 	}
 	_, err = p.getCredentials()
 	assert.NotNil(t, err)
 	assert.Equal(t, "get session token failed: 4xx error", err.Error())
 
-	// case 5: invalid json
-	hookDo = func(fn do) do {
-		return func(req *http.Request) (res *http.Response, err error) {
-			res = mockResponse(200, "invalid json")
-			return
+	// case 4: invalid json
+	httpDo = func(req *httputil.Request) (res *httputil.Response, err error) {
+		res = &httputil.Response{
+			StatusCode: 200,
+			Body:       []byte("invalid json"),
 		}
+		return
 	}
 	_, err = p.getCredentials()
 	assert.NotNil(t, err)
 	assert.Equal(t, "get oidc sts token err, json.Unmarshal fail: invalid character 'i' looking for beginning of value", err.Error())
 
-	// case 6: empty response json
-	hookDo = func(fn do) do {
-		return func(req *http.Request) (res *http.Response, err error) {
-			res = mockResponse(200, "null")
-			return
+	// case 5: empty response json
+	httpDo = func(req *httputil.Request) (res *httputil.Response, err error) {
+		res = &httputil.Response{
+			StatusCode: 200,
+			Body:       []byte("null"),
 		}
+		return
 	}
 	_, err = p.getCredentials()
 	assert.NotNil(t, err)
 	assert.Equal(t, "get oidc sts token err, fail to get credentials", err.Error())
 
-	// case 7: empty session ak response json
-	hookDo = func(fn do) do {
-		return func(req *http.Request) (res *http.Response, err error) {
-			res = mockResponse(200, `{"Credentials": {}}`)
-			return
+	// case 6: empty session ak response json
+	httpDo = func(req *httputil.Request) (res *httputil.Response, err error) {
+		res = &httputil.Response{
+			StatusCode: 200,
+			Body:       []byte(`{"Credentials": {}}`),
 		}
+		return
 	}
 	_, err = p.getCredentials()
 	assert.NotNil(t, err)
 	assert.Equal(t, "refresh RoleArn sts token err, fail to get credentials", err.Error())
 
-	// case 8: mock ok value
-	hookDo = func(fn do) do {
-		return func(req *http.Request) (res *http.Response, err error) {
-			res = mockResponse(200, `{"Credentials": {"AccessKeyId":"saki","AccessKeySecret":"saks","Expiration":"2021-10-20T04:27:09Z","SecurityToken":"token"}}`)
-			return
+	// case 7: mock ok value
+	httpDo = func(req *httputil.Request) (res *httputil.Response, err error) {
+		res = &httputil.Response{
+			StatusCode: 200,
+			Body:       []byte(`{"Credentials": {"AccessKeyId":"saki","AccessKeySecret":"saks","Expiration":"2021-10-20T04:27:09Z","SecurityToken":"token"}}`),
 		}
+		return
 	}
 	creds, err := p.getCredentials()
 	assert.Nil(t, err)
@@ -268,8 +237,8 @@ func TestOIDCCredentialsProvider_getCredentials(t *testing.T) {
 }
 
 func TestOIDCCredentialsProvider_getCredentialsWithRequestCheck(t *testing.T) {
-	originDo := hookDo
-	defer func() { hookDo = originDo }()
+	originHttpDo := httpDo
+	defer func() { httpDo = originHttpDo }()
 
 	// case 1: mock new http request failed
 	wd, _ := os.Getwd()
@@ -286,31 +255,25 @@ func TestOIDCCredentialsProvider_getCredentialsWithRequestCheck(t *testing.T) {
 	assert.Nil(t, err)
 
 	// case 1: server error
-	hookDo = func(fn do) do {
-		return func(req *http.Request) (res *http.Response, err error) {
-			assert.Equal(t, "sts.aliyuncs.com", req.Host)
-			assert.Contains(t, req.URL.String(), "Action=AssumeRoleWithOIDC")
-			body, err := ioutil.ReadAll(req.Body)
-			assert.Nil(t, err)
-			bodyString := string(body)
-			assert.Contains(t, bodyString, "Policy=policy")
-			assert.Contains(t, bodyString, "RoleArn=roleArn")
-			assert.Contains(t, bodyString, "RoleSessionName=rsn")
-			assert.Contains(t, bodyString, "DurationSeconds=1000")
+	httpDo = func(req *httputil.Request) (res *httputil.Response, err error) {
+		assert.Equal(t, "sts.aliyuncs.com", req.Host)
+		assert.Equal(t, "AssumeRoleWithOIDC", req.Queries["Action"])
+		assert.Equal(t, "policy", req.Form["Policy"])
+		assert.Equal(t, "roleArn", req.Form["RoleArn"])
+		assert.Equal(t, "rsn", req.Form["RoleSessionName"])
+		assert.Equal(t, "1000", req.Form["DurationSeconds"])
 
-			err = errors.New("mock server error")
-			return
-		}
+		err = errors.New("mock server error")
+		return
 	}
-
 	_, err = p.getCredentials()
 	assert.NotNil(t, err)
 	assert.Equal(t, "mock server error", err.Error())
 }
 
 func TestOIDCCredentialsProviderGetCredentials(t *testing.T) {
-	originDo := hookDo
-	defer func() { hookDo = originDo }()
+	originHttpDo := httpDo
+	defer func() { httpDo = originHttpDo }()
 
 	// case 1: mock new http request failed
 	wd, _ := os.Getwd()
@@ -326,34 +289,34 @@ func TestOIDCCredentialsProviderGetCredentials(t *testing.T) {
 
 	assert.Nil(t, err)
 
-	// case 1: get credentials failed
-	hookDo = func(fn do) do {
-		return func(req *http.Request) (res *http.Response, err error) {
-			err = errors.New("mock server error")
-			return
-		}
+	// case 2: get credentials failed
+	httpDo = func(req *httputil.Request) (res *httputil.Response, err error) {
+		err = errors.New("mock server error")
+		return
 	}
 	_, err = p.GetCredentials()
 	assert.NotNil(t, err)
 	assert.Equal(t, "mock server error", err.Error())
 
 	// case 2: get invalid expiration
-	hookDo = func(fn do) do {
-		return func(req *http.Request) (res *http.Response, err error) {
-			res = mockResponse(200, `{"Credentials": {"AccessKeyId":"akid","AccessKeySecret":"aksecret","Expiration":"invalidexpiration","SecurityToken":"ststoken"}}`)
-			return
+	httpDo = func(req *httputil.Request) (res *httputil.Response, err error) {
+		res = &httputil.Response{
+			StatusCode: 200,
+			Body:       []byte(`{"Credentials": {"AccessKeyId":"akid","AccessKeySecret":"aksecret","Expiration":"invalidexpiration","SecurityToken":"ststoken"}}`),
 		}
+		return
 	}
 	_, err = p.GetCredentials()
 	assert.NotNil(t, err)
 	assert.Equal(t, "parsing time \"invalidexpiration\" as \"2006-01-02T15:04:05Z\": cannot parse \"invalidexpiration\" as \"2006\"", err.Error())
 
 	// case 3: happy result
-	hookDo = func(fn do) do {
-		return func(req *http.Request) (res *http.Response, err error) {
-			res = mockResponse(200, `{"Credentials": {"AccessKeyId":"akid","AccessKeySecret":"aksecret","Expiration":"2021-10-20T04:27:09Z","SecurityToken":"ststoken"}}`)
-			return
+	httpDo = func(req *httputil.Request) (res *httputil.Response, err error) {
+		res = &httputil.Response{
+			StatusCode: 200,
+			Body:       []byte(`{"Credentials": {"AccessKeyId":"akid","AccessKeySecret":"aksecret","Expiration":"2021-10-20T04:27:09Z","SecurityToken":"ststoken"}}`),
 		}
+		return
 	}
 	cc, err := p.GetCredentials()
 	assert.Nil(t, err)
