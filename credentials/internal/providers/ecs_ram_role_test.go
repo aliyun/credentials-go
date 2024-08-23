@@ -2,13 +2,10 @@ package providers
 
 import (
 	"errors"
-	"io"
-	"io/ioutil"
-	"net/http"
-	"strconv"
 	"testing"
 	"time"
 
+	httputil "github.com/aliyun/credentials-go/credentials/internal/http"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -30,75 +27,42 @@ func TestNewECSRAMRoleCredentialsProvider(t *testing.T) {
 }
 
 func TestECSRAMRoleCredentialsProvider_getRoleName(t *testing.T) {
+	originHttpDo := httpDo
+	defer func() { httpDo = originHttpDo }()
+
 	p, err := NewECSRAMRoleCredentialsProviderBuilder().Build()
 	assert.Nil(t, err)
 
-	originNewRequest := hookNewRequest
-	defer func() { hookNewRequest = originNewRequest }()
-
-	// case 1: mock new http request failed
-	hookNewRequest = func(fn newReuqest) newReuqest {
-		return func(method, url string, body io.Reader) (*http.Request, error) {
-			return nil, errors.New("new http request failed")
-		}
+	// case 1: server error
+	httpDo = func(req *httputil.Request) (res *httputil.Response, err error) {
+		err = errors.New("mock server error")
+		return
 	}
-	_, err = p.getRoleName()
-	assert.NotNil(t, err)
-	assert.Equal(t, "get role name failed: new http request failed", err.Error())
-	// reset new request
-	hookNewRequest = originNewRequest
 
-	originDo := hookDo
-	defer func() { hookDo = originDo }()
-
-	// case 2: server error
-	hookDo = func(fn do) do {
-		return func(req *http.Request) (res *http.Response, err error) {
-			err = errors.New("mock server error")
-			return
-		}
-	}
 	_, err = p.getRoleName()
 	assert.NotNil(t, err)
 	assert.Equal(t, "get role name failed: mock server error", err.Error())
 
-	// case 3: 4xx error
-	hookDo = func(fn do) do {
-		return func(req *http.Request) (res *http.Response, err error) {
-			res = mockResponse(400, "4xx error")
-			return
+	// case 2: 4xx error
+	httpDo = func(req *httputil.Request) (res *httputil.Response, err error) {
+		res = &httputil.Response{
+			StatusCode: 400,
+			Body:       []byte("4xx error"),
 		}
+		return
 	}
 
 	_, err = p.getRoleName()
 	assert.NotNil(t, err)
-	assert.Equal(t, "get role name failed: request http://100.100.100.200/latest/meta-data/ram/security-credentials/ 400", err.Error())
+	assert.Equal(t, "get role name failed: GET http://100.100.100.200/latest/meta-data/ram/security-credentials/ 400", err.Error())
 
-	// case 4: mock read response error
-	hookDo = func(fn do) do {
-		return func(req *http.Request) (res *http.Response, err error) {
-			status := strconv.Itoa(200)
-			res = &http.Response{
-				Proto:      "HTTP/1.1",
-				ProtoMajor: 1,
-				Header:     map[string][]string{},
-				StatusCode: 200,
-				Status:     status + " " + http.StatusText(200),
-			}
-			res.Body = ioutil.NopCloser(&errorReader{})
-			return
+	// case 3: ok
+	httpDo = func(req *httputil.Request) (res *httputil.Response, err error) {
+		res = &httputil.Response{
+			StatusCode: 200,
+			Body:       []byte("rolename"),
 		}
-	}
-	_, err = p.getRoleName()
-	assert.NotNil(t, err)
-	assert.Equal(t, "read failed", err.Error())
-
-	// case 5: value json
-	hookDo = func(fn do) do {
-		return func(req *http.Request) (res *http.Response, err error) {
-			res = mockResponse(200, "rolename")
-			return
-		}
+		return
 	}
 	roleName, err := p.getRoleName()
 	assert.Nil(t, err)
@@ -106,34 +70,38 @@ func TestECSRAMRoleCredentialsProvider_getRoleName(t *testing.T) {
 }
 
 func TestECSRAMRoleCredentialsProvider_getRoleNameWithMetadataV2(t *testing.T) {
+	originHttpDo := httpDo
+	defer func() { httpDo = originHttpDo }()
+
 	p, err := NewECSRAMRoleCredentialsProviderBuilder().WithEnableIMDSv2(true).Build()
 	assert.Nil(t, err)
 
 	// case 1: get metadata token failed
-	originDo := hookDo
-	defer func() { hookDo = originDo }()
-
-	hookDo = func(fn do) do {
-		return func(req *http.Request) (res *http.Response, err error) {
-			err = errors.New("mock server error")
-			return
-		}
+	httpDo = func(req *httputil.Request) (res *httputil.Response, err error) {
+		err = errors.New("mock server error")
+		return
 	}
+
 	_, err = p.getRoleName()
 	assert.NotNil(t, err)
 	assert.Equal(t, "get metadata token failed: mock server error", err.Error())
 
 	// case 2: return token
-	hookDo = func(fn do) do {
-		return func(req *http.Request) (res *http.Response, err error) {
-			if req.URL.Path == "/latest/api/token" {
-				res = mockResponse(200, `tokenxxxxx`)
-			} else {
-				assert.Equal(t, "tokenxxxxx", req.Header.Get("x-aliyun-ecs-metadata-token"))
-				res = mockResponse(200, "rolename")
+	httpDo = func(req *httputil.Request) (res *httputil.Response, err error) {
+		if req.Path == "/latest/api/token" {
+			res = &httputil.Response{
+				StatusCode: 200,
+				Body:       []byte("tokenxxxxx"),
 			}
-			return
+		} else {
+			assert.Equal(t, "tokenxxxxx", req.Headers["x-aliyun-ecs-metadata-token"])
+
+			res = &httputil.Response{
+				StatusCode: 200,
+				Body:       []byte("rolename"),
+			}
 		}
+		return
 	}
 
 	roleName, err := p.getRoleName()
@@ -142,209 +110,156 @@ func TestECSRAMRoleCredentialsProvider_getRoleNameWithMetadataV2(t *testing.T) {
 }
 
 func TestECSRAMRoleCredentialsProvider_getCredentials(t *testing.T) {
-	originDo := hookDo
-	defer func() { hookDo = originDo }()
+	originHttpDo := httpDo
+	defer func() { httpDo = originHttpDo }()
 
 	p, err := NewECSRAMRoleCredentialsProviderBuilder().Build()
 	assert.Nil(t, err)
 
 	// case 1: server error
-	hookDo = func(fn do) do {
-		return func(req *http.Request) (res *http.Response, err error) {
-			err = errors.New("mock server error")
-			return
-		}
+	httpDo = func(req *httputil.Request) (res *httputil.Response, err error) {
+		err = errors.New("mock server error")
+		return
 	}
 	_, err = p.getCredentials()
 	assert.NotNil(t, err)
 	assert.Equal(t, "get role name failed: mock server error", err.Error())
 
-	hookDo = func(fn do) do {
-		return func(req *http.Request) (res *http.Response, err error) {
-			if req.URL.Path == "/latest/meta-data/ram/security-credentials/" {
-				res = mockResponse(200, "rolename")
-				return
-			}
-
-			err = errors.New("mock server error")
-			return
-		}
-	}
-
-	originNewRequest := hookNewRequest
-	defer func() { hookNewRequest = originNewRequest }()
-
-	// case 2: mock new http request failed
-	hookNewRequest = func(fn newReuqest) newReuqest {
-		return func(method, url string, body io.Reader) (*http.Request, error) {
-			if url == "http://100.100.100.200/latest/meta-data/ram/security-credentials/rolename" {
-				return nil, errors.New("new http request failed")
-			}
-			return http.NewRequest(method, url, body)
-		}
-	}
-
-	_, err = p.getCredentials()
-	assert.NotNil(t, err)
-	assert.Equal(t, "refresh Ecs sts token err: new http request failed", err.Error())
-
-	hookNewRequest = originNewRequest
-
-	// case 3
-	hookDo = func(fn do) do {
-		return func(req *http.Request) (res *http.Response, err error) {
-			if req.URL.Path == "/latest/meta-data/ram/security-credentials/" {
-				res = mockResponse(200, "rolename")
-				return
-			}
-
-			if req.URL.Path == "/latest/meta-data/ram/security-credentials/rolename" {
-				err = errors.New("mock server error")
-				return
+	// case 2: get role name ok, get credentials failed with server error
+	httpDo = func(req *httputil.Request) (res *httputil.Response, err error) {
+		if req.Path == "/latest/meta-data/ram/security-credentials/" {
+			res = &httputil.Response{
+				StatusCode: 200,
+				Body:       []byte("rolename"),
 			}
 			return
 		}
+		err = errors.New("mock server error")
+		return
 	}
+
 	_, err = p.getCredentials()
 	assert.NotNil(t, err)
 	assert.Equal(t, "refresh Ecs sts token err: mock server error", err.Error())
 
-	// case 4: mock read response error
-	hookDo = func(fn do) do {
-		return func(req *http.Request) (res *http.Response, err error) {
-			if req.URL.Path == "/latest/meta-data/ram/security-credentials/" {
-				res = mockResponse(200, "rolename")
-				return
-			}
-
-			if req.URL.Path == "/latest/meta-data/ram/security-credentials/rolename" {
-				status := strconv.Itoa(200)
-				res = &http.Response{
-					Proto:      "HTTP/1.1",
-					ProtoMajor: 1,
-					Header:     map[string][]string{},
-					StatusCode: 200,
-					Status:     status + " " + http.StatusText(200),
-				}
-				res.Body = ioutil.NopCloser(&errorReader{})
-				return
+	// case 3: 4xx error
+	httpDo = func(req *httputil.Request) (res *httputil.Response, err error) {
+		if req.Path == "/latest/meta-data/ram/security-credentials/" {
+			res = &httputil.Response{
+				StatusCode: 200,
+				Body:       []byte("rolename"),
 			}
 			return
 		}
-	}
-	_, err = p.getCredentials()
-	assert.NotNil(t, err)
-	assert.Equal(t, "read failed", err.Error())
 
-	// case 4: 4xx error
-	hookDo = func(fn do) do {
-		return func(req *http.Request) (res *http.Response, err error) {
-			if req.URL.Path == "/latest/meta-data/ram/security-credentials/" {
-				res = mockResponse(200, "rolename")
-				return
-			}
-
-			if req.URL.Path == "/latest/meta-data/ram/security-credentials/rolename" {
-				res = mockResponse(400, "4xx error")
-				return
-			}
-			return
+		res = &httputil.Response{
+			StatusCode: 400,
+			Body:       []byte("4xx error"),
 		}
+		return
 	}
+
 	_, err = p.getCredentials()
 	assert.NotNil(t, err)
 	assert.Equal(t, "refresh Ecs sts token err, httpStatus: 400, message = 4xx error", err.Error())
 
-	// case 5: invalid json
-	hookDo = func(fn do) do {
-		return func(req *http.Request) (res *http.Response, err error) {
-			if req.URL.Path == "/latest/meta-data/ram/security-credentials/" {
-				res = mockResponse(200, "rolename")
-				return
-			}
-
-			if req.URL.Path == "/latest/meta-data/ram/security-credentials/rolename" {
-				res = mockResponse(200, "invalid json")
-				return
+	// case 4: invalid json
+	httpDo = func(req *httputil.Request) (res *httputil.Response, err error) {
+		if req.Path == "/latest/meta-data/ram/security-credentials/" {
+			res = &httputil.Response{
+				StatusCode: 200,
+				Body:       []byte("rolename"),
 			}
 			return
 		}
+
+		res = &httputil.Response{
+			StatusCode: 200,
+			Body:       []byte("invalid json"),
+		}
+		return
 	}
+
 	_, err = p.getCredentials()
 	assert.NotNil(t, err)
 	assert.Equal(t, "refresh Ecs sts token err, json.Unmarshal fail: invalid character 'i' looking for beginning of value", err.Error())
 
-	// case 6: empty response json
-	hookDo = func(fn do) do {
-		return func(req *http.Request) (res *http.Response, err error) {
-			if req.URL.Path == "/latest/meta-data/ram/security-credentials/" {
-				res = mockResponse(200, "rolename")
-				return
-			}
-
-			if req.URL.Path == "/latest/meta-data/ram/security-credentials/rolename" {
-				res = mockResponse(200, "null")
-				return
+	// case 5: empty response json
+	httpDo = func(req *httputil.Request) (res *httputil.Response, err error) {
+		if req.Path == "/latest/meta-data/ram/security-credentials/" {
+			res = &httputil.Response{
+				StatusCode: 200,
+				Body:       []byte("rolename"),
 			}
 			return
 		}
+
+		res = &httputil.Response{
+			StatusCode: 200,
+			Body:       []byte("null"),
+		}
+		return
+	}
+
+	_, err = p.getCredentials()
+	assert.NotNil(t, err)
+	assert.Equal(t, "refresh Ecs sts token err, fail to get credentials", err.Error())
+
+	// case 6: empty session ak response json
+	httpDo = func(req *httputil.Request) (res *httputil.Response, err error) {
+		if req.Path == "/latest/meta-data/ram/security-credentials/" {
+			res = &httputil.Response{
+				StatusCode: 200,
+				Body:       []byte("rolename"),
+			}
+			return
+		}
+
+		res = &httputil.Response{
+			StatusCode: 200,
+			Body:       []byte("{}"),
+		}
+		return
 	}
 	_, err = p.getCredentials()
 	assert.NotNil(t, err)
 	assert.Equal(t, "refresh Ecs sts token err, fail to get credentials", err.Error())
 
-	// case 7: empty session ak response json
-	hookDo = func(fn do) do {
-		return func(req *http.Request) (res *http.Response, err error) {
-			if req.URL.Path == "/latest/meta-data/ram/security-credentials/" {
-				res = mockResponse(200, "rolename")
-				return
-			}
-
-			if req.URL.Path == "/latest/meta-data/ram/security-credentials/rolename" {
-				res = mockResponse(200, `{}`)
-				return
+	// case 7: non-success response
+	httpDo = func(req *httputil.Request) (res *httputil.Response, err error) {
+		if req.Path == "/latest/meta-data/ram/security-credentials/" {
+			res = &httputil.Response{
+				StatusCode: 200,
+				Body:       []byte("rolename"),
 			}
 			return
 		}
-	}
-	_, err = p.getCredentials()
-	assert.NotNil(t, err)
-	assert.Equal(t, "refresh Ecs sts token err, fail to get credentials", err.Error())
 
-	// case 8: non-success response
-	hookDo = func(fn do) do {
-		return func(req *http.Request) (res *http.Response, err error) {
-			if req.URL.Path == "/latest/meta-data/ram/security-credentials/" {
-				res = mockResponse(200, "rolename")
-				return
-			}
-
-			if req.URL.Path == "/latest/meta-data/ram/security-credentials/rolename" {
-				res = mockResponse(200, `{"AccessKeyId":"saki","AccessKeySecret":"saks","Expiration":"2021-10-20T04:27:09Z","SecurityToken":"token","Code":"Failed"}`)
-				return
-			}
-			return
+		res = &httputil.Response{
+			StatusCode: 200,
+			Body:       []byte(`{"AccessKeyId":"saki","AccessKeySecret":"saks","Expiration":"2021-10-20T04:27:09Z","SecurityToken":"token","Code":"Failed"}`),
 		}
+		return
 	}
 	_, err = p.getCredentials()
 	assert.NotNil(t, err)
 	assert.Equal(t, "refresh Ecs sts token err, Code is not Success", err.Error())
 
 	// case 8: mock ok value
-	hookDo = func(fn do) do {
-		return func(req *http.Request) (res *http.Response, err error) {
-			if req.URL.Path == "/latest/meta-data/ram/security-credentials/" {
-				res = mockResponse(200, "rolename")
-				return
-			}
-
-			if req.URL.Path == "/latest/meta-data/ram/security-credentials/rolename" {
-				res = mockResponse(200, `{"AccessKeyId":"saki","AccessKeySecret":"saks","Expiration":"2021-10-20T04:27:09Z","SecurityToken":"token","Code":"Success"}`)
-				return
+	httpDo = func(req *httputil.Request) (res *httputil.Response, err error) {
+		if req.Path == "/latest/meta-data/ram/security-credentials/" {
+			res = &httputil.Response{
+				StatusCode: 200,
+				Body:       []byte("rolename"),
 			}
 			return
 		}
+
+		res = &httputil.Response{
+			StatusCode: 200,
+			Body:       []byte(`{"AccessKeyId":"saki","AccessKeySecret":"saks","Expiration":"2021-10-20T04:27:09Z","SecurityToken":"token","Code":"Success"}`),
+		}
+		return
 	}
 	creds, err := p.getCredentials()
 	assert.Nil(t, err)
@@ -363,36 +278,37 @@ func TestECSRAMRoleCredentialsProvider_getCredentials(t *testing.T) {
 }
 
 func TestECSRAMRoleCredentialsProvider_getCredentialsWithMetadataV2(t *testing.T) {
-	originDo := hookDo
-	defer func() { hookDo = originDo }()
+	originHttpDo := httpDo
+	defer func() { httpDo = originHttpDo }()
 
 	p, err := NewECSRAMRoleCredentialsProviderBuilder().WithRoleName("rolename").WithEnableIMDSv2(true).Build()
 	assert.Nil(t, err)
 
 	// case 1: get metadata token failed
-	hookDo = func(fn do) do {
-		return func(req *http.Request) (res *http.Response, err error) {
-			err = errors.New("mock server error")
-			return
-		}
+	httpDo = func(req *httputil.Request) (res *httputil.Response, err error) {
+		err = errors.New("mock server error")
+		return
 	}
+
 	_, err = p.getCredentials()
 	assert.NotNil(t, err)
 	assert.Equal(t, "get metadata token failed: mock server error", err.Error())
 
 	// case 2: return token
-	hookDo = func(fn do) do {
-		return func(req *http.Request) (res *http.Response, err error) {
-			if req.URL.Path == "/latest/api/token" {
-				res = mockResponse(200, `tokenxxxxx`)
-				return
+	httpDo = func(req *httputil.Request) (res *httputil.Response, err error) {
+		if req.Path == "/latest/api/token" {
+			res = &httputil.Response{
+				StatusCode: 200,
+				Body:       []byte("tokenxxxxx"),
 			}
-			if req.URL.Path == "/latest/meta-data/ram/security-credentials/rolename" {
-				assert.Equal(t, "tokenxxxxx", req.Header.Get("x-aliyun-ecs-metadata-token"))
-				res = mockResponse(200, `{"AccessKeyId":"saki","AccessKeySecret":"saks","Expiration":"2021-10-20T04:27:09Z","SecurityToken":"token","Code":"Success"}`)
+		} else if req.Path == "/latest/meta-data/ram/security-credentials/rolename" {
+			assert.Equal(t, "tokenxxxxx", req.Headers["x-aliyun-ecs-metadata-token"])
+			res = &httputil.Response{
+				StatusCode: 200,
+				Body:       []byte(`{"AccessKeyId":"saki","AccessKeySecret":"saks","Expiration":"2021-10-20T04:27:09Z","SecurityToken":"token","Code":"Success"}`),
 			}
-			return
 		}
+		return
 	}
 
 	creds, err := p.getCredentials()
@@ -412,39 +328,39 @@ func TestECSRAMRoleCredentialsProvider_getCredentialsWithMetadataV2(t *testing.T
 }
 
 func TestECSRAMRoleCredentialsProviderGetCredentials(t *testing.T) {
-	originDo := hookDo
-	defer func() { hookDo = originDo }()
+	originHttpDo := httpDo
+	defer func() { httpDo = originHttpDo }()
 
 	p, err := NewECSRAMRoleCredentialsProviderBuilder().WithRoleName("rolename").Build()
 	assert.Nil(t, err)
 	// case 1: get credentials failed
-	hookDo = func(fn do) do {
-		return func(req *http.Request) (res *http.Response, err error) {
-			err = errors.New("mock server error")
-			return
-		}
+	httpDo = func(req *httputil.Request) (res *httputil.Response, err error) {
+		err = errors.New("mock server error")
+		return
 	}
 	_, err = p.GetCredentials()
 	assert.NotNil(t, err)
 	assert.Equal(t, "refresh Ecs sts token err: mock server error", err.Error())
 
 	// case 2: get invalid expiration
-	hookDo = func(fn do) do {
-		return func(req *http.Request) (res *http.Response, err error) {
-			res = mockResponse(200, `{"AccessKeyId":"saki","AccessKeySecret":"saks","Expiration":"invalidexpiration","SecurityToken":"token","Code":"Success"}`)
-			return
+	httpDo = func(req *httputil.Request) (res *httputil.Response, err error) {
+		res = &httputil.Response{
+			StatusCode: 200,
+			Body:       []byte(`{"AccessKeyId":"saki","AccessKeySecret":"saks","Expiration":"invalidexpiration","SecurityToken":"token","Code":"Success"}`),
 		}
+		return
 	}
 	_, err = p.GetCredentials()
 	assert.NotNil(t, err)
 	assert.Equal(t, "parsing time \"invalidexpiration\" as \"2006-01-02T15:04:05Z\": cannot parse \"invalidexpiration\" as \"2006\"", err.Error())
 
 	// case 3: happy result
-	hookDo = func(fn do) do {
-		return func(req *http.Request) (res *http.Response, err error) {
-			res = mockResponse(200, `{"AccessKeyId":"akid","AccessKeySecret":"aksecret","Expiration":"2021-10-20T04:27:09Z","SecurityToken":"token","Code":"Success"}`)
-			return
+	httpDo = func(req *httputil.Request) (res *httputil.Response, err error) {
+		res = &httputil.Response{
+			StatusCode: 200,
+			Body:       []byte(`{"AccessKeyId":"akid","AccessKeySecret":"aksecret","Expiration":"2021-10-20T04:27:09Z","SecurityToken":"token","Code":"Success"}`),
 		}
+		return
 	}
 	cc, err := p.GetCredentials()
 	assert.Nil(t, err)
@@ -455,28 +371,28 @@ func TestECSRAMRoleCredentialsProviderGetCredentials(t *testing.T) {
 }
 
 func TestECSRAMRoleCredentialsProvider_getMetadataToken(t *testing.T) {
-	originDo := hookDo
-	defer func() { hookDo = originDo }()
+	originHttpDo := httpDo
+	defer func() { httpDo = originHttpDo }()
 
 	p, err := NewECSRAMRoleCredentialsProviderBuilder().Build()
 	assert.Nil(t, err)
 
 	// case 1: server error
-	hookDo = func(fn do) do {
-		return func(req *http.Request) (res *http.Response, err error) {
-			err = errors.New("mock server error")
-			return
-		}
+	httpDo = func(req *httputil.Request) (res *httputil.Response, err error) {
+		err = errors.New("mock server error")
+		return
 	}
+
 	_, err = p.getMetadataToken()
 	assert.NotNil(t, err)
 	assert.Equal(t, "get metadata token failed: mock server error", err.Error())
 	// case 2: return token
-	hookDo = func(fn do) do {
-		return func(req *http.Request) (res *http.Response, err error) {
-			res = mockResponse(200, `tokenxxxxx`)
-			return
+	httpDo = func(req *httputil.Request) (res *httputil.Response, err error) {
+		res = &httputil.Response{
+			StatusCode: 200,
+			Body:       []byte("tokenxxxxx"),
 		}
+		return
 	}
 	metadataToken, err := p.getMetadataToken()
 	assert.Nil(t, err)
