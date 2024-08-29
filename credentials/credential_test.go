@@ -216,6 +216,12 @@ func TestNewCredentialWithRAMRoleARN(t *testing.T) {
 	cred, err = NewCredential(config)
 	assert.Nil(t, err)
 	assert.NotNil(t, cred)
+
+	// with sts should ok
+	config.SetSecurityToken("securitytoken")
+	cred, err = NewCredential(config)
+	assert.Nil(t, err)
+	assert.NotNil(t, cred)
 }
 
 func TestNewCredentialWithBearerToken(t *testing.T) {
