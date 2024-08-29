@@ -259,7 +259,7 @@ func NewCredential(config *Config) (credential Credential, err error) {
 		credential = fromCredentialsProvider("ecs_ram_role", provider)
 	case "ram_role_arn":
 		var credentialsProvider providers.CredentialsProvider
-		if config.SecurityToken != nil {
+		if config.SecurityToken != nil && *config.SecurityToken != "" {
 			credentialsProvider, err = providers.NewStaticSTSCredentialsProviderBuilder().
 				WithAccessKeyId(tea.StringValue(config.AccessKeyId)).
 				WithAccessKeySecret(tea.StringValue(config.AccessKeySecret)).
