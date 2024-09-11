@@ -49,6 +49,7 @@ type Config struct {
 	PublicKeyId           *string  `json:"public_key_id"`
 	RoleName              *string  `json:"role_name"`
 	EnableIMDSv2          *bool    `json:"enable_imds_v2"`
+	DisableIMDSv1         *bool    `json:"disable_imds_v1"`
 	MetadataTokenDuration *int     `json:"metadata_token_duration"`
 	SessionExpiration     *int     `json:"session_expiration"`
 	PrivateKeyFile        *string  `json:"private_key_file"`
@@ -248,8 +249,7 @@ func NewCredential(config *Config) (credential Credential, err error) {
 	case "ecs_ram_role":
 		provider, err := providers.NewECSRAMRoleCredentialsProviderBuilder().
 			WithRoleName(tea.StringValue(config.RoleName)).
-			WithEnableIMDSv2(tea.BoolValue(config.EnableIMDSv2)).
-			WithMetadataTokenDurationSeconds(tea.IntValue(config.MetadataTokenDuration)).
+			WithDisableIMDSv1(tea.BoolValue(config.DisableIMDSv1)).
 			Build()
 
 		if err != nil {

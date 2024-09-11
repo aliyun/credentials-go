@@ -2,6 +2,7 @@ package providers
 
 import (
 	"errors"
+	"os"
 	"testing"
 	"time"
 
@@ -13,15 +14,10 @@ func TestNewECSRAMRoleCredentialsProvider(t *testing.T) {
 	p, err := NewECSRAMRoleCredentialsProviderBuilder().Build()
 	assert.Nil(t, err)
 	assert.Equal(t, "", p.roleName)
-	assert.Equal(t, 21600, p.metadataTokenDurationSeconds)
 
-	_, err = NewECSRAMRoleCredentialsProviderBuilder().WithMetadataTokenDurationSeconds(1000000000).Build()
-	assert.EqualError(t, err, "the metadata token duration seconds must be 1-21600")
-
-	p, err = NewECSRAMRoleCredentialsProviderBuilder().WithRoleName("role").WithMetadataTokenDurationSeconds(3600).Build()
+	p, err = NewECSRAMRoleCredentialsProviderBuilder().WithRoleName("role").Build()
 	assert.Nil(t, err)
 	assert.Equal(t, "role", p.roleName)
-	assert.Equal(t, 3600, p.metadataTokenDurationSeconds)
 
 	assert.True(t, p.needUpdateCredential())
 }
@@ -73,7 +69,7 @@ func TestECSRAMRoleCredentialsProvider_getRoleNameWithMetadataV2(t *testing.T) {
 	originHttpDo := httpDo
 	defer func() { httpDo = originHttpDo }()
 
-	p, err := NewECSRAMRoleCredentialsProviderBuilder().WithEnableIMDSv2(true).Build()
+	p, err := NewECSRAMRoleCredentialsProviderBuilder().WithDisableIMDSv1(true).Build()
 	assert.Nil(t, err)
 
 	// case 1: get metadata token failed
@@ -281,7 +277,7 @@ func TestECSRAMRoleCredentialsProvider_getCredentialsWithMetadataV2(t *testing.T
 	originHttpDo := httpDo
 	defer func() { httpDo = originHttpDo }()
 
-	p, err := NewECSRAMRoleCredentialsProviderBuilder().WithRoleName("rolename").WithEnableIMDSv2(true).Build()
+	p, err := NewECSRAMRoleCredentialsProviderBuilder().WithDisableIMDSv1(true).WithRoleName("rolename").Build()
 	assert.Nil(t, err)
 
 	// case 1: get metadata token failed
@@ -384,8 +380,36 @@ func TestECSRAMRoleCredentialsProvider_getMetadataToken(t *testing.T) {
 	}
 
 	_, err = p.getMetadataToken()
+	assert.Nil(t, err)
+
+	p, err = NewECSRAMRoleCredentialsProviderBuilder().WithDisableIMDSv1(false).Build()
+	assert.Nil(t, err)
+
+	_, err = p.getMetadataToken()
+	assert.Nil(t, err)
+
+	os.Setenv("ALIBABA_CLOUD_IMDSV1_DISABLE", "true")
+	p, err = NewECSRAMRoleCredentialsProviderBuilder().Build()
+	assert.Nil(t, err)
+
+	_, err = p.getMetadataToken()
 	assert.NotNil(t, err)
+
+	os.Setenv("ALIBABA_CLOUD_IMDSV1_DISABLE", "")
+	p, err = NewECSRAMRoleCredentialsProviderBuilder().Build()
+	assert.Nil(t, err)
+
+	_, err = p.getMetadataToken()
+	assert.Nil(t, err)
+
+	p, err = NewECSRAMRoleCredentialsProviderBuilder().WithDisableIMDSv1(true).Build()
+	assert.Nil(t, err)
+
+	_, err = p.getMetadataToken()
+	assert.NotNil(t, err)
+
 	assert.Equal(t, "get metadata token failed: mock server error", err.Error())
+
 	// case 2: return token
 	httpDo = func(req *httputil.Request) (res *httputil.Response, err error) {
 		res = &httputil.Response{
@@ -397,4 +421,26 @@ func TestECSRAMRoleCredentialsProvider_getMetadataToken(t *testing.T) {
 	metadataToken, err := p.getMetadataToken()
 	assert.Nil(t, err)
 	assert.Equal(t, "tokenxxxxx", metadataToken)
+
+	// case 3: return 404
+	p, err = NewECSRAMRoleCredentialsProviderBuilder().WithDisableIMDSv1(false).Build()
+	assert.Nil(t, err)
+
+	httpDo = func(req *httputil.Request) (res *httputil.Response, err error) {
+		res = &httputil.Response{
+			StatusCode: 404,
+			Body:       []byte("not found"),
+		}
+		return
+	}
+	metadataToken, err = p.getMetadataToken()
+	assert.Nil(t, err)
+	assert.Equal(t, "", metadataToken)
+
+	p, err = NewECSRAMRoleCredentialsProviderBuilder().WithDisableIMDSv1(true).Build()
+	assert.Nil(t, err)
+
+	metadataToken, err = p.getMetadataToken()
+	assert.NotNil(t, err)
+	assert.Equal(t, "", metadataToken)
 }
