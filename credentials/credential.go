@@ -115,6 +115,11 @@ func (s *Config) SetEnableIMDSv2(v bool) *Config {
 	return s
 }
 
+func (s *Config) SetDisableIMDSv1(v bool) *Config {
+	s.DisableIMDSv1 = &v
+	return s
+}
+
 func (s *Config) SetMetadataTokenDuration(v int) *Config {
 	s.MetadataTokenDuration = &v
 	return s
