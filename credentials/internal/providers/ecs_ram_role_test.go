@@ -388,14 +388,14 @@ func TestECSRAMRoleCredentialsProvider_getMetadataToken(t *testing.T) {
 	_, err = p.getMetadataToken()
 	assert.Nil(t, err)
 
-	os.Setenv("ALIBABA_CLOUD_IMDSV1_DISABLE", "true")
+	os.Setenv("ALIBABA_CLOUD_IMDSV1_DISABLED", "true")
 	p, err = NewECSRAMRoleCredentialsProviderBuilder().Build()
 	assert.Nil(t, err)
 
 	_, err = p.getMetadataToken()
 	assert.NotNil(t, err)
 
-	os.Setenv("ALIBABA_CLOUD_IMDSV1_DISABLE", "")
+	os.Setenv("ALIBABA_CLOUD_IMDSV1_DISABLED", "")
 	p, err = NewECSRAMRoleCredentialsProviderBuilder().Build()
 	assert.Nil(t, err)
 
