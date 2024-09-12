@@ -229,8 +229,8 @@ func main(){
     SetType("ecs_ram_role").
     // `roleName` is optional. It will be retrieved automatically if not set. It is highly recommended to set it up to reduce requests
     SetRoleName("RoleName").
-    // `EnableIMDSv2` is optional and is recommended to be turned on. It can be replaced by setting environment variable: ALIBABA_CLOUD_ECS_IMDSV2_ENABLE
-    SetEnableIMDSv2(true)
+    // `DisableIMDSv1` is optional and is recommended to be turned on. It can be replaced by setting environment variable: ALIBABA_CLOUD_IMDSV1_DISABLE
+    SetDisableIMDSv1(true)
 
   provider, err := credentials.NewCredential(config)
   if err != nil {

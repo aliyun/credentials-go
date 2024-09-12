@@ -125,7 +125,17 @@ func TestNewCredentialWithECSRAMRole(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, cred)
 
+	config.SetDisableIMDSv1(false)
+	cred, err = NewCredential(config)
+	assert.Nil(t, err)
+	assert.NotNil(t, cred)
+
 	config.SetEnableIMDSv2(true)
+	cred, err = NewCredential(config)
+	assert.Nil(t, err)
+	assert.NotNil(t, cred)
+
+	config.SetDisableIMDSv1(true)
 	cred, err = NewCredential(config)
 	assert.Nil(t, err)
 	assert.NotNil(t, cred)
