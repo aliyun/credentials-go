@@ -232,6 +232,15 @@ func TestNewCredentialWithRAMRoleARN(t *testing.T) {
 	cred, err = NewCredential(config)
 	assert.Nil(t, err)
 	assert.NotNil(t, cred)
+
+	config.SetExternalId("externalId")
+	config.SetPolicy("policy")
+	config.SetRoleSessionExpiration(3600)
+	config.SetRoleSessionName("roleSessionName")
+	cred, err = NewCredential(config)
+	assert.Nil(t, err)
+	assert.NotNil(t, cred)
+
 }
 
 func TestNewCredentialWithBearerToken(t *testing.T) {

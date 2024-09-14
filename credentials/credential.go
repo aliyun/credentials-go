@@ -198,6 +198,11 @@ func (s *Config) SetSTSEndpoint(v string) *Config {
 	return s
 }
 
+func (s *Config) SetExternalId(v string) *Config {
+	s.ExternalId = &v
+	return s
+}
+
 // NewCredential return a credential according to the type in config.
 // if config is nil, the function will use default provider chain to get credentials.
 // please see README.md for detail.
