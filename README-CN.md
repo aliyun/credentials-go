@@ -118,11 +118,17 @@ import (
 func main() {
   config := new(credentials.Config).
     SetType("oidc_role_arn").
+    // The ARN of OIDC provider
     SetOIDCProviderArn("OIDCProviderArn").
+    // The path of OIDC token file
     SetOIDCTokenFilePath("OIDCTokenFilePath").
-    SetRoleSessionName("RoleSessionName").
-    SetPolicy("Policy").
+    // The ARN of role
     SetRoleArn("RoleArn").
+    // The role session name
+    SetRoleSessionName("RoleSessionName").
+    // Not required, The RAM policy document.
+    SetPolicy("Policy").
+    // Not required, limit the Valid time of STS Token
     SetSessionExpiration(3600)
 
   provider, err := credentials.NewCredential(config)
