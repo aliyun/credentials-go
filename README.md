@@ -64,9 +64,9 @@ func main(){
   }
 
   accessKeyId := credential.AccessKeyId
-  accessSecret := credential.AccessKeySecret
+  accessKeySecret := credential.AccessKeySecret
   credentialType := credential.Type
-  fmt.Println(accessKeyId, accessSecret, credentialType)
+  fmt.Println(accessKeyId, accessKeySecret, credentialType)
 }
 ```
 
@@ -103,11 +103,11 @@ func main() {
   }
 
   accessKeyId := credential.AccessKeyId
-  accessSecret := credential.AccessKeySecret
+  accessKeySecret := credential.AccessKeySecret
   securityToken := credential.SecurityToken
   credentialType := credential.Type
 
-  fmt.Println(accessKeyId, accessSecret, securityToken, credentialType)
+  fmt.Println(accessKeyId, accessKeySecret, securityToken, credentialType)
 }
 ```
 
@@ -145,7 +145,7 @@ func main() {
   }
 
   accessKeyId := credential.AccessKeyId
-  accessSecret := credential.AccessKeySecret
+  accessKeySecret := credential.AccessKeySecret
   securityToken := credential.SecurityToken
   credentialType := credential.Type
 
@@ -191,7 +191,7 @@ func main(){
   }
 
   accessKeyId := credential.AccessKeyId
-  accessSecret := credential.AccessKeySecret
+  accessKeySecret := credential.AccessKeySecret
   securityToken := credential.SecurityToken
   credentialType := credential.Type
 
@@ -223,7 +223,7 @@ func main(){
   }
 
   accessKeyId := credential.AccessKeyId
-  accessSecret := credential.AccessKeySecret
+  accessKeySecret := credential.AccessKeySecret
   securityToken := credential.SecurityToken
   credentialType := credential.Type
 
@@ -258,7 +258,7 @@ func main(){
 
   credential, err := provider.GetCredential()
   accessKeyId := credential.AccessKeyId
-  accessSecret := credential.AccessKeySecret
+  accessKeySecret := credential.AccessKeySecret
   securityToken := credential.SecurityToken
   credentialType := credential.Type
 
