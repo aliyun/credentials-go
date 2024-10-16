@@ -33,6 +33,33 @@ go get -u github.com/aliyun/credentials-go
 
 ### 凭证类型
 
+#### 使用默认凭据链
+当您在初始化凭据客户端不传入任何参数时，Credentials工具会使用默认凭据链方式初始化客户端。默认凭据的读取逻辑请参见[默认凭据链](#默认凭证提供程序链)。
+
+```go
+import (
+  "fmt"
+
+  "github.com/aliyun/credentials-go/credentials"
+)
+
+func main(){
+  provider, err := credentials.NewCredential(nil)
+  if err != nil {
+    return
+  }
+  credential, err := provider.GetCredential()
+  if err != nil {
+    return
+  }
+  accessKeyId := credential.AccessKeyId
+  accessSecret := credential.AccessKeySecret
+  securityToken := credential.SecurityToken
+  credentialType := credential.Type
+  fmt.Println(accessKeyId, accessKeySecret, securityToken, credentialType)
+}
+```
+
 #### AccessKey
 
 通过[用户信息管理][ak]设置 access_key，它们具有该账户完全的权限，请妥善保管。有时出于安全考虑，您不能把具有完全访问权限的主账户 AccessKey 交于一个项目的开发者使用，您可以[创建RAM子账户][ram]并为子账户[授权][permissions]，使用RAM子用户的 AccessKey 来进行API调用。
@@ -46,11 +73,11 @@ import (
 
 func main(){
   config := new(credentials.Config).
-    // Which type of credential you want
+    // 设置凭证类型
     SetType("access_key").
-    // AccessKeyId of your account
+    // 用户 AccessKey Id
     SetAccessKeyId("AccessKeyId").
-    // AccessKeySecret of your account
+    // 用户 AccessKey Secret
     SetAccessKeySecret("AccessKeySecret")
 
   provider, err := credentials.NewCredential(config)
@@ -58,6 +85,9 @@ func main(){
     return
   }
   credential, err := provider.GetCredential()
+  if err != nil {
+    return
+  }
   accessKeyId := credential.AccessKeyId
   accessSecret := credential.AccessKeySecret
   credentialType := credential.Type
@@ -78,13 +108,13 @@ import (
 
 func main() {
   config := new(credentials.Config).
-    // Which type of credential you want
+    // 设置凭证类型
     SetType("sts").
-    // AccessKeyId of your account
+    // 临时用户 AccessKey Id
     SetAccessKeyId("AccessKeyId").
-    // AccessKeySecret of your account
+    // 临时用户 AccessKey Secret
     SetAccessKeySecret("AccessKeySecret").
-    // Temporary Security Token
+    // 临时用户 Security Token
     SetSecurityToken("SecurityToken")
 
   provider, err := credentials.NewCredential(config)
@@ -93,6 +123,9 @@ func main() {
   }
 
   credential, err := provider.GetCredential()
+  if err != nil {
+    return
+  }
   accessKeyId := credential.AccessKeyId
   accessSecret := credential.AccessKeySecret
   securityToken := credential.SecurityToken
@@ -103,32 +136,32 @@ func main() {
 
 #### AssumeRoleWithOIDC
 
-在执行oidc角色SSO时，通过调用AssumeRoleWithOIDC接口获取扮演RAM角色的临时身份凭证（STS令牌）。
+在容器服务 Kubernetes 版中设置了Worker节点RAM角色后，对应节点内的Pod中的应用也就可以像ECS上部署的应用一样，通过元数据服务（Meta Data Server）获取关联角色的STS Token。但如果容器集群上部署的是不可信的应用（比如部署您的客户提交的应用，代码也没有对您开放），您可能并不希望它们能通过元数据服务获取Worker节点关联实例RAM角色的STS Token。为了避免影响云上资源的安全，同时又能让这些不可信的应用安全地获取所需的 STS Token，实现应用级别的权限最小化，您可以使用RRSA（RAM Roles for Service Account）功能。阿里云容器集群会为不同的应用Pod创建和挂载相应的服务账户OIDC Token文件，并将相关配置信息注入到环境变量中，Credentials工具通过获取环境变量的配置信息，调用STS服务的AssumeRoleWithOIDC - OIDC角色SSO时获取扮演角色的临时身份凭证接口换取绑定角色的STS Token。详情请参见[通过RRSA配置ServiceAccount的RAM权限实现Pod权限隔离](https://help.aliyun.com/zh/ack/ack-managed-and-ack-dedicated/user-guide/use-rrsa-to-authorize-pods-to-access-different-cloud-services#task-2142941)。
 
 ``` go
 package main
 
 import (
   "fmt"
-  "net/http"
 
   "github.com/aliyun/credentials-go/credentials"
 )
 
 func main() {
   config := new(credentials.Config).
+    // 设置凭证类型
     SetType("oidc_role_arn").
-    // The ARN of OIDC provider
+    // OIDC提供商ARN，可以通过环境变量ALIBABA_CLOUD_OIDC_PROVIDER_ARN设置OidcProviderArn
     SetOIDCProviderArn("OIDCProviderArn").
-    // The path of OIDC token file
+    // OIDC Token文件路径，可以通过环境变量ALIBABA_CLOUD_OIDC_TOKEN_FILE设置OidcTokenFilePath
     SetOIDCTokenFilePath("OIDCTokenFilePath").
-    // The ARN of role
+    // RAM角色名称ARN，可以通过环境变量ALIBABA_CLOUD_ROLE_ARN设置RoleArn
     SetRoleArn("RoleArn").
-    // The role session name
+    // 角色会话名称，可以通过环境变量ALIBABA_CLOUD_ROLE_SESSION_NAME设置RoleSessionName
     SetRoleSessionName("RoleSessionName").
-    // Not required, The RAM policy document.
+    // 设置更小的权限策略，非必填。示例值：{"Statement": [{"Action": ["*"],"Effect": "Allow","Resource": ["*"]}],"Version":"1"}
     SetPolicy("Policy").
-    // Not required, limit the Valid time of STS Token
+    // 设置session过期时间，非必填。
     SetSessionExpiration(3600)
 
   provider, err := credentials.NewCredential(config)
@@ -137,6 +170,9 @@ func main() {
   }
 
   credential, err := provider.GetCredential()
+  if err != nil {
+    return
+  }
   accessKeyId := credential.AccessKeyId
   accessSecret := credential.AccessKeySecret
   securityToken := credential.SecurityToken
@@ -159,19 +195,19 @@ import (
 
 func main(){
   config := new(credentials.Config).
-    // Which type of credential you want
+    // 设置凭证类型
     SetType("ram_role_arn").
-    // AccessKeyId of your account
+    // 用户 AccessKey Id
     SetAccessKeyId("AccessKeyId").
-    // AccessKeySecret of your account
+    // 用户 AccessKey Secret
     SetAccessKeySecret("AccessKeySecret").
-    // Format: acs:ram::USER_Id:role/ROLE_NAME
+    // 要扮演的RAM角色ARN，示例值：acs:ram::123456789012****:role/adminrole，可以通过环境变量ALIBABA_CLOUD_ROLE_ARN设置RoleArn
     SetRoleArn("RoleArn").
-    // Role Session Name
+    // 角色会话名称，可以通过环境变量ALIBABA_CLOUD_ROLE_SESSION_NAME设置RoleSessionName
     SetRoleSessionName("RoleSessionName").
-    // Not required, limit the permissions of STS Token
+    // 设置更小的权限策略，非必填。示例值：{"Statement": [{"Action": ["*"],"Effect": "Allow","Resource": ["*"]}],"Version":"1"}
     SetPolicy("Policy").
-    // Not required, limit the Valid time of STS Token
+    // 设置session过期时间，非必填。
     SetRoleSessionExpiration(3600)
 
   provider, err := credentials.NewCredential(config)
@@ -179,6 +215,9 @@ func main(){
     return
   }
   credential, err := provider.GetCredential()
+  if err != nil {
+    return
+  }
   accessKeyId := credential.AccessKeyId
   accessSecret := credential.AccessKeySecret
   securityToken := credential.SecurityToken
@@ -188,7 +227,9 @@ func main(){
 }
 ```
 
-#### uriCredential
+#### Credentials URI
+
+通过指定提供凭证的自定义网络服务地址，让凭证自动申请维护 STS Token。
 
 ```go
 import (
@@ -198,7 +239,11 @@ import (
 )
 
 func main(){
-  config := new(credentials.Config).SetType("credentials_uri").SetURL("http://127.0.0.1")
+  config := new(credentials.Config).
+    // 设置凭证类型
+    SetType("credentials_uri").
+    // 凭证的 URI，格式为http://local_or_remote_uri/，可以通过环境变量ALIBABA_CLOUD_CREDENTIALS_URI设置CredentialsUri
+    SetURL("http://127.0.0.1")
   provider, err := credentials.NewCredential(config)
   if err != nil {
     return
@@ -220,7 +265,7 @@ func main(){
 
 #### EcsRamRole
 
-通过指定角色名称，让凭证自动申请维护 STS Token
+Credentials工具会自动获取ECS实例绑定的RAM角色，调用ECS的元数据服务（Meta Data Server）换取STS Token，完成凭据客户端初始化。ECI实例，容器服务 Kubernetes 版的Worker节点均支持绑定实例RAM角色。
 
 ```go
 import (
@@ -231,11 +276,11 @@ import (
 
 func main(){
   config := new(credentials.Config).
-    // Which type of credential you want
+    // 设置凭证类型
     SetType("ecs_ram_role").
-    // `roleName` is optional. It will be retrieved automatically if not set. It is highly recommended to set it up to reduce requests
+    // 选填，该ECS角色的角色名称，不填会自动获取，但是建议加上以减少请求次数，可以通过环境变量 ALIBABA_CLOUD_ECS_METADATA 设置 RoleName
     SetRoleName("RoleName").
-    // `DisableIMDSv1` is optional and is recommended to be turned on. It can be replaced by setting environment variable: ALIBABA_CLOUD_IMDSV1_DISABLED
+    // 选填，推荐设置为 true，关闭 IMDS V1 的兜底能力，默认使用 IMDS V2（安全加固）。也可以通过环境变量 ALIBABA_CLOUD_IMDSV1_DISABLED 设置
     SetDisableIMDSv1(true)
 
   provider, err := credentials.NewCredential(config)
@@ -244,6 +289,9 @@ func main(){
   }
 
   credential, err := provider.GetCredential()
+  if err != nil {
+    return
+  }
   accessKeyId := credential.AccessKeyId
   accessSecret := credential.AccessKeySecret
   securityToken := credential.SecurityToken
@@ -255,7 +303,7 @@ func main(){
 
 #### Bearer Token
 
-如呼叫中心(CCC)需用此凭证，请自行申请维护 Bearer Token。
+目前只有云呼叫中心 CCC 这款产品支持 Bearer Token 的凭据初始化方式。
 
 ```go
 import (
@@ -266,9 +314,9 @@ import (
 
 func main(){
   config := new(credentials.Config).
-    // Which type of credential you want
+    // 设置凭证类型
     SetType("bearer").
-    // BearerToken of your account
+    // 填入您的Bearer Token
     SetBearerToken("BearerToken")
 
   provider, err := credentials.NewCredential(config)
@@ -289,26 +337,142 @@ func main(){
 
 ### 凭证提供程序链
 
-如果你调用 `NewCredential()` 时传入空， 将通过凭证提供链来为你获取凭证。
+当开发环境与生产环境使用的凭据类型不一致时，常见做法是在代码中获取当前环境信息，编写获取不同凭据的分支代码。借助Credentials工具的默认凭据链，您可以用同一套代码，通过程序之外的配置来控制不同环境下的凭据获取方式。当您使用 `NewCredential()` 初始化凭据客户端，且不传入任何参数时，阿里云SDK将会尝试按照如下顺序查找相关凭据信息。
 
-#### 1. 环境凭证
+#### 1. 使用环境变量
 
-程序首先会在环境变量里寻找环境凭证，如果定义了 `ALIBABA_CLOUD_ACCESS_KEY_ID`  和 `ALIBABA_CLOUD_ACCESS_KEY_SECRET` 环境变量且不为空，程序将使用他们创建凭证。如否则，程序会在配置文件中加载和寻找凭证。
+Credentials工具会优先在环境变量中获取凭据信息。
 
-#### 2. 配置文件
+- 如果系统环境变量 `ALIBABA_CLOUD_ACCESS_KEY_ID`（密钥Key） 和 `ALIBABA_CLOUD_ACCESS_KEY_SECRET`（密钥Value） 不为空，Credentials工具会优先使用它们作为默认凭据。
 
-如果用户主目录存在默认文件 `~/.alibabacloud/credentials` （Windows 为 `C:\Users\USER_NAME\.alibabacloud\credentials`），程序会自动创建指定类型和名称的凭证。默认文件可以不存在，但解析错误会抛出异常。也可以手动加载指定文件： `AlibabaCloud::load('/data/credentials', 'vfs://AlibabaCloud/credentials', ...);` 不同的项目、工具之间可以共用这个配置文件，因为超出项目之外，也不会被意外提交到版本控制。Windows 上可以使用环境变量引用到主目录 %UserProfile%。类 Unix 的系统可以使用环境变量 $HOME 或 ~ (tilde)。 可以通过定义 `ALIBABA_CLOUD_CREDENTIALS_FILE` 环境变量修改默认文件的路径。
+- 如果系统环境变量 `ALIBABA_CLOUD_ACCESS_KEY_ID`（密钥Key）、`ALIBABA_CLOUD_ACCESS_KEY_SECRET`（密钥Value）、`ALIBABA_CLOUD_SECURITY_TOKEN`（Token）均不为空，Credentials工具会优先使用STS Token作为默认凭据。
 
-```ini
-[default]                          # 默认凭证
-type = access_key                  # 认证方式为 access_key
-access_key_id = foo                # access key id
-access_key_secret = bar            # access key secret
+### 2. 使用OIDC RAM角色
+若不存在优先级更高的凭据信息，Credentials工具会在环境变量中获取如下内容：
+
+`ALIBABA_CLOUD_ROLE_ARN`：RAM角色名称ARN；
+
+`ALIBABA_CLOUD_OIDC_PROVIDER_ARN`：OIDC提供商ARN；
+
+`ALIBABA_CLOUD_OIDC_TOKEN_FILE`：OIDC Token文件路径；
+
+若以上三个环境变量都已设置内容，Credentials将会使用变量内容调用STS服务的[AssumeRoleWithOIDC - OIDC角色SSO时获取扮演角色的临时身份凭证](https://help.aliyun.com/zh/ram/developer-reference/api-sts-2015-04-01-assumerolewithoidc)接口换取STS Token作为默认凭据。
+
+### 3. 使用 Aliyun CLI 工具的 config.json 配置文件
+
+若不存在优先级更高的凭据信息，Credentials工具会优先在如下位置查找 `config.json` 文件是否存在：
+Linux系统：`~/.aliyun/config.json`
+Windows系统： `C:\Users\USER_NAME\.aliyun\config.json`
+如果文件存在，程序将会使用配置文件中 `current` 指定的凭据信息初始化凭据客户端。当然，您也可以通过环境变量 `ALIBABA_CLOUD_PROFILE` 来指定凭据信息，例如设置 `ALIBABA_CLOUD_PROFILE` 的值为 `AK`。
+
+在config.json配置文件中每个module的值代表了不同的凭据信息获取方式：
+
+- AK：使用用户的Access Key作为凭据信息；
+- RamRoleArn：使用RAM角色的ARN来获取凭据信息；
+- EcsRamRole：利用ECS绑定的RAM角色来获取凭据信息；
+- OIDC：通过OIDC ARN和OIDC Token来获取凭据信息；
+- ChainableRamRoleArn：采用角色链的方式，通过指定JSON文件中的其他凭据，以重新获取新的凭据信息。
+
+配置示例信息如下：
+
+```json
+{
+    "current": "AK",
+    "profiles": [
+        {
+            "name": "AK",
+            "mode": "AK",
+            "access_key_id": "access_key_id",
+            "access_key_secret": "access_key_secret"
+        },
+        {
+            "name": "RamRoleArn",
+            "mode": "RamRoleArn",
+            "access_key_id": "access_key_id",
+            "access_key_secret": "access_key_secret",
+            "ram_role_arn": "ram_role_arn",
+            "ram_session_name": "ram_session_name",
+            "expired_seconds": 3600,
+            "sts_region": "cn-hangzhou"
+        },
+        {
+            "name": "EcsRamRole",
+            "mode": "EcsRamRole",
+            "ram_role_name": "ram_role_name"
+        },
+        {
+            "name": "OIDC",
+            "mode": "OIDC",
+            "ram_role_arn": "ram_role_arn",
+            "oidc_token_file": "path/to/oidc/file",
+            "oidc_provider_arn": "oidc_provider_arn",
+            "ram_session_name": "ram_session_name",
+            "expired_seconds": 3600,
+            "sts_region": "cn-hangzhou"
+        },
+        {
+            "name": "ChainableRamRoleArn",
+            "mode": "ChainableRamRoleArn",
+            "source_profile": "AK",
+            "ram_role_arn": "ram_role_arn",
+            "ram_session_name": "ram_session_name",
+            "expired_seconds": 3600,
+            "sts_region": "cn-hangzhou"
+        }
+    ]
+}
 ```
 
-#### 3. 实例 RAM 角色
+### 4. 使用配置文件
+>
+> 如果用户主目录存在默认文件 `~/.alibabacloud/credentials` （Windows 为 `C:\Users\USER_NAME\.alibabacloud\credentials`），程序会自动创建指定类型和名称的凭证。您也可通过环境变量 `ALIBABA_CLOUD_CREDENTIALS_FILE` 指定配置文件路径。如果文件存在，程序将会使用配置文件中 default 指定的凭据信息初始化凭据客户端。当然，您也可以通过环境变量 `ALIBABA_CLOUD_PROFILE` 来指定凭据信息，例如设置 `ALIBABA_CLOUD_PROFILE` 的值为 `client1`。
 
-如果定义了环境变量 `ALIBABA_CLOUD_ECS_METADATA` 且不为空，程序会将该环境变量的值作为角色名称，请求 `http://100.100.100.200/latest/meta-data/ram/security-credentials/` 获取临时安全凭证。
+配置示例信息如下：
+
+```ini
+[default]
+type = access_key                  # 认证方式为 access_key
+access_key_id = foo                # Key
+access_key_secret = bar            # Secret
+
+[project1]
+type = ecs_ram_role                # 认证方式为 ecs_ram_role
+role_name = EcsRamRoleTest         # Role Name，非必填，不填则自动获取，建议设置，可以减少网络请求。
+
+[project2]
+type = ram_role_arn                # 认证方式为 ram_role_arn
+access_key_id = foo
+access_key_secret = bar
+role_arn = role_arn
+role_session_name = session_name
+
+[project3]
+type=oidc_role_arn                 # 认证方式为 oidc_role_arn
+oidc_provider_arn=oidc_provider_arn
+oidc_token_file_path=oidc_token_file_path
+role_arn=role_arn
+role_session_name=session_name
+```
+
+### 5. 使用 ECS 实例RAM角色
+
+如果定义了环境变量 `ALIBABA_CLOUD_ECS_METADATA` 且不为空，程序会将该环境变量的值作为角色名称，请求 `http://100.100.100.200/latest/meta-data/ram/security-credentials/` 获取临时安全凭证作为默认凭证。
+
+### 6. 使用外部服务 Credentials URI
+
+若不存在优先级更高的凭据信息，Credentials工具会在环境变量中获取ALIBABA_CLOUD_CREDENTIALS_URI，若存在，程序将请求该URI地址，获取临时安全凭证作为默认凭据信息。
+
+外部服务响应结构应如下：
+
+```json
+{
+  "Code": "Success",
+  "AccessKeyId": "AccessKeyId",
+  "AccessKeySecret": "AccessKeySecret",
+  "SecurityToken": "SecurityToken",
+  "Expiration": "2024-10-26T03:46:38Z"
+}
+```
 
 ## 许可证
 
