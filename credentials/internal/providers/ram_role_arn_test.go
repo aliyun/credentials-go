@@ -2,15 +2,21 @@ package providers
 
 import (
 	"errors"
+	"os"
 	"strings"
 	"testing"
 	"time"
 
 	httputil "github.com/aliyun/credentials-go/credentials/internal/http"
+	"github.com/aliyun/credentials-go/credentials/internal/utils"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestNewRAMRoleARNCredentialsProvider(t *testing.T) {
+	rollback := utils.Memory("ALIBABA_CLOUD_STS_REGION")
+	defer func() {
+		rollback()
+	}()
 	// case 1: no credentials provider
 	_, err := NewRAMRoleARNCredentialsProviderBuilder().
 		Build()
@@ -70,6 +76,37 @@ func TestNewRAMRoleARNCredentialsProvider(t *testing.T) {
 	// sts endpoint with sts region
 	assert.Equal(t, "sts.cn-hangzhou.aliyuncs.com", p.stsEndpoint)
 
+	// default sts endpoint
+	p, err = NewRAMRoleARNCredentialsProviderBuilder().
+		WithCredentialsProvider(akProvider).
+		WithRoleArn("roleArn").
+		WithPolicy("policy").
+		WithExternalId("externalId").
+		WithRoleSessionName("rsn").
+		WithDurationSeconds(1000).
+		Build()
+	assert.Nil(t, err)
+	assert.Equal(t, "rsn", p.roleSessionName)
+	assert.Equal(t, "roleArn", p.roleArn)
+	assert.Equal(t, "policy", p.policy)
+	assert.Equal(t, "externalId", p.externalId)
+	assert.Equal(t, "", p.stsRegionId)
+	assert.Equal(t, 1000, p.durationSeconds)
+	assert.Equal(t, "sts.aliyuncs.com", p.stsEndpoint)
+
+	// sts endpoint with env
+	os.Setenv("ALIBABA_CLOUD_STS_REGION", "cn-hangzhou")
+	p, err = NewRAMRoleARNCredentialsProviderBuilder().
+		WithCredentialsProvider(akProvider).
+		WithRoleArn("roleArn").
+		WithPolicy("policy").
+		WithExternalId("externalId").
+		WithRoleSessionName("rsn").
+		WithDurationSeconds(1000).
+		Build()
+	assert.Nil(t, err)
+	assert.Equal(t, "sts.cn-hangzhou.aliyuncs.com", p.stsEndpoint)
+
 	// sts endpoint with sts endpoint
 	p, err = NewRAMRoleARNCredentialsProviderBuilder().
 		WithCredentialsProvider(akProvider).
@@ -88,24 +125,6 @@ func TestNewRAMRoleARNCredentialsProvider(t *testing.T) {
 	assert.Equal(t, "", p.stsRegionId)
 	assert.Equal(t, 1000, p.durationSeconds)
 	assert.Equal(t, "sts.cn-shanghai.aliyuncs.com", p.stsEndpoint)
-
-	// default sts endpoint
-	p, err = NewRAMRoleARNCredentialsProviderBuilder().
-		WithCredentialsProvider(akProvider).
-		WithRoleArn("roleArn").
-		WithPolicy("policy").
-		WithExternalId("externalId").
-		WithRoleSessionName("rsn").
-		WithDurationSeconds(1000).
-		Build()
-	assert.Nil(t, err)
-	assert.Equal(t, "rsn", p.roleSessionName)
-	assert.Equal(t, "roleArn", p.roleArn)
-	assert.Equal(t, "policy", p.policy)
-	assert.Equal(t, "externalId", p.externalId)
-	assert.Equal(t, "", p.stsRegionId)
-	assert.Equal(t, 1000, p.durationSeconds)
-	assert.Equal(t, "sts.aliyuncs.com", p.stsEndpoint)
 }
 
 func TestRAMRoleARNCredentialsProvider_getCredentials(t *testing.T) {

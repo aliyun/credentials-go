@@ -36,7 +36,7 @@ func TestOIDCCredentialsProviderGetCredentialsWithError(t *testing.T) {
 }
 
 func TestNewOIDCCredentialsProvider(t *testing.T) {
-	rollback := utils.Memory("ALIBABA_CLOUD_OIDC_TOKEN_FILE", "ALIBABA_CLOUD_OIDC_PROVIDER_ARN", "ALIBABA_CLOUD_ROLE_ARN")
+	rollback := utils.Memory("ALIBABA_CLOUD_OIDC_TOKEN_FILE", "ALIBABA_CLOUD_OIDC_PROVIDER_ARN", "ALIBABA_CLOUD_ROLE_ARN", "ALIBABA_CLOUD_STS_REGION")
 	defer func() {
 		rollback()
 	}()
@@ -89,6 +89,14 @@ func TestNewOIDCCredentialsProvider(t *testing.T) {
 	assert.Equal(t, "role_arn_from_env", p.roleArn)
 	// sts endpoint: default
 	assert.Equal(t, "sts.aliyuncs.com", p.stsEndpoint)
+
+	// sts endpoint: with sts endpoint env
+	os.Setenv("ALIBABA_CLOUD_STS_REGION", "cn-hangzhou")
+	p, err = NewOIDCCredentialsProviderBuilder().
+		Build()
+	assert.Nil(t, err)
+	assert.Equal(t, "sts.cn-hangzhou.aliyuncs.com", p.stsEndpoint)
+
 	// sts endpoint: with sts endpoint
 	p, err = NewOIDCCredentialsProviderBuilder().
 		WithSTSEndpoint("sts.cn-shanghai.aliyuncs.com").
