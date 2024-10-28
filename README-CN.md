@@ -162,7 +162,9 @@ func main() {
     // 设置更小的权限策略，非必填。示例值：{"Statement": [{"Action": ["*"],"Effect": "Allow","Resource": ["*"]}],"Version":"1"}
     SetPolicy("Policy").
     // 设置session过期时间，非必填。
-    SetSessionExpiration(3600)
+    SetRoleSessionExpiration(3600).
+    // 非必填，默认为sts.aliyuncs.com，建议使用Region化的STS域名，选择地理位置更接近的Region可以保证网络连通性，Region对应的域名请参考：https://api.aliyun.com/product/Sts
+    SetSTSEndpoint("sts.cn-hangzhou.aliyuncs.com")
 
   provider, err := credentials.NewCredential(config)
   if err != nil {
@@ -208,7 +210,11 @@ func main(){
     // 设置更小的权限策略，非必填。示例值：{"Statement": [{"Action": ["*"],"Effect": "Allow","Resource": ["*"]}],"Version":"1"}
     SetPolicy("Policy").
     // 设置session过期时间，非必填。
-    SetRoleSessionExpiration(3600)
+    SetRoleSessionExpiration(3600).
+    // 非必填，角色外部 ID，该参数为外部提供的用于表示角色的参数信息，主要功能是防止混淆代理人问题。更多信息请参考：https://help.aliyun.com/zh/ram/use-cases/use-externalid-to-prevent-the-confused-deputy-problem
+    SetExternalId("ExternalId").
+    // 非必填，默认为sts.aliyuncs.com，建议使用Region化的STS域名，选择地理位置更接近的Region可以保证网络连通性，Region对应的域名请参考：https://api.aliyun.com/product/Sts
+    SetSTSEndpoint("sts.cn-hangzhou.aliyuncs.com")
 
   provider, err := credentials.NewCredential(config)
   if err != nil {

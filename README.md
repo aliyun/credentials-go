@@ -167,7 +167,10 @@ func main() {
     // Optional. Specify limited permissions for the RAM role. Example: {"Statement": [{"Action": ["*"],"Effect": "Allow","Resource": ["*"]}],"Version":"1"}.
     SetPolicy("Policy").
     // Optional. Specify the validity period of the session.
-    SetSessionExpiration(3600)
+    SetRoleSessionExpiration(3600).
+    // Optional. The default value is sts.aliyuncs.com. It is recommended to use a regionalized STS domain name. Selecting a region that is geographically closer can ensure network connectivity. For the domain name corresponding to the region, please refer to: https://api.alibabacloud.com/product/Sts
+    SetSTSEndpoint("sts.cn-hangzhou.aliyuncs.com")
+
   provider, err := credentials.NewCredential(config)
   if err != nil {
     return
@@ -213,7 +216,11 @@ func main(){
     // Optional. Specify limited permissions for the RAM role. Example: {"Statement": [{"Action": ["*"],"Effect": "Allow","Resource": ["*"]}],"Version":"1"}.
     SetPolicy("Policy").
     // Optional. Specify the expiration of the session
-    SetRoleSessionExpiration(3600)
+    SetRoleSessionExpiration(3600).
+    // Optional, role external ID, this parameter is the parameter information provided externally to represent the role, and its main function is to prevent the confused deputy problem. For more information, please refer to: https://www.alibabacloud.com/help/en/ram/use-cases/use-externalid-to-prevent-the-confused-deputy-problem
+    SetExternalId("ExternalId").
+    // Optional. The default value is sts.aliyuncs.com. It is recommended to use a regionalized STS domain name. Selecting a region that is geographically closer can ensure network connectivity. For the domain name corresponding to the region, please refer to: https://api.alibabacloud.com/product/Sts
+    SetSTSEndpoint("sts.cn-hangzhou.aliyuncs.com")
 
   provider, err := credentials.NewCredential(config)
   if err != nil {
