@@ -59,10 +59,13 @@ type profile struct {
 	RoleSessionName string `json:"ram_session_name"`
 	DurationSeconds int    `json:"expired_seconds"`
 	StsRegion       string `json:"sts_region"`
+	EnableVpc       bool   `json:"enable_vpc"`
 	SourceProfile   string `json:"source_profile"`
 	RoleName        string `json:"ram_role_name"`
 	OIDCTokenFile   string `json:"oidc_token_file"`
 	OIDCProviderARN string `json:"oidc_provider_arn"`
+	Policy          string `json:"policy"`
+	ExternalId      string `json:"external_id"`
 }
 
 type configuration struct {
@@ -132,6 +135,9 @@ func (provider *CLIProfileCredentialsProvider) getCredentialsProvider(conf *conf
 			WithRoleSessionName(p.RoleSessionName).
 			WithDurationSeconds(p.DurationSeconds).
 			WithStsRegionId(p.StsRegion).
+			WithEnableVpc(p.EnableVpc).
+			WithPolicy(p.Policy).
+			WithExternalId(p.ExternalId).
 			Build()
 	case "EcsRamRole":
 		credentialsProvider, err = NewECSRAMRoleCredentialsProviderBuilder().WithRoleName(p.RoleName).Build()
@@ -141,8 +147,10 @@ func (provider *CLIProfileCredentialsProvider) getCredentialsProvider(conf *conf
 			WithOIDCProviderARN(p.OIDCProviderARN).
 			WithRoleArn(p.RoleArn).
 			WithStsRegionId(p.StsRegion).
+			WithEnableVpc(p.EnableVpc).
 			WithDurationSeconds(p.DurationSeconds).
 			WithRoleSessionName(p.RoleSessionName).
+			WithPolicy(p.Policy).
 			Build()
 	case "ChainableRamRoleArn":
 		previousProvider, err1 := provider.getCredentialsProvider(conf, p.SourceProfile)
@@ -156,6 +164,9 @@ func (provider *CLIProfileCredentialsProvider) getCredentialsProvider(conf *conf
 			WithRoleSessionName(p.RoleSessionName).
 			WithDurationSeconds(p.DurationSeconds).
 			WithStsRegionId(p.StsRegion).
+			WithEnableVpc(p.EnableVpc).
+			WithPolicy(p.Policy).
+			WithExternalId(p.ExternalId).
 			Build()
 	default:
 		err = fmt.Errorf("unsupported profile mode '%s'", p.Mode)

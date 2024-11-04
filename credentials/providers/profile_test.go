@@ -47,6 +47,7 @@ access_key_id = foo
 access_key_secret = bar
 role_arn = role_arn
 role_session_name = session_name
+policy = {"Statement": [{"Action": ["*"],"Effect": "Allow","Resource": ["*"]}],"Version":"1"}
 
 [noram]
 type = ram_role_arn

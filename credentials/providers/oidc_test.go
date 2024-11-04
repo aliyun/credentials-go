@@ -36,7 +36,7 @@ func TestOIDCCredentialsProviderGetCredentialsWithError(t *testing.T) {
 }
 
 func TestNewOIDCCredentialsProvider(t *testing.T) {
-	rollback := utils.Memory("ALIBABA_CLOUD_OIDC_TOKEN_FILE", "ALIBABA_CLOUD_OIDC_PROVIDER_ARN", "ALIBABA_CLOUD_ROLE_ARN", "ALIBABA_CLOUD_STS_REGION")
+	rollback := utils.Memory("ALIBABA_CLOUD_OIDC_TOKEN_FILE", "ALIBABA_CLOUD_OIDC_PROVIDER_ARN", "ALIBABA_CLOUD_ROLE_ARN", "ALIBABA_CLOUD_STS_REGION", "ALIBABA_CLOUD_VPC_ENDPOINT_ENABLED")
 	defer func() {
 		rollback()
 	}()
@@ -92,10 +92,11 @@ func TestNewOIDCCredentialsProvider(t *testing.T) {
 
 	// sts endpoint: with sts endpoint env
 	os.Setenv("ALIBABA_CLOUD_STS_REGION", "cn-hangzhou")
+	os.Setenv("ALIBABA_CLOUD_VPC_ENDPOINT_ENABLED", "true")
 	p, err = NewOIDCCredentialsProviderBuilder().
 		Build()
 	assert.Nil(t, err)
-	assert.Equal(t, "sts.cn-hangzhou.aliyuncs.com", p.stsEndpoint)
+	assert.Equal(t, "sts-vpc.cn-hangzhou.aliyuncs.com", p.stsEndpoint)
 
 	// sts endpoint: with sts endpoint
 	p, err = NewOIDCCredentialsProviderBuilder().
@@ -107,10 +108,12 @@ func TestNewOIDCCredentialsProvider(t *testing.T) {
 	// sts endpoint: with sts regionId
 	p, err = NewOIDCCredentialsProviderBuilder().
 		WithStsRegionId("cn-beijing").
+		WithEnableVpc(true).
 		Build()
 	assert.Nil(t, err)
-	assert.Equal(t, "sts.cn-beijing.aliyuncs.com", p.stsEndpoint)
+	assert.Equal(t, "sts-vpc.cn-beijing.aliyuncs.com", p.stsEndpoint)
 
+	os.Setenv("ALIBABA_CLOUD_VPC_ENDPOINT_ENABLED", "false")
 	p, err = NewOIDCCredentialsProviderBuilder().
 		WithOIDCTokenFilePath("/path/to/invalid/oidc.token").
 		WithOIDCProviderARN("provider-arn").
