@@ -100,11 +100,17 @@ func (provider *ProfileCredentialsProvider) getCredentialsProvider(ini *ini.File
 			err = errors.New("get previous credentials provider failed")
 			return
 		}
+		rawPolicy, _ := section.GetKey("policy")
+		policy := ""
+		if rawPolicy != nil {
+			policy = rawPolicy.String()
+		}
 
 		credentialsProvider, err = NewRAMRoleARNCredentialsProviderBuilder().
 			WithCredentialsProvider(previous).
 			WithRoleArn(value3.String()).
 			WithRoleSessionName(value4.String()).
+			WithPolicy(policy).
 			WithDurationSeconds(3600).
 			Build()
 	default:

@@ -12,8 +12,8 @@ import (
 
 	"github.com/alibabacloud-go/debug/debug"
 	"github.com/alibabacloud-go/tea/tea"
-	"github.com/aliyun/credentials-go/credentials/internal/providers"
 	"github.com/aliyun/credentials-go/credentials/internal/utils"
+	"github.com/aliyun/credentials-go/credentials/providers"
 	"github.com/aliyun/credentials-go/credentials/request"
 	"github.com/aliyun/credentials-go/credentials/response"
 )
@@ -209,7 +209,7 @@ func (s *Config) SetExternalId(v string) *Config {
 func NewCredential(config *Config) (credential Credential, err error) {
 	if config == nil {
 		provider := providers.NewDefaultCredentialsProvider()
-		credential = fromCredentialsProvider("default", provider)
+		credential = FromCredentialsProvider("default", provider)
 		return
 	}
 	switch tea.StringValue(config.Type) {
@@ -234,7 +234,7 @@ func NewCredential(config *Config) (credential Credential, err error) {
 		if err != nil {
 			return nil, err
 		}
-		credential = fromCredentialsProvider("oidc_role_arn", provider)
+		credential = FromCredentialsProvider("oidc_role_arn", provider)
 	case "access_key":
 		provider, err := providers.NewStaticAKCredentialsProviderBuilder().
 			WithAccessKeyId(tea.StringValue(config.AccessKeyId)).
@@ -244,7 +244,7 @@ func NewCredential(config *Config) (credential Credential, err error) {
 			return nil, err
 		}
 
-		credential = fromCredentialsProvider("access_key", provider)
+		credential = FromCredentialsProvider("access_key", provider)
 	case "sts":
 		provider, err := providers.NewStaticSTSCredentialsProviderBuilder().
 			WithAccessKeyId(tea.StringValue(config.AccessKeyId)).
@@ -255,7 +255,7 @@ func NewCredential(config *Config) (credential Credential, err error) {
 			return nil, err
 		}
 
-		credential = fromCredentialsProvider("sts", provider)
+		credential = FromCredentialsProvider("sts", provider)
 	case "ecs_ram_role":
 		provider, err := providers.NewECSRAMRoleCredentialsProviderBuilder().
 			WithRoleName(tea.StringValue(config.RoleName)).
@@ -266,7 +266,7 @@ func NewCredential(config *Config) (credential Credential, err error) {
 			return nil, err
 		}
 
-		credential = fromCredentialsProvider("ecs_ram_role", provider)
+		credential = FromCredentialsProvider("ecs_ram_role", provider)
 	case "ram_role_arn":
 		var credentialsProvider providers.CredentialsProvider
 		if config.SecurityToken != nil && *config.SecurityToken != "" {
@@ -304,7 +304,7 @@ func NewCredential(config *Config) (credential Credential, err error) {
 			return nil, err
 		}
 
-		credential = fromCredentialsProvider("ram_role_arn", provider)
+		credential = FromCredentialsProvider("ram_role_arn", provider)
 	case "rsa_key_pair":
 		err = checkRSAKeyPair(config)
 		if err != nil {
@@ -479,7 +479,7 @@ func (cp *credentialsProviderWrap) GetType() *string {
 	return &cp.typeName
 }
 
-func fromCredentialsProvider(typeName string, cp providers.CredentialsProvider) Credential {
+func FromCredentialsProvider(typeName string, cp providers.CredentialsProvider) Credential {
 	return &credentialsProviderWrap{
 		typeName: typeName,
 		provider: cp,

@@ -91,6 +91,10 @@ func TestCLIProfileCredentialsProvider_getCredentialsProvider(t *testing.T) {
 				AccessKeyID:     "akid",
 				AccessKeySecret: "secret",
 				RoleArn:         "arn",
+				StsRegion:       "cn-hangzhou",
+				EnableVpc:       true,
+				Policy:          "policy",
+				ExternalId:      "externalId",
 			},
 			{
 				Mode: "RamRoleArn",
@@ -107,6 +111,9 @@ func TestCLIProfileCredentialsProvider_getCredentialsProvider(t *testing.T) {
 				RoleArn:         "role_arn",
 				OIDCTokenFile:   "path/to/oidc/file",
 				OIDCProviderARN: "provider_arn",
+				StsRegion:       "cn-hangzhou",
+				EnableVpc:       true,
+				Policy:          "policy",
 			},
 			{
 				Mode:          "ChainableRamRoleArn",

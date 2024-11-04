@@ -13,14 +13,14 @@ import (
 )
 
 func TestNewRAMRoleARNCredentialsProvider(t *testing.T) {
-	rollback := utils.Memory("ALIBABA_CLOUD_STS_REGION")
+	rollback := utils.Memory("ALIBABA_CLOUD_STS_REGION", "ALIBABA_CLOUD_VPC_ENDPOINT_ENABLED")
 	defer func() {
 		rollback()
 	}()
 	// case 1: no credentials provider
 	_, err := NewRAMRoleARNCredentialsProviderBuilder().
 		Build()
-	assert.EqualError(t, err, "must specify a previous credentials provider to asssume role")
+	assert.EqualError(t, err, "must specify a previous credentials provider to assume role")
 
 	// case 2: no role arn
 	akProvider, err := NewStaticAKCredentialsProviderBuilder().
@@ -61,6 +61,7 @@ func TestNewRAMRoleARNCredentialsProvider(t *testing.T) {
 		WithCredentialsProvider(akProvider).
 		WithRoleArn("roleArn").
 		WithStsRegionId("cn-hangzhou").
+		WithEnableVpc(true).
 		WithPolicy("policy").
 		WithExternalId("externalId").
 		WithRoleSessionName("rsn").
@@ -74,9 +75,10 @@ func TestNewRAMRoleARNCredentialsProvider(t *testing.T) {
 	assert.Equal(t, "cn-hangzhou", p.stsRegionId)
 	assert.Equal(t, 1000, p.durationSeconds)
 	// sts endpoint with sts region
-	assert.Equal(t, "sts.cn-hangzhou.aliyuncs.com", p.stsEndpoint)
+	assert.Equal(t, "sts-vpc.cn-hangzhou.aliyuncs.com", p.stsEndpoint)
 
 	// default sts endpoint
+	os.Setenv("ALIBABA_CLOUD_VPC_ENDPOINT_ENABLED", "1")
 	p, err = NewRAMRoleARNCredentialsProviderBuilder().
 		WithCredentialsProvider(akProvider).
 		WithRoleArn("roleArn").
@@ -96,6 +98,7 @@ func TestNewRAMRoleARNCredentialsProvider(t *testing.T) {
 
 	// sts endpoint with env
 	os.Setenv("ALIBABA_CLOUD_STS_REGION", "cn-hangzhou")
+	os.Setenv("ALIBABA_CLOUD_VPC_ENDPOINT_ENABLED", "True")
 	p, err = NewRAMRoleARNCredentialsProviderBuilder().
 		WithCredentialsProvider(akProvider).
 		WithRoleArn("roleArn").
@@ -105,7 +108,7 @@ func TestNewRAMRoleARNCredentialsProvider(t *testing.T) {
 		WithDurationSeconds(1000).
 		Build()
 	assert.Nil(t, err)
-	assert.Equal(t, "sts.cn-hangzhou.aliyuncs.com", p.stsEndpoint)
+	assert.Equal(t, "sts-vpc.cn-hangzhou.aliyuncs.com", p.stsEndpoint)
 
 	// sts endpoint with sts endpoint
 	p, err = NewRAMRoleARNCredentialsProviderBuilder().
