@@ -19,6 +19,14 @@ func TestRequest(t *testing.T) {
 		Path:     "/",
 	}
 	assert.Equal(t, "GET http://www.aliyun.com/", req.BuildRequestURL())
+
+	req = &Request{
+		Method: "GET",
+		URL:    "http://www.aliyun.com",
+		Path:   "/",
+	}
+	assert.Equal(t, "GET http://www.aliyun.com", req.BuildRequestURL())
+
 	// With query
 	req = &Request{
 		Method:   "GET",
@@ -40,6 +48,16 @@ func TestDoGet(t *testing.T) {
 		Path:     "/",
 	}
 	res, err := Do(req)
+	assert.Nil(t, err)
+	assert.NotNil(t, res)
+	assert.Equal(t, 200, res.StatusCode)
+	assert.Equal(t, "text/html; charset=utf-8", res.Headers["Content-Type"])
+
+	req = &Request{
+		Method: "GET",
+		URL:    "http://www.aliyun.com",
+	}
+	res, err = Do(req)
 	assert.Nil(t, err)
 	assert.NotNil(t, res)
 	assert.Equal(t, 200, res.StatusCode)

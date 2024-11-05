@@ -163,11 +163,20 @@ func (provider *OIDCCredentialsProvider) getCredentials() (session *sessionCrede
 		Headers:  map[string]string{},
 	}
 
-	if provider.httpOptions != nil {
-		req.ConnectTimeout = time.Duration(provider.httpOptions.ConnectTimeout) * time.Second
-		req.ReadTimeout = time.Duration(provider.httpOptions.ReadTimeout) * time.Second
+	connectTimeout := 5 * time.Second
+	readTimeout := 10 * time.Second
+
+	if provider.httpOptions != nil && provider.httpOptions.ConnectTimeout > 0 {
+		connectTimeout = time.Duration(provider.httpOptions.ConnectTimeout) * time.Millisecond
+	}
+	if provider.httpOptions != nil && provider.httpOptions.ReadTimeout > 0 {
+		readTimeout = time.Duration(provider.httpOptions.ReadTimeout) * time.Millisecond
+	}
+	if provider.httpOptions != nil && provider.httpOptions.Proxy != "" {
 		req.Proxy = provider.httpOptions.Proxy
 	}
+	req.ConnectTimeout = connectTimeout
+	req.ReadTimeout = readTimeout
 
 	queries := make(map[string]string)
 	queries["Version"] = "2015-04-01"

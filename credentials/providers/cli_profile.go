@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"strings"
 
 	"github.com/aliyun/credentials-go/credentials/internal/utils"
 )
@@ -34,7 +35,7 @@ func (b *CLIProfileCredentialsProviderBuilder) Build() (provider *CLIProfileCred
 		b.provider.profileName = os.Getenv("ALIBABA_CLOUD_PROFILE")
 	}
 
-	if os.Getenv("ALIBABA_CLOUD_CLI_PROFILE_DISABLED") == "true" {
+	if strings.ToLower(os.Getenv("ALIBABA_CLOUD_CLI_PROFILE_DISABLED")) == "true" {
 		err = errors.New("the CLI profile is disabled")
 		return
 	}

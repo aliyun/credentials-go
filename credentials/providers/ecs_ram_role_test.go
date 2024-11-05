@@ -7,17 +7,42 @@ import (
 	"time"
 
 	httputil "github.com/aliyun/credentials-go/credentials/internal/http"
+	"github.com/aliyun/credentials-go/credentials/internal/utils"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestNewECSRAMRoleCredentialsProvider(t *testing.T) {
+	rollback := utils.Memory("ALIBABA_CLOUD_ECS_METADATA_DISABLED", "ALIBABA_CLOUD_ECS_METADATA", "ALIBABA_CLOUD_IMDSV1_DISABLED")
+	defer func() {
+		rollback()
+	}()
 	p, err := NewECSRAMRoleCredentialsProviderBuilder().Build()
 	assert.Nil(t, err)
 	assert.Equal(t, "", p.roleName)
 
+	os.Setenv("ALIBABA_CLOUD_ECS_METADATA", "rolename")
+	p, err = NewECSRAMRoleCredentialsProviderBuilder().Build()
+	assert.Nil(t, err)
+	assert.Equal(t, "rolename", p.roleName)
+
 	p, err = NewECSRAMRoleCredentialsProviderBuilder().WithRoleName("role").Build()
 	assert.Nil(t, err)
 	assert.Equal(t, "role", p.roleName)
+	assert.False(t, p.disableIMDSv1)
+
+	os.Setenv("ALIBABA_CLOUD_IMDSV1_DISABLED", "True")
+	p, err = NewECSRAMRoleCredentialsProviderBuilder().Build()
+	assert.Nil(t, err)
+	assert.True(t, p.disableIMDSv1)
+
+	os.Setenv("ALIBABA_CLOUD_IMDSV1_DISABLED", "1")
+	p, err = NewECSRAMRoleCredentialsProviderBuilder().WithDisableIMDSv1(true).Build()
+	assert.Nil(t, err)
+	assert.True(t, p.disableIMDSv1)
+
+	os.Setenv("ALIBABA_CLOUD_ECS_METADATA_DISABLED", "True")
+	_, err = NewECSRAMRoleCredentialsProviderBuilder().Build()
+	assert.Equal(t, "IMDS credentials is disabled", err.Error())
 
 	assert.True(t, p.needUpdateCredential())
 }
@@ -367,6 +392,11 @@ func TestECSRAMRoleCredentialsProviderGetCredentials(t *testing.T) {
 }
 
 func TestECSRAMRoleCredentialsProvider_getMetadataToken(t *testing.T) {
+	rollback := utils.Memory("ALIBABA_CLOUD_IMDSV1_DISABLED")
+	defer func() {
+		rollback()
+	}()
+
 	originHttpDo := httpDo
 	defer func() { httpDo = originHttpDo }()
 
@@ -443,4 +473,28 @@ func TestECSRAMRoleCredentialsProvider_getMetadataToken(t *testing.T) {
 	metadataToken, err = p.getMetadataToken()
 	assert.NotNil(t, err)
 	assert.Equal(t, "", metadataToken)
+}
+
+func TestNewECSRAMRoleCredentialsProviderWithHttpOptions(t *testing.T) {
+	p, err := NewECSRAMRoleCredentialsProviderBuilder().
+		WithRoleName("test").
+		WithHttpOptions(&HttpOptions{
+			ConnectTimeout: 1000,
+			ReadTimeout:    1000,
+			Proxy:          "localhost:3999",
+		}).
+		Build()
+	assert.Nil(t, err)
+
+	_, err = p.getRoleName()
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "proxyconnect tcp:")
+
+	_, err = p.getCredentials()
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "proxyconnect tcp:")
+
+	_, err = p.GetCredentials()
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "proxyconnect tcp:")
 }

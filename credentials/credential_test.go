@@ -15,8 +15,8 @@ this is privatekey`
 
 func TestConfig(t *testing.T) {
 	config := new(Config)
-	assert.Equal(t, "{\n   \"type\": null,\n   \"access_key_id\": null,\n   \"access_key_secret\": null,\n   \"oidc_provider_arn\": null,\n   \"oidc_token\": null,\n   \"role_arn\": null,\n   \"role_session_name\": null,\n   \"public_key_id\": null,\n   \"role_name\": null,\n   \"enable_imds_v2\": null,\n   \"disable_imds_v1\": null,\n   \"metadata_token_duration\": null,\n   \"session_expiration\": null,\n   \"private_key_file\": null,\n   \"bearer_token\": null,\n   \"security_token\": null,\n   \"role_session_expiration\": null,\n   \"policy\": null,\n   \"host\": null,\n   \"timeout\": null,\n   \"connect_timeout\": null,\n   \"proxy\": null,\n   \"inAdvanceScale\": null,\n   \"url\": null,\n   \"sts_endpoint\": null,\n   \"external_id\": null\n}", config.String())
-	assert.Equal(t, "{\n   \"type\": null,\n   \"access_key_id\": null,\n   \"access_key_secret\": null,\n   \"oidc_provider_arn\": null,\n   \"oidc_token\": null,\n   \"role_arn\": null,\n   \"role_session_name\": null,\n   \"public_key_id\": null,\n   \"role_name\": null,\n   \"enable_imds_v2\": null,\n   \"disable_imds_v1\": null,\n   \"metadata_token_duration\": null,\n   \"session_expiration\": null,\n   \"private_key_file\": null,\n   \"bearer_token\": null,\n   \"security_token\": null,\n   \"role_session_expiration\": null,\n   \"policy\": null,\n   \"host\": null,\n   \"timeout\": null,\n   \"connect_timeout\": null,\n   \"proxy\": null,\n   \"inAdvanceScale\": null,\n   \"url\": null,\n   \"sts_endpoint\": null,\n   \"external_id\": null\n}", config.GoString())
+	assert.Equal(t, "{\n   \"type\": null,\n   \"access_key_id\": null,\n   \"access_key_secret\": null,\n   \"security_token\": null,\n   \"bearer_token\": null,\n   \"oidc_provider_arn\": null,\n   \"oidc_token\": null,\n   \"role_arn\": null,\n   \"role_session_name\": null,\n   \"role_session_expiration\": null,\n   \"policy\": null,\n   \"external_id\": null,\n   \"sts_endpoint\": null,\n   \"role_name\": null,\n   \"enable_imds_v2\": null,\n   \"disable_imds_v1\": null,\n   \"metadata_token_duration\": null,\n   \"url\": null,\n   \"session_expiration\": null,\n   \"public_key_id\": null,\n   \"private_key_file\": null,\n   \"host\": null,\n   \"timeout\": null,\n   \"connect_timeout\": null,\n   \"proxy\": null,\n   \"inAdvanceScale\": null\n}", config.String())
+	assert.Equal(t, "{\n   \"type\": null,\n   \"access_key_id\": null,\n   \"access_key_secret\": null,\n   \"security_token\": null,\n   \"bearer_token\": null,\n   \"oidc_provider_arn\": null,\n   \"oidc_token\": null,\n   \"role_arn\": null,\n   \"role_session_name\": null,\n   \"role_session_expiration\": null,\n   \"policy\": null,\n   \"external_id\": null,\n   \"sts_endpoint\": null,\n   \"role_name\": null,\n   \"enable_imds_v2\": null,\n   \"disable_imds_v1\": null,\n   \"metadata_token_duration\": null,\n   \"url\": null,\n   \"session_expiration\": null,\n   \"public_key_id\": null,\n   \"private_key_file\": null,\n   \"host\": null,\n   \"timeout\": null,\n   \"connect_timeout\": null,\n   \"proxy\": null,\n   \"inAdvanceScale\": null\n}", config.GoString())
 
 	config.SetSTSEndpoint("sts.cn-hangzhou.aliyuncs.com")
 	assert.Equal(t, "sts.cn-hangzhou.aliyuncs.com", *config.STSEndpoint)
@@ -309,7 +309,7 @@ func TestNewCredentialWithInvalidType(t *testing.T) {
 	config.SetType("sdk")
 	cred, err := NewCredential(config)
 	assert.NotNil(t, err)
-	assert.Equal(t, "invalid type option, support: access_key, sts, ecs_ram_role, ram_role_arn, rsa_key_pair", err.Error())
+	assert.Equal(t, "invalid type option, support: access_key, sts, bearer, ecs_ram_role, ram_role_arn, rsa_key_pair, oidc_role_arn, credentials_uri", err.Error())
 	assert.Nil(t, cred)
 }
 
