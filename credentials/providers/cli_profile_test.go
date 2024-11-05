@@ -11,7 +11,7 @@ import (
 )
 
 func TestCLIProfileCredentialsProvider(t *testing.T) {
-	rollback := utils.Memory("ALIBABA_CLOUD_PROFILE")
+	rollback := utils.Memory("ALIBABA_CLOUD_PROFILE", "ALIBABA_CLOUD_CLI_PROFILE_DISABLED")
 	defer rollback()
 
 	b, err := NewCLIProfileCredentialsProviderBuilder().
@@ -31,6 +31,13 @@ func TestCLIProfileCredentialsProvider(t *testing.T) {
 		Build()
 	assert.Nil(t, err)
 	assert.Equal(t, "profilename", b.profileName)
+
+	os.Setenv("ALIBABA_CLOUD_CLI_PROFILE_DISABLED", "True")
+	_, err = NewCLIProfileCredentialsProviderBuilder().
+		WithProfileName("profilename").
+		Build()
+	assert.Equal(t, "the CLI profile is disabled", err.Error())
+
 }
 
 func Test_configuration(t *testing.T) {

@@ -11,7 +11,7 @@ import (
 func TestDefaultCredentialsProvider(t *testing.T) {
 	provider := NewDefaultCredentialsProvider()
 	assert.NotNil(t, provider)
-	assert.Len(t, provider.providerChain, 3)
+	assert.Len(t, provider.providerChain, 4)
 	_, ok := provider.providerChain[0].(*EnvironmentVariableCredentialsProvider)
 	assert.True(t, ok)
 
@@ -21,11 +21,15 @@ func TestDefaultCredentialsProvider(t *testing.T) {
 	_, ok = provider.providerChain[2].(*ProfileCredentialsProvider)
 	assert.True(t, ok)
 
+	_, ok = provider.providerChain[3].(*ECSRAMRoleCredentialsProvider)
+	assert.True(t, ok)
+
 	// Add oidc provider
 	rollback := utils.Memory("ALIBABA_CLOUD_OIDC_TOKEN_FILE",
 		"ALIBABA_CLOUD_OIDC_PROVIDER_ARN",
 		"ALIBABA_CLOUD_ROLE_ARN",
-		"ALIBABA_CLOUD_ECS_METADATA")
+		"ALIBABA_CLOUD_ECS_METADATA",
+		"ALIBABA_CLOUD_CREDENTIALS_URI")
 
 	defer rollback()
 	os.Setenv("ALIBABA_CLOUD_OIDC_TOKEN_FILE", "/path/to/oidc.token")
@@ -34,7 +38,7 @@ func TestDefaultCredentialsProvider(t *testing.T) {
 
 	provider = NewDefaultCredentialsProvider()
 	assert.NotNil(t, provider)
-	assert.Len(t, provider.providerChain, 4)
+	assert.Len(t, provider.providerChain, 5)
 	_, ok = provider.providerChain[0].(*EnvironmentVariableCredentialsProvider)
 	assert.True(t, ok)
 
@@ -47,7 +51,10 @@ func TestDefaultCredentialsProvider(t *testing.T) {
 	_, ok = provider.providerChain[3].(*ProfileCredentialsProvider)
 	assert.True(t, ok)
 
-	// Add ecs ram role
+	_, ok = provider.providerChain[4].(*ECSRAMRoleCredentialsProvider)
+	assert.True(t, ok)
+
+	// Add ecs ram role name
 	os.Setenv("ALIBABA_CLOUD_ECS_METADATA", "rolename")
 	provider = NewDefaultCredentialsProvider()
 	assert.NotNil(t, provider)
@@ -66,12 +73,36 @@ func TestDefaultCredentialsProvider(t *testing.T) {
 
 	_, ok = provider.providerChain[4].(*ECSRAMRoleCredentialsProvider)
 	assert.True(t, ok)
+
+	// Add ecs ram role
+	os.Setenv("ALIBABA_CLOUD_CREDENTIALS_URI", "http://")
+	provider = NewDefaultCredentialsProvider()
+	assert.NotNil(t, provider)
+	assert.Len(t, provider.providerChain, 6)
+	_, ok = provider.providerChain[0].(*EnvironmentVariableCredentialsProvider)
+	assert.True(t, ok)
+
+	_, ok = provider.providerChain[1].(*OIDCCredentialsProvider)
+	assert.True(t, ok)
+
+	_, ok = provider.providerChain[2].(*CLIProfileCredentialsProvider)
+	assert.True(t, ok)
+
+	_, ok = provider.providerChain[3].(*ProfileCredentialsProvider)
+	assert.True(t, ok)
+
+	_, ok = provider.providerChain[4].(*ECSRAMRoleCredentialsProvider)
+	assert.True(t, ok)
+
+	_, ok = provider.providerChain[5].(*URLCredentialsProvider)
+	assert.True(t, ok)
 }
 
 func TestDefaultCredentialsProvider_GetCredentials(t *testing.T) {
 	rollback := utils.Memory("ALIBABA_CLOUD_ACCESS_KEY_ID",
 		"ALIBABA_CLOUD_ACCESS_KEY_SECRET",
-		"ALIBABA_CLOUD_SECURITY_TOKEN")
+		"ALIBABA_CLOUD_SECURITY_TOKEN",
+		"ALIBABA_CLOUD_ECS_METADATA_DISABLED")
 
 	defer func() {
 		getHomePath = utils.GetHomePath
@@ -83,6 +114,7 @@ func TestDefaultCredentialsProvider_GetCredentials(t *testing.T) {
 		return ""
 	}
 
+	os.Setenv("ALIBABA_CLOUD_ECS_METADATA_DISABLED", "true")
 	provider := NewDefaultCredentialsProvider()
 	assert.Len(t, provider.providerChain, 3)
 	_, err := provider.GetCredentials()

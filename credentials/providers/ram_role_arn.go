@@ -39,9 +39,11 @@ type sessionCredentials struct {
 }
 
 type HttpOptions struct {
-	Proxy          string
+	Proxy string
+	// Connection timeout, in milliseconds.
 	ConnectTimeout int
-	ReadTimeout    int
+	// Read timeout, in milliseconds.
+	ReadTimeout int
 }
 
 type RAMRoleARNCredentialsProvider struct {
@@ -164,8 +166,8 @@ func (builder *RAMRoleARNCredentialsProviderBuilder) Build() (provider *RAMRoleA
 			}
 		} else {
 			err = errors.New("must specify a previous credentials provider to assume role")
+			return
 		}
-		return
 	}
 
 	if builder.provider.roleArn == "" {
@@ -278,11 +280,20 @@ func (provider *RAMRoleARNCredentialsProvider) getCredentials(cc *Credentials) (
 	req.Headers["Content-Type"] = "application/x-www-form-urlencoded"
 	req.Headers["x-acs-credentials-provider"] = cc.ProviderName
 
-	if provider.httpOptions != nil {
-		req.ConnectTimeout = time.Duration(provider.httpOptions.ConnectTimeout) * time.Second
-		req.ReadTimeout = time.Duration(provider.httpOptions.ReadTimeout) * time.Second
+	connectTimeout := 5 * time.Second
+	readTimeout := 10 * time.Second
+
+	if provider.httpOptions != nil && provider.httpOptions.ConnectTimeout > 0 {
+		connectTimeout = time.Duration(provider.httpOptions.ConnectTimeout) * time.Millisecond
+	}
+	if provider.httpOptions != nil && provider.httpOptions.ReadTimeout > 0 {
+		readTimeout = time.Duration(provider.httpOptions.ReadTimeout) * time.Millisecond
+	}
+	if provider.httpOptions != nil && provider.httpOptions.Proxy != "" {
 		req.Proxy = provider.httpOptions.Proxy
 	}
+	req.ConnectTimeout = connectTimeout
+	req.ReadTimeout = readTimeout
 
 	res, err := httpDo(req)
 	if err != nil {

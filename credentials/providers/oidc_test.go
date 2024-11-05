@@ -24,12 +24,12 @@ func TestOIDCCredentialsProviderGetCredentialsWithError(t *testing.T) {
 		WithPolicy("policy").
 		WithDurationSeconds(1000).
 		WithHttpOptions(&HttpOptions{
-			ConnectTimeout: 10,
+			ConnectTimeout: 10000,
 		}).
 		Build()
 
 	assert.Nil(t, err)
-	assert.Equal(t, 10, p.httpOptions.ConnectTimeout)
+	assert.Equal(t, 10000, p.httpOptions.ConnectTimeout)
 	_, err = p.GetCredentials()
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "AuthenticationFail.NoPermission")
@@ -336,4 +336,27 @@ func TestOIDCCredentialsProviderGetCredentials(t *testing.T) {
 	assert.Equal(t, "ststoken", cc.SecurityToken)
 	assert.Equal(t, "oidc_role_arn", cc.ProviderName)
 	assert.True(t, p.needUpdateCredential())
+}
+
+func TestOIDCCredentialsProviderGetCredentialsWithHttpOptions(t *testing.T) {
+	wd, _ := os.Getwd()
+	p, err := NewOIDCCredentialsProviderBuilder().
+		// read a normal token
+		WithOIDCTokenFilePath(path.Join(wd, "fixtures/mock_oidctoken")).
+		WithOIDCProviderARN("provider-arn").
+		WithRoleArn("roleArn").
+		WithRoleSessionName("rsn").
+		WithPolicy("policy").
+		WithDurationSeconds(1000).
+		WithHttpOptions(&HttpOptions{
+			ConnectTimeout: 1000,
+			ReadTimeout:    1000,
+			Proxy:          "localhost:3999",
+		}).
+		Build()
+
+	assert.Nil(t, err)
+	_, err = p.GetCredentials()
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "proxyconnect tcp:")
 }

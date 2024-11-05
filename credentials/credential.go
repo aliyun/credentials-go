@@ -39,32 +39,50 @@ type Credential interface {
 
 // Config is important when call NewCredential
 type Config struct {
-	Type                  *string  `json:"type"`
-	AccessKeyId           *string  `json:"access_key_id"`
-	AccessKeySecret       *string  `json:"access_key_secret"`
-	OIDCProviderArn       *string  `json:"oidc_provider_arn"`
-	OIDCTokenFilePath     *string  `json:"oidc_token"`
-	RoleArn               *string  `json:"role_arn"`
-	RoleSessionName       *string  `json:"role_session_name"`
-	PublicKeyId           *string  `json:"public_key_id"`
-	RoleName              *string  `json:"role_name"`
-	EnableIMDSv2          *bool    `json:"enable_imds_v2"`
-	DisableIMDSv1         *bool    `json:"disable_imds_v1"`
-	MetadataTokenDuration *int     `json:"metadata_token_duration"`
-	SessionExpiration     *int     `json:"session_expiration"`
-	PrivateKeyFile        *string  `json:"private_key_file"`
-	BearerToken           *string  `json:"bearer_token"`
-	SecurityToken         *string  `json:"security_token"`
-	RoleSessionExpiration *int     `json:"role_session_expiration"`
-	Policy                *string  `json:"policy"`
-	Host                  *string  `json:"host"`
-	Timeout               *int     `json:"timeout"`
-	ConnectTimeout        *int     `json:"connect_timeout"`
-	Proxy                 *string  `json:"proxy"`
-	InAdvanceScale        *float64 `json:"inAdvanceScale"`
-	Url                   *string  `json:"url"`
-	STSEndpoint           *string  `json:"sts_endpoint"`
-	ExternalId            *string  `json:"external_id"`
+	// Credential type, including access_key, sts, bearer, ecs_ram_role, ram_role_arn, rsa_key_pair, oidc_role_arn, credentials_uri
+	Type            *string `json:"type"`
+	AccessKeyId     *string `json:"access_key_id"`
+	AccessKeySecret *string `json:"access_key_secret"`
+	SecurityToken   *string `json:"security_token"`
+	BearerToken     *string `json:"bearer_token"`
+
+	// Used when the type is ram_role_arn or oidc_role_arn
+	OIDCProviderArn       *string `json:"oidc_provider_arn"`
+	OIDCTokenFilePath     *string `json:"oidc_token"`
+	RoleArn               *string `json:"role_arn"`
+	RoleSessionName       *string `json:"role_session_name"`
+	RoleSessionExpiration *int    `json:"role_session_expiration"`
+	Policy                *string `json:"policy"`
+	ExternalId            *string `json:"external_id"`
+	STSEndpoint           *string `json:"sts_endpoint"`
+
+	// Used when the type is ecs_ram_role
+	RoleName *string `json:"role_name"`
+	// Deprecated
+	EnableIMDSv2  *bool `json:"enable_imds_v2"`
+	DisableIMDSv1 *bool `json:"disable_imds_v1"`
+	// Deprecated
+	MetadataTokenDuration *int `json:"metadata_token_duration"`
+
+	// Used when the type is credentials_uri
+	Url *string `json:"url"`
+
+	// Deprecated
+	// Used when the type is rsa_key_pair
+	SessionExpiration *int    `json:"session_expiration"`
+	PublicKeyId       *string `json:"public_key_id"`
+	PrivateKeyFile    *string `json:"private_key_file"`
+	Host              *string `json:"host"`
+
+	// Read timeout, in milliseconds.
+	// The default value for ecs_ram_role is 1000ms, the default value for ram_role_arn is 5000ms, and the default value for oidc_role_arn is 5000ms.
+	Timeout *int `json:"timeout"`
+	// Connection timeout, in milliseconds.
+	// The default value for ecs_ram_role is 1000ms, the default value for ram_role_arn is 10000ms, and the default value for oidc_role_arn is 10000ms.
+	ConnectTimeout *int `json:"connect_timeout"`
+
+	Proxy          *string  `json:"proxy"`
+	InAdvanceScale *float64 `json:"inAdvanceScale"`
 }
 
 func (s Config) String() string {
@@ -343,7 +361,7 @@ func NewCredential(config *Config) (credential Credential, err error) {
 		}
 		credential = newBearerTokenCredential(tea.StringValue(config.BearerToken))
 	default:
-		err = errors.New("invalid type option, support: access_key, sts, ecs_ram_role, ram_role_arn, rsa_key_pair")
+		err = errors.New("invalid type option, support: access_key, sts, bearer, ecs_ram_role, ram_role_arn, rsa_key_pair, oidc_role_arn, credentials_uri")
 		return
 	}
 	return credential, nil
