@@ -94,7 +94,7 @@ func Do(req *Request) (res *Response, err error) {
 	httpClient := &http.Client{}
 
 	if req.ReadTimeout != 0 {
-		httpClient.Timeout = req.ReadTimeout
+		httpClient.Timeout = req.ReadTimeout + req.ConnectTimeout
 	}
 
 	transport := &http.Transport{}

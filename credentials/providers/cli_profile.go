@@ -210,11 +210,16 @@ func (provider *CLIProfileCredentialsProvider) GetCredentials() (cc *Credentials
 		return
 	}
 
+	providerName := innerCC.ProviderName
+	if providerName == "" {
+		providerName = provider.innerProvider.GetProviderName()
+	}
+
 	cc = &Credentials{
 		AccessKeyId:     innerCC.AccessKeyId,
 		AccessKeySecret: innerCC.AccessKeySecret,
 		SecurityToken:   innerCC.SecurityToken,
-		ProviderName:    fmt.Sprintf("%s/%s", provider.GetProviderName(), provider.innerProvider.GetProviderName()),
+		ProviderName:    fmt.Sprintf("%s/%s", provider.GetProviderName(), providerName),
 	}
 
 	return

@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	httputil "github.com/aliyun/credentials-go/credentials/internal/http"
 	"github.com/aliyun/credentials-go/credentials/internal/utils"
 	"github.com/stretchr/testify/assert"
 )
@@ -188,6 +189,8 @@ func TestCLIProfileCredentialsProvider_getCredentialsProvider(t *testing.T) {
 }
 
 func TestCLIProfileCredentialsProvider_GetCredentials(t *testing.T) {
+	originHttpDo := httpDo
+	defer func() { httpDo = originHttpDo }()
 	defer func() {
 		getHomePath = utils.GetHomePath
 	}()
@@ -230,4 +233,20 @@ func TestCLIProfileCredentialsProvider_GetCredentials(t *testing.T) {
 	assert.Nil(t, err)
 	_, err = provider.GetCredentials()
 	assert.Contains(t, err.Error(), "InvalidAccessKeyId.NotFound")
+
+	httpDo = func(req *httputil.Request) (res *httputil.Response, err error) {
+		res = &httputil.Response{
+			StatusCode: 200,
+			Body:       []byte(`{"Credentials": {"AccessKeyId":"akid","AccessKeySecret":"aksecret","Expiration":"2021-10-20T04:27:09Z","SecurityToken":"ststoken"}}`),
+		}
+		return
+	}
+	provider, err = NewCLIProfileCredentialsProviderBuilder().WithProfileName("ChainableRamRoleArn").Build()
+	assert.Nil(t, err)
+	cc, err = provider.GetCredentials()
+	assert.Nil(t, err)
+	assert.Equal(t, "akid", cc.AccessKeyId)
+	assert.Equal(t, "aksecret", cc.AccessKeySecret)
+	assert.Equal(t, "ststoken", cc.SecurityToken)
+	assert.Equal(t, "cli_profile/ram_role_arn/ram_role_arn/static_ak", cc.ProviderName)
 }

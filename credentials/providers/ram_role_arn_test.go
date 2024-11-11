@@ -2,7 +2,6 @@ package providers
 
 import (
 	"errors"
-	"fmt"
 	"os"
 	"strings"
 	"testing"
@@ -142,7 +141,6 @@ func TestNewRAMRoleARNCredentialsProvider(t *testing.T) {
 		WithDurationSeconds(1000).
 		Build()
 	assert.Nil(t, err)
-	fmt.Println(p.credentialsProvider)
 	cre, err := p.credentialsProvider.GetCredentials()
 	assert.Nil(t, err)
 	assert.Equal(t, "ak", cre.AccessKeyId)
@@ -398,6 +396,21 @@ func TestRAMRoleARNCredentialsProviderGetCredentials(t *testing.T) {
 	assert.Equal(t, "ststoken", cc.SecurityToken)
 	assert.Equal(t, "ram_role_arn/static_ak", cc.ProviderName)
 	assert.True(t, p.needUpdateCredential())
+
+	pp, err := NewRAMRoleARNCredentialsProviderBuilder().
+		WithCredentialsProvider(p).
+		WithRoleArn("roleArn").
+		WithRoleSessionName("rsn").
+		WithDurationSeconds(1000).
+		Build()
+	assert.Nil(t, err)
+	cc, err = pp.GetCredentials()
+	assert.Nil(t, err)
+	assert.Equal(t, "akid", cc.AccessKeyId)
+	assert.Equal(t, "aksecret", cc.AccessKeySecret)
+	assert.Equal(t, "ststoken", cc.SecurityToken)
+	assert.True(t, pp.needUpdateCredential())
+	assert.Equal(t, "ram_role_arn/ram_role_arn/static_ak", cc.ProviderName)
 }
 
 func TestRAMRoleARNCredentialsProviderGetCredentialsWithError(t *testing.T) {
