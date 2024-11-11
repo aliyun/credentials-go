@@ -64,11 +64,16 @@ func (provider *DefaultCredentialsProvider) GetCredentials() (cc *Credentials, e
 			return
 		}
 
+		providerName := inner.ProviderName
+		if providerName == "" {
+			providerName = provider.lastUsedProvider.GetProviderName()
+		}
+
 		cc = &Credentials{
 			AccessKeyId:     inner.AccessKeyId,
 			AccessKeySecret: inner.AccessKeySecret,
 			SecurityToken:   inner.SecurityToken,
-			ProviderName:    fmt.Sprintf("%s/%s", provider.GetProviderName(), provider.lastUsedProvider.GetProviderName()),
+			ProviderName:    fmt.Sprintf("%s/%s", provider.GetProviderName(), providerName),
 		}
 		return
 	}
@@ -84,11 +89,15 @@ func (provider *DefaultCredentialsProvider) GetCredentials() (cc *Credentials, e
 		}
 
 		if inner != nil {
+			providerName := inner.ProviderName
+			if providerName == "" {
+				providerName = p.GetProviderName()
+			}
 			cc = &Credentials{
 				AccessKeyId:     inner.AccessKeyId,
 				AccessKeySecret: inner.AccessKeySecret,
 				SecurityToken:   inner.SecurityToken,
-				ProviderName:    fmt.Sprintf("%s/%s", provider.GetProviderName(), p.GetProviderName()),
+				ProviderName:    fmt.Sprintf("%s/%s", provider.GetProviderName(), providerName),
 			}
 			return
 		}

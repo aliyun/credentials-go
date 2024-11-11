@@ -2,8 +2,10 @@ package providers
 
 import (
 	"os"
+	"path"
 	"testing"
 
+	httputil "github.com/aliyun/credentials-go/credentials/internal/http"
 	"github.com/aliyun/credentials-go/credentials/internal/utils"
 	"github.com/stretchr/testify/assert"
 )
@@ -102,12 +104,15 @@ func TestDefaultCredentialsProvider_GetCredentials(t *testing.T) {
 	rollback := utils.Memory("ALIBABA_CLOUD_ACCESS_KEY_ID",
 		"ALIBABA_CLOUD_ACCESS_KEY_SECRET",
 		"ALIBABA_CLOUD_SECURITY_TOKEN",
-		"ALIBABA_CLOUD_ECS_METADATA_DISABLED")
+		"ALIBABA_CLOUD_ECS_METADATA_DISABLED",
+		"ALIBABA_CLOUD_PROFILE")
 
 	defer func() {
 		getHomePath = utils.GetHomePath
 		rollback()
 	}()
+	originHttpDo := httpDo
+	defer func() { httpDo = originHttpDo }()
 
 	// testcase: empty home
 	getHomePath = func() string {
@@ -131,4 +136,23 @@ func TestDefaultCredentialsProvider_GetCredentials(t *testing.T) {
 	cc, err = provider.GetCredentials()
 	assert.Nil(t, err)
 	assert.Equal(t, &Credentials{AccessKeyId: "akid", AccessKeySecret: "aksecret", SecurityToken: "", ProviderName: "default/env"}, cc)
+
+	getHomePath = func() string {
+		wd, _ := os.Getwd()
+		return path.Join(wd, "fixtures")
+	}
+	os.Setenv("ALIBABA_CLOUD_ACCESS_KEY_ID", "")
+	os.Setenv("ALIBABA_CLOUD_ACCESS_KEY_SECRET", "")
+	os.Setenv("ALIBABA_CLOUD_PROFILE", "ChainableRamRoleArn")
+	httpDo = func(req *httputil.Request) (res *httputil.Response, err error) {
+		res = &httputil.Response{
+			StatusCode: 200,
+			Body:       []byte(`{"Credentials": {"AccessKeyId":"akid","AccessKeySecret":"aksecret","Expiration":"2021-10-20T04:27:09Z","SecurityToken":"ststoken"}}`),
+		}
+		return
+	}
+	provider = NewDefaultCredentialsProvider()
+	cc, err = provider.GetCredentials()
+	assert.Nil(t, err)
+	assert.Equal(t, &Credentials{AccessKeyId: "akid", AccessKeySecret: "aksecret", SecurityToken: "ststoken", ProviderName: "default/cli_profile/ram_role_arn/ram_role_arn/static_ak"}, cc)
 }

@@ -65,9 +65,10 @@ type RAMRoleARNCredentialsProvider struct {
 	// for http options
 	httpOptions *HttpOptions
 	// inner
-	expirationTimestamp int64
-	lastUpdateTimestamp int64
-	sessionCredentials  *sessionCredentials
+	expirationTimestamp  int64
+	lastUpdateTimestamp  int64
+	previousProviderName string
+	sessionCredentials   *sessionCredentials
 }
 
 type RAMRoleARNCredentialsProviderBuilder struct {
@@ -356,6 +357,7 @@ func (provider *RAMRoleARNCredentialsProvider) GetCredentials() (cc *Credentials
 
 		provider.expirationTimestamp = expirationTime.Unix()
 		provider.lastUpdateTimestamp = time.Now().Unix()
+		provider.previousProviderName = previousCredentials.ProviderName
 		provider.sessionCredentials = sessionCredentials
 	}
 
@@ -363,7 +365,7 @@ func (provider *RAMRoleARNCredentialsProvider) GetCredentials() (cc *Credentials
 		AccessKeyId:     provider.sessionCredentials.AccessKeyId,
 		AccessKeySecret: provider.sessionCredentials.AccessKeySecret,
 		SecurityToken:   provider.sessionCredentials.SecurityToken,
-		ProviderName:    fmt.Sprintf("%s/%s", provider.GetProviderName(), provider.credentialsProvider.GetProviderName()),
+		ProviderName:    fmt.Sprintf("%s/%s", provider.GetProviderName(), provider.previousProviderName),
 	}
 	return
 }

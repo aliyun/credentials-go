@@ -5,6 +5,7 @@ import (
 	"path"
 	"testing"
 
+	httputil "github.com/aliyun/credentials-go/credentials/internal/http"
 	"github.com/aliyun/credentials-go/credentials/internal/utils"
 	"github.com/stretchr/testify/assert"
 	"gopkg.in/ini.v1"
@@ -195,6 +196,8 @@ func TestProfileCredentialsProvider_getCredentialsProvider(t *testing.T) {
 }
 
 func TestProfileCredentialsProviderGetCredentials(t *testing.T) {
+	originHttpDo := httpDo
+	defer func() { httpDo = originHttpDo }()
 	rollback := utils.Memory("ALIBABA_CLOUD_CREDENTIALS_FILE")
 	defer func() {
 		getHomePath = utils.GetHomePath
@@ -249,4 +252,20 @@ func TestProfileCredentialsProviderGetCredentials(t *testing.T) {
 	cc, err = provider.GetCredentials()
 	assert.Nil(t, err)
 	assert.Equal(t, &Credentials{AccessKeyId: "foo", AccessKeySecret: "bar", SecurityToken: "", ProviderName: "profile/static_ak"}, cc)
+
+	httpDo = func(req *httputil.Request) (res *httputil.Response, err error) {
+		res = &httputil.Response{
+			StatusCode: 200,
+			Body:       []byte(`{"Credentials": {"AccessKeyId":"akid","AccessKeySecret":"aksecret","Expiration":"2021-10-20T04:27:09Z","SecurityToken":"ststoken"}}`),
+		}
+		return
+	}
+	provider, err = NewProfileCredentialsProviderBuilder().WithProfileName("ram").Build()
+	assert.Nil(t, err)
+	cc, err = provider.GetCredentials()
+	assert.Nil(t, err)
+	assert.Equal(t, "akid", cc.AccessKeyId)
+	assert.Equal(t, "aksecret", cc.AccessKeySecret)
+	assert.Equal(t, "ststoken", cc.SecurityToken)
+	assert.Equal(t, "profile/ram_role_arn/static_ak", cc.ProviderName)
 }
