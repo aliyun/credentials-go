@@ -61,6 +61,7 @@ func (provider *DefaultCredentialsProvider) GetCredentials() (cc *Credentials, e
 	if provider.lastUsedProvider != nil {
 		inner, err1 := provider.lastUsedProvider.GetCredentials()
 		if err1 != nil {
+			err = err1
 			return
 		}
 

@@ -97,7 +97,7 @@ func Do(req *Request) (res *Response, err error) {
 		httpClient.Timeout = req.ReadTimeout + req.ConnectTimeout
 	}
 
-	transport := &http.Transport{}
+	transport := http.DefaultTransport.(*http.Transport).Clone()
 	if req.Proxy != "" {
 		var proxy *url.URL
 		proxy, err = url.Parse(req.Proxy)
