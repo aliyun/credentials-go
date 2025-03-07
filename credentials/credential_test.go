@@ -299,8 +299,8 @@ func TestNewCredentialWithCredentialsURI(t *testing.T) {
 
 	config.SetURLCredential("")
 	cred, err = NewCredential(config)
-	assert.Nil(t, err)
-	assert.NotNil(t, cred)
+	assert.NotNil(t, err)
+	assert.Nil(t, cred)
 	assert.Equal(t, "", tea.StringValue(config.Url))
 }
 

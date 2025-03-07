@@ -181,13 +181,16 @@ var getHomePath = utils.GetHomePath
 
 func (provider *CLIProfileCredentialsProvider) GetCredentials() (cc *Credentials, err error) {
 	if provider.innerProvider == nil {
-		homedir := getHomePath()
-		if homedir == "" {
-			err = fmt.Errorf("cannot found home dir")
-			return
-		}
+		cfgPath := os.Getenv("ALIBABA_CLOUD_CONFIG_FILE")
+		if cfgPath == "" {
+			homeDir := getHomePath()
+			if homeDir == "" {
+				err = fmt.Errorf("cannot found home dir")
+				return
+			}
 
-		cfgPath := path.Join(homedir, ".aliyun/config.json")
+			cfgPath = path.Join(homeDir, ".aliyun/config.json")
+		}
 
 		conf, err1 := newConfigurationFromPath(cfgPath)
 		if err1 != nil {

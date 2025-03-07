@@ -30,4 +30,5 @@ func Test_BearerTokenCredential(t *testing.T) {
 	assert.Nil(t, cred.AccessKeySecret)
 	assert.Nil(t, cred.SecurityToken)
 	assert.Equal(t, "bearer", *cred.Type)
+	assert.Equal(t, "bearer", *cred.ProviderName)
 }
