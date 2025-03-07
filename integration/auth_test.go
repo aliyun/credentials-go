@@ -79,6 +79,7 @@ func TestOidc(t *testing.T) {
 	assert.NotNil(t, c.AccessKeySecret)
 	assert.NotNil(t, c.SecurityToken)
 	assert.Equal(t, "oidc_role_arn", *c.Type)
+	assert.Equal(t, "oidc_role_arn", *c.ProviderName)
 }
 
 func TestDefaultProvider(t *testing.T) {
@@ -90,5 +91,6 @@ func TestDefaultProvider(t *testing.T) {
 	assert.NotNil(t, c.AccessKeyId)
 	assert.NotNil(t, c.AccessKeySecret)
 	assert.NotNil(t, c.SecurityToken)
-	assert.Equal(t, "default/oidc_role_arn", *c.Type)
+	assert.Equal(t, "default", *c.Type)
+	assert.Equal(t, "default/oidc_role_arn", *c.ProviderName)
 }

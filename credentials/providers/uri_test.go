@@ -18,19 +18,19 @@ func TestNewURLCredentialsProvider(t *testing.T) {
 		rollback()
 	}()
 	// case 1: no credentials provider
-	_, err := NewURLCredentialsProviderBuilderBuilder().
+	_, err := NewURLCredentialsProviderBuilder().
 		Build()
 	assert.EqualError(t, err, "the url is empty")
 
 	// case 2: no role arn
 	os.Setenv("ALIBABA_CLOUD_CREDENTIALS_URI", "http://localhost:8080")
-	p, err := NewURLCredentialsProviderBuilderBuilder().
+	p, err := NewURLCredentialsProviderBuilder().
 		Build()
 	assert.Nil(t, err)
 	assert.True(t, strings.HasPrefix(p.url, "http://localhost:8080"))
 
 	// case 3: check default role session name
-	p, err = NewURLCredentialsProviderBuilderBuilder().
+	p, err = NewURLCredentialsProviderBuilder().
 		WithUrl("http://localhost:9090").
 		Build()
 	assert.Nil(t, err)
@@ -40,7 +40,7 @@ func TestNewURLCredentialsProvider(t *testing.T) {
 func TestURLCredentialsProvider_getCredentials(t *testing.T) {
 	originHttpDo := httpDo
 	defer func() { httpDo = originHttpDo }()
-	p, err := NewURLCredentialsProviderBuilderBuilder().
+	p, err := NewURLCredentialsProviderBuilder().
 		WithUrl("http://localhost:8080").
 		Build()
 	assert.Nil(t, err)
@@ -132,7 +132,7 @@ func TestURLCredentialsProvider_GetCredentials(t *testing.T) {
 	defer func() { httpDo = originHttpDo }()
 
 	// case 0: get previous credentials failed
-	p, err := NewURLCredentialsProviderBuilderBuilder().
+	p, err := NewURLCredentialsProviderBuilder().
 		WithUrl("http://localhost:8080").
 		Build()
 	assert.Nil(t, err)
@@ -184,7 +184,7 @@ func TestURLCredentialsProvider_GetCredentials(t *testing.T) {
 }
 
 func TestURLCredentialsProviderWithHttpOptions(t *testing.T) {
-	p, err := NewURLCredentialsProviderBuilderBuilder().
+	p, err := NewURLCredentialsProviderBuilder().
 		WithUrl("http://localhost:8080").
 		WithHttpOptions(&HttpOptions{
 			ConnectTimeout: 1000,
