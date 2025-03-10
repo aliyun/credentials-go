@@ -213,12 +213,23 @@ func TestCLIProfileCredentialsProvider_GetCredentials(t *testing.T) {
 	_, err = provider.GetCredentials()
 	assert.EqualError(t, err, "reading aliyun cli config from '/path/invalid/home/dir/.aliyun/config.json' failed open /path/invalid/home/dir/.aliyun/config.json: no such file or directory")
 
+	// testcase: specify credentials file
+	provider, err = NewCLIProfileCredentialsProviderBuilder().WithProfileFile("/path/to/config.invalid").Build()
+	assert.Nil(t, err)
+	_, err = provider.GetCredentials()
+	assert.EqualError(t, err, "reading aliyun cli config from '/path/to/config.invalid' failed open /path/to/config.invalid: no such file or directory")
+
 	// testcase: specify credentials file with env
 	os.Setenv("ALIBABA_CLOUD_CONFIG_FILE", "/path/to/config.invalid")
 	provider, err = NewCLIProfileCredentialsProviderBuilder().Build()
 	assert.Nil(t, err)
 	_, err = provider.GetCredentials()
 	assert.EqualError(t, err, "reading aliyun cli config from '/path/to/config.invalid' failed open /path/to/config.invalid: no such file or directory")
+
+	provider, err = NewCLIProfileCredentialsProviderBuilder().WithProfileFile("/path/to/config1.invalid").Build()
+	assert.Nil(t, err)
+	_, err = provider.GetCredentials()
+	assert.EqualError(t, err, "reading aliyun cli config from '/path/to/config1.invalid' failed open /path/to/config1.invalid: no such file or directory")
 	os.Unsetenv("ALIBABA_CLOUD_CONFIG_FILE")
 
 	getHomePath = func() string {
