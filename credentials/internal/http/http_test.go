@@ -51,7 +51,7 @@ func TestDoGet(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, res)
 	assert.Equal(t, 200, res.StatusCode)
-	assert.Equal(t, "text/html;charset=UTF-8", res.Headers["Content-Type"])
+	assert.Equal(t, "text/html; charset=utf-8", res.Headers["Content-Type"])
 
 	req = &Request{
 		Method: "GET",
@@ -61,7 +61,7 @@ func TestDoGet(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, res)
 	assert.Equal(t, 200, res.StatusCode)
-	assert.Equal(t, "text/html;charset=UTF-8", res.Headers["Content-Type"])
+	assert.Equal(t, "text/html; charset=utf-8", res.Headers["Content-Type"])
 }
 
 func TestDoPost(t *testing.T) {
