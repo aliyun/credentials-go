@@ -5,6 +5,7 @@ import (
 	"path"
 	"strings"
 	"testing"
+	"time"
 
 	httputil "github.com/aliyun/credentials-go/credentials/internal/http"
 	"github.com/aliyun/credentials-go/credentials/internal/utils"
@@ -142,6 +143,15 @@ func TestCLIProfileCredentialsProvider_getCredentialsProvider(t *testing.T) {
 				SourceProfile: "InvalidSource",
 			},
 			{
+				Name:              "CloudSSO",
+				Mode:              "CloudSSO",
+				SignInUrl:         "url",
+				AccessToken:       "token",
+				AccessTokenExpire: time.Now().Unix() + 1000,
+				AccessConfig:      "config",
+				AccountId:         "uid",
+			},
+			{
 				Mode: "Unsupported",
 				Name: "Unsupported",
 			},
@@ -192,6 +202,12 @@ func TestCLIProfileCredentialsProvider_getCredentialsProvider(t *testing.T) {
 	cp, err = provider.getCredentialsProvider(conf, "ChainableRamRoleArn")
 	assert.Nil(t, err)
 	_, ok = cp.(*RAMRoleARNCredentialsProvider)
+	assert.True(t, ok)
+
+	// CloudSSO
+	cp, err = provider.getCredentialsProvider(conf, "CloudSSO")
+	assert.Nil(t, err)
+	_, ok = cp.(*CloudSSOCredentialsProvider)
 	assert.True(t, ok)
 
 	// ChainableRamRoleArn with invalid source profile

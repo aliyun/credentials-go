@@ -1,6 +1,7 @@
 package http
 
 import (
+	"encoding/json"
 	"errors"
 	"io"
 	"io/ioutil"
@@ -78,6 +79,15 @@ func TestDoPost(t *testing.T) {
 		},
 	}
 	res, err := Do(req)
+	assert.Nil(t, err)
+	assert.NotNil(t, res)
+	assert.Equal(t, 200, res.StatusCode)
+	assert.Equal(t, "text/html; charset=utf-8", res.Headers["Content-Type"])
+	req.Body, err = json.Marshal(map[string]string{
+		"URL": "HI",
+	})
+	assert.Nil(t, err)
+	res, err = Do(req)
 	assert.Nil(t, err)
 	assert.NotNil(t, res)
 	assert.Equal(t, 200, res.StatusCode)
