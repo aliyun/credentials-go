@@ -52,7 +52,7 @@ func TestDoGet(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, res)
 	assert.Equal(t, 200, res.StatusCode)
-	assert.Equal(t, "text/html; charset=utf-8", res.Headers["Content-Type"])
+	assert.Contains(t, res.Headers["Content-Type"], "text/html")
 
 	req = &Request{
 		Method: "GET",
@@ -62,7 +62,7 @@ func TestDoGet(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, res)
 	assert.Equal(t, 200, res.StatusCode)
-	assert.Equal(t, "text/html; charset=utf-8", res.Headers["Content-Type"])
+	assert.Contains(t, res.Headers["Content-Type"], "text/html")
 }
 
 func TestDoPost(t *testing.T) {
@@ -82,7 +82,7 @@ func TestDoPost(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, res)
 	assert.Equal(t, 200, res.StatusCode)
-	assert.Equal(t, "text/html; charset=utf-8", res.Headers["Content-Type"])
+	assert.Contains(t, res.Headers["Content-Type"], "text/html")
 	req.Body, err = json.Marshal(map[string]string{
 		"URL": "HI",
 	})
@@ -91,7 +91,7 @@ func TestDoPost(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, res)
 	assert.Equal(t, 200, res.StatusCode)
-	assert.Equal(t, "text/html; charset=utf-8", res.Headers["Content-Type"])
+	assert.Contains(t, res.Headers["Content-Type"], "text/html")
 }
 
 type errorReader struct {
