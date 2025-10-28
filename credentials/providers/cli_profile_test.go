@@ -1392,3 +1392,113 @@ func TestCLIProfileCredentialsProvider_UpdateOAuthTokens_ErrorScenarios(t *testi
 	err = provider.updateOAuthTokens("refresh", "access", "ak", "sk", "token", 1234567890, 1234567890)
 	assert.NotNil(t, err)
 }
+
+func TestCLIProfileCredentialsProvider_writeConfigFile(t *testing.T) {
+	tempDir, err := ioutil.TempDir("", "test_aws_write")
+	assert.Nil(t, err)
+	defer os.RemoveAll(tempDir)
+
+	configPath := path.Join(tempDir, "config.json")
+	provider := &CLIProfileCredentialsProvider{}
+
+	// 创建测试配置
+	conf := &configuration{
+		Current: "test",
+		Profiles: []*profile{
+			{
+				Name:            "test",
+				Mode:            "AK",
+				AccessKeyID:     "test_key",
+				AccessKeySecret: "test_secret",
+			},
+		},
+	}
+
+	// 测试写入文件
+	err = provider.writeConfigFile(configPath, 0644, conf)
+	assert.Nil(t, err)
+
+	// 验证文件内容
+	data, err := ioutil.ReadFile(configPath)
+	assert.Nil(t, err)
+
+	var loadedConf configuration
+	err = json.Unmarshal(data, &loadedConf)
+	assert.Nil(t, err)
+	assert.Equal(t, conf.Current, loadedConf.Current)
+	assert.Equal(t, len(conf.Profiles), len(loadedConf.Profiles))
+	assert.Equal(t, conf.Profiles[0].Name, loadedConf.Profiles[0].Name)
+}
+
+func TestCLIProfileCredentialsProvider_writeConfigFile_Error(t *testing.T) {
+	provider := &CLIProfileCredentialsProvider{}
+
+	// 测试写入只读目录
+	conf := &configuration{Current: "test"}
+	err := provider.writeConfigFile("/readonly/config.json", 0644, conf)
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "failed to create config file")
+}
+
+func TestCLIProfileCredentialsProvider_writeConfigurationToFile_Concurrent(t *testing.T) {
+	tempDir, err := ioutil.TempDir("", "test_aws_concurrent")
+	assert.Nil(t, err)
+	defer os.RemoveAll(tempDir)
+
+	configPath := path.Join(tempDir, "config.json")
+	provider := &CLIProfileCredentialsProvider{}
+
+	// 创建初始配置
+	initialConf := &configuration{
+		Current: "initial",
+		Profiles: []*profile{
+			{
+				Name:            "initial",
+				Mode:            "AK",
+				AccessKeyID:     "initial_key",
+				AccessKeySecret: "initial_secret",
+			},
+		},
+	}
+
+	err = provider.writeConfigurationToFile(configPath, initialConf)
+	assert.Nil(t, err)
+
+	// 并发写入测试
+	var wg sync.WaitGroup
+	numGoroutines := 10
+
+	for i := 0; i < numGoroutines; i++ {
+		wg.Add(1)
+		go func(id int) {
+			defer wg.Done()
+
+			conf := &configuration{
+				Current: fmt.Sprintf("test_%d", id),
+				Profiles: []*profile{
+					{
+						Name:            fmt.Sprintf("test_%d", id),
+						Mode:            "AK",
+						AccessKeyID:     fmt.Sprintf("key_%d", id),
+						AccessKeySecret: fmt.Sprintf("secret_%d", id),
+					},
+				},
+			}
+
+			err := provider.writeConfigurationToFile(configPath, conf)
+			assert.Nil(t, err)
+		}(i)
+	}
+
+	wg.Wait()
+
+	// 验证最终文件存在且有效
+	data, err := ioutil.ReadFile(configPath)
+	assert.Nil(t, err)
+
+	var loadedConf configuration
+	err = json.Unmarshal(data, &loadedConf)
+	assert.Nil(t, err)
+	assert.NotEmpty(t, loadedConf.Current)
+	assert.NotEmpty(t, loadedConf.Profiles)
+}
