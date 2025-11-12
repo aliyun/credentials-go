@@ -63,3 +63,56 @@ jobs:
         ALIBABA_CLOUD_OIDC_PROVIDER_ARN: ${{ secrets.OIDC_PROVIDER_ARN }}
         ALIBABA_CLOUD_OIDC_TOKEN_FILE: "/tmp/oidc_token"
         ALIBABA_CLOUD_ROLE_ARN: ${{ secrets.OIDC_ROLE_ARN }}
+
+  build-win:
+    runs-on: windows-2025
+    strategy:
+      matrix:
+        go: ['1.13', '1.14', '1.15', '1.16', '1.17', '1.18', '1.19', '1.20', '1.21', '1.22']
+      fail-fast: false
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Setup Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: ${{ matrix.go }}
+
+    - name: Go Mod
+      run: go mod tidy
+
+    - name: Test
+      run: go test -race -covermode=atomic ./credentials/...
+
+    - name: Upload coverage infomartion
+      uses: codecov/codecov-action@v4
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+
+    - name: Setup OIDC
+      run: npm install @actions/core@1.6.0 @actions/http-client
+
+    - name: Get Id Token
+      uses: actions/github-script@v7
+      id: idtoken
+      with:
+        script: |
+          const coreDemo = require('@actions/core');
+          const idToken = await coreDemo.getIDToken('sts.aliyuncs.com');
+          const fsx = require('fs/promises');
+          await fsx.writeFile('D:\\oidc_token', idToken);
+
+    - name: Integration Test
+      run: go test -v -timeout 120s ./integration/...
+      if: env.SUB_ALICLOUD_ACCESS_KEY != ''
+      env:
+        # for RAM role ARN
+        SUB_ALICLOUD_ACCESS_KEY: ${{ secrets.SUB_ALICLOUD_ACCESS_KEY }}
+        SUB_ALICLOUD_SECRET_KEY: ${{ secrets.SUB_ALICLOUD_SECRET_KEY }}
+        ALICLOUD_ROLE_ARN: ${{ secrets.ALICLOUD_ROLE_ARN }}
+        ALICLOUD_ROLE_SESSION_NAME: ${{ secrets.ALICLOUD_ROLE_SESSION_NAME }}
+        ALICLOUD_ROLE_SESSION_EXPIRATION: ${{ secrets.ALICLOUD_ROLE_SESSION_EXPIRATION }}
+        # for OIDC
+        ALIBABA_CLOUD_OIDC_PROVIDER_ARN: ${{ secrets.OIDC_PROVIDER_ARN }}
+        ALIBABA_CLOUD_OIDC_TOKEN_FILE: "D:\\oidc_token"
+        ALIBABA_CLOUD_ROLE_ARN: ${{ secrets.OIDC_ROLE_ARN }}

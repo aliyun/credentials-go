@@ -10,10 +10,10 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"syscall"
 	"time"
 
 	"github.com/aliyun/credentials-go/credentials/internal/utils"
+	"github.com/gofrs/flock"
 )
 
 type CLIProfileCredentialsProvider struct {
@@ -305,6 +305,9 @@ func (provider *CLIProfileCredentialsProvider) GetProviderName() string {
 }
 
 // updateOAuthTokens 更新OAuth令牌并写回配置文件
+// 注意：使用进程内的 fileMutex 和跨进程文件锁双重保护
+// - fileMutex 保护同一进程内的并发访问
+// - 跨进程文件锁保护多进程并发访问，避免数据丢失
 func (provider *CLIProfileCredentialsProvider) updateOAuthTokens(refreshToken, accessToken, accessKey, secret, securityToken string, accessTokenExpire, stsExpire int64) error {
 	provider.fileMutex.Lock()
 	defer provider.fileMutex.Unlock()
@@ -370,9 +373,12 @@ func (provider *CLIProfileCredentialsProvider) writeConfigFile(filename string, 
 	}
 
 	defer func() {
-		closeErr := f.Close()
-		if err == nil && closeErr != nil {
-			err = fmt.Errorf("failed to close config file: %w", closeErr)
+		// 检查 f 是否为 nil，避免在 Windows 上出现 nil pointer dereference
+		if f != nil {
+			closeErr := f.Close()
+			if err == nil && closeErr != nil {
+				err = fmt.Errorf("failed to close config file: %w", closeErr)
+			}
 		}
 	}()
 
@@ -386,27 +392,38 @@ func (provider *CLIProfileCredentialsProvider) writeConfigFile(filename string, 
 	return nil
 }
 
-// writeConfigurationToFileWithLock 使用操作系统级别的文件锁写入配置文件
+// writeConfigurationToFileWithLock 使用跨进程文件锁和原子写入方式写入配置文件
+// 通过文件锁保护跨进程并发访问，通过临时文件+原子重命名确保文件完整性
+// 注意：此方法同时提供跨进程文件锁保护和进程内并发保护（依赖调用方的 fileMutex）
 func (provider *CLIProfileCredentialsProvider) writeConfigurationToFileWithLock(cfgPath string, conf *configuration) error {
+	// 创建锁文件路径（在配置文件同目录下）
+	lockPath := cfgPath + ".lock"
+	fileLock := flock.New(lockPath)
+
+	// 获取跨进程文件锁（阻塞等待）
+	err := fileLock.Lock()
+	if err != nil {
+		// Lock() 失败时直接返回，不执行 defer，避免在 Windows 上出现 nil pointer dereference
+		return fmt.Errorf("failed to acquire file lock: %v", err)
+	}
+
+	// 只有在成功获取锁后才设置 defer
+	// 使用 recover 捕获可能的 panic（Windows 上可能出现）
+	defer func() {
+		defer func() {
+			if r := recover(); r != nil {
+				// 忽略解锁时的 panic，避免影响主流程
+				_ = r
+			}
+		}()
+		_ = fileLock.Unlock()
+	}()
+
 	// 获取原文件权限（如果存在）
 	fileMode := os.FileMode(0644)
 	if stat, err := os.Stat(cfgPath); err == nil {
 		fileMode = stat.Mode()
 	}
-
-	// 打开文件用于锁定
-	file, err := os.OpenFile(cfgPath, os.O_RDWR|os.O_CREATE, fileMode)
-	if err != nil {
-		return fmt.Errorf("failed to open config file: %v", err)
-	}
-	defer file.Close()
-
-	// 获取独占锁（阻塞其他进程）
-	err = syscall.Flock(int(file.Fd()), syscall.LOCK_EX)
-	if err != nil {
-		return fmt.Errorf("failed to acquire file lock: %v", err)
-	}
-	defer syscall.Flock(int(file.Fd()), syscall.LOCK_UN)
 
 	// 创建唯一临时文件
 	tempFile := cfgPath + ".tmp-" + strconv.FormatInt(time.Now().UnixNano(), 10)
@@ -415,7 +432,7 @@ func (provider *CLIProfileCredentialsProvider) writeConfigurationToFileWithLock(
 		return fmt.Errorf("failed to write temp file: %v", err)
 	}
 
-	// 原子性重命名
+	// 原子性重命名，确保文件完整性
 	err = os.Rename(tempFile, cfgPath)
 	if err != nil {
 		os.Remove(tempFile)
