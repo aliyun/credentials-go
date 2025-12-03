@@ -10,7 +10,6 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"syscall"
 	"time"
 
 	"github.com/aliyun/credentials-go/credentials/internal/utils"
@@ -402,11 +401,11 @@ func (provider *CLIProfileCredentialsProvider) writeConfigurationToFileWithLock(
 	defer file.Close()
 
 	// 获取独占锁（阻塞其他进程）
-	err = syscall.Flock(int(file.Fd()), syscall.LOCK_EX)
+	err = lockFile(int(file.Fd()))
 	if err != nil {
 		return fmt.Errorf("failed to acquire file lock: %v", err)
 	}
-	defer syscall.Flock(int(file.Fd()), syscall.LOCK_UN)
+	defer unlockFile(int(file.Fd()))
 
 	// 创建唯一临时文件
 	tempFile := cfgPath + ".tmp-" + strconv.FormatInt(time.Now().UnixNano(), 10)
