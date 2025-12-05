@@ -66,36 +66,30 @@ func main(){
 Setup access_key credential through [User Information Management][ak], it have full authority over the account, please keep it safe. Sometimes for security reasons, you cannot hand over a primary account AccessKey with full access to the developer of a project. You may create a sub-account [RAM Sub-account][ram] , grant its [authorization][permissions]，and use the AccessKey of RAM Sub-account.
 
 ```go
-import (
-  "fmt"
+package main
 
-  "github.com/aliyun/credentials-go/credentials"
+import (
+	"fmt"
+
+	"github.com/aliyun/credentials-go/credentials"
 )
 
-func main(){
-  config := new(credentials.Config).
-    // Which type of credential you want
-    SetType("access_key").
-    // AccessKeyId of your account
-    SetAccessKeyId("AccessKeyId").
-    // AccessKeySecret of your account
-    SetAccessKeySecret("AccessKeySecret")
-
-  provider, err := credentials.NewCredential(config)
-  if err != nil {
-    return
-  }
-
-  credential, err := provider.GetCredential()
-  if err != nil {
-    return
-  }
-
-  accessKeyId := credential.AccessKeyId
-  accessKeySecret := credential.AccessKeySecret
-  credentialType := credential.Type
-  fmt.Println(accessKeyId, accessKeySecret, credentialType)
+func main() {
+	provider, err := credentials.NewCredential(nil)
+	if err != nil {
+		return
+	}
+	credential, err := provider.GetCredential()
+	if err != nil {
+		return
+	}
+	accessKeyId := credential.AccessKeyId
+	accessSecret := credential.AccessKeySecret
+	securityToken := credential.SecurityToken
+	credentialType := credential.Type
+	fmt.Println(accessKeyId, accessSecret, securityToken, credentialType)
 }
+
 ```
 
 #### STS
