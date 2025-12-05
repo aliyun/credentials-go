@@ -398,21 +398,26 @@ func (provider *CLIProfileCredentialsProvider) writeConfigurationToFileWithLock(
 	if err != nil {
 		return fmt.Errorf("failed to open config file: %v", err)
 	}
-	defer file.Close()
 
 	// 获取独占锁（阻塞其他进程）
 	err = lockFile(int(file.Fd()))
 	if err != nil {
+		file.Close()
 		return fmt.Errorf("failed to acquire file lock: %v", err)
 	}
-	defer unlockFile(int(file.Fd()))
 
 	// 创建唯一临时文件
 	tempFile := cfgPath + ".tmp-" + strconv.FormatInt(time.Now().UnixNano(), 10)
 	err = provider.writeConfigFile(tempFile, fileMode, conf)
 	if err != nil {
+		unlockFile(int(file.Fd()))
+		file.Close()
 		return fmt.Errorf("failed to write temp file: %v", err)
 	}
+
+	// 关闭并解锁原文件，以便在Windows上可以重命名
+	unlockFile(int(file.Fd()))
+	file.Close()
 
 	// 原子性重命名
 	err = os.Rename(tempFile, cfgPath)

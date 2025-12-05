@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"runtime"
 	"strings"
 	"sync"
 	"testing"
@@ -402,6 +403,11 @@ func TestCLIProfileCredentialsProvider_writeConfigurationToFile(t *testing.T) {
 }
 
 func TestCLIProfileCredentialsProvider_writeConfigurationToFile_Error(t *testing.T) {
+	// Skip on Windows as directory permissions work differently
+	if runtime.GOOS == "windows" {
+		t.Skip("Skipping test on Windows - directory permissions work differently")
+	}
+
 	// 创建临时目录用于测试
 	tempDir, err := ioutil.TempDir("", "oauth_write_error_test")
 	assert.Nil(t, err)
@@ -486,6 +492,11 @@ func TestCLIProfileCredentialsProvider_writeConfigurationToFileWithLock(t *testi
 }
 
 func TestCLIProfileCredentialsProvider_writeConfigurationToFileWithLock_Error(t *testing.T) {
+	// Skip on Windows as directory permissions work differently
+	if runtime.GOOS == "windows" {
+		t.Skip("Skipping test on Windows - directory permissions work differently")
+	}
+
 	// 创建临时目录用于测试
 	tempDir, err := ioutil.TempDir("", "oauth_write_lock_error_test")
 	assert.Nil(t, err)
@@ -1207,6 +1218,11 @@ func TestCLIProfileCredentialsProvider_ProfileName_Empty(t *testing.T) {
 }
 
 func TestCLIProfileCredentialsProvider_WriteConfigurationToFileWithLock_ErrorScenarios(t *testing.T) {
+	// Skip on Windows as directory permissions work differently
+	if runtime.GOOS == "windows" {
+		t.Skip("Skipping test on Windows - directory permissions work differently")
+	}
+
 	// 创建临时目录
 	tempDir, err := ioutil.TempDir("", "cli_profile_test")
 	assert.Nil(t, err)
@@ -1268,6 +1284,11 @@ func TestCLIProfileCredentialsProvider_WriteConfigurationToFileWithLock_ErrorSce
 }
 
 func TestCLIProfileCredentialsProvider_WriteConfigurationToFile_ErrorScenarios(t *testing.T) {
+	// Skip on Windows as directory permissions work differently
+	if runtime.GOOS == "windows" {
+		t.Skip("Skipping test on Windows - directory permissions work differently")
+	}
+
 	// 创建临时目录
 	tempDir, err := ioutil.TempDir("", "cli_profile_test")
 	assert.Nil(t, err)
@@ -1365,32 +1386,34 @@ func TestCLIProfileCredentialsProvider_UpdateOAuthTokens_ErrorScenarios(t *testi
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "failed to get profile nonexistent")
 
-	// 测试4: 配置文件写入失败 - 通过创建只读目录来模拟
-	readOnlyDir := path.Join(tempDir, "readonly")
-	err = os.Mkdir(readOnlyDir, 0400) // 只读权限
-	assert.Nil(t, err)
-	defer os.Remove(readOnlyDir)
+	// 测试4: 配置文件写入失败 - 通过创建只读目录来模拟 (仅在Unix上测试)
+	if runtime.GOOS != "windows" {
+		readOnlyDir := path.Join(tempDir, "readonly")
+		err = os.Mkdir(readOnlyDir, 0400) // 只读权限
+		assert.Nil(t, err)
+		defer os.Remove(readOnlyDir)
 
-	readOnlyConfigPath := path.Join(readOnlyDir, "config.json")
-	validConfigForReadOnly := `{
-		"current": "test",
-		"profiles": [
-			{
-				"name": "test",
-				"mode": "AK"
-			}
-		]
-	}`
-	err = ioutil.WriteFile(readOnlyConfigPath, []byte(validConfigForReadOnly), 0644)
-	assert.NotNil(t, err)
+		readOnlyConfigPath := path.Join(readOnlyDir, "config.json")
+		validConfigForReadOnly := `{
+			"current": "test",
+			"profiles": [
+				{
+					"name": "test",
+					"mode": "AK"
+				}
+			]
+		}`
+		err = ioutil.WriteFile(readOnlyConfigPath, []byte(validConfigForReadOnly), 0644)
+		assert.NotNil(t, err)
 
-	provider = &CLIProfileCredentialsProvider{
-		profileFile: readOnlyConfigPath,
-		profileName: "test",
+		provider = &CLIProfileCredentialsProvider{
+			profileFile: readOnlyConfigPath,
+			profileName: "test",
+		}
+
+		err = provider.updateOAuthTokens("refresh", "access", "ak", "sk", "token", 1234567890, 1234567890)
+		assert.NotNil(t, err)
 	}
-
-	err = provider.updateOAuthTokens("refresh", "access", "ak", "sk", "token", 1234567890, 1234567890)
-	assert.NotNil(t, err)
 }
 
 func TestCLIProfileCredentialsProvider_writeConfigFile(t *testing.T) {
