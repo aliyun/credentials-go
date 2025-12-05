@@ -2,6 +2,7 @@ package proxy
 
 import (
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/alibabacloud-go/tea/tea"
@@ -22,8 +23,10 @@ func TestRAMRoleARNWithInvalidProxy(t *testing.T) {
 	cred, err := credentials.NewCredential(config)
 	assert.Nil(t, err)
 	_, err = cred.GetCredential()
+	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "proxyconnect tcp: dial tcp")
-	assert.Contains(t, err.Error(), ":3600: connect: connection refused")
+	assert.Contains(t, err.Error(), ":3600")
+	assert.True(t, strings.Contains(err.Error(), "connection refused") || strings.Contains(err.Error(), "No connection could be made"))
 }
 
 func TestOIDCWithInvalidProxy(t *testing.T) {
@@ -38,6 +41,8 @@ func TestOIDCWithInvalidProxy(t *testing.T) {
 	cred, err := credentials.NewCredential(config)
 	assert.Nil(t, err)
 	_, err = cred.GetCredential()
+	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "proxyconnect tcp: dial tcp")
-	assert.Contains(t, err.Error(), ":3600: connect: connection refused")
+	assert.Contains(t, err.Error(), ":3600")
+	assert.True(t, strings.Contains(err.Error(), "connection refused") || strings.Contains(err.Error(), "No connection could be made"))
 }
