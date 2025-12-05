@@ -151,7 +151,8 @@ func TestOIDCCredentialsProvider_getCredentials(t *testing.T) {
 
 	_, err = p.getCredentials()
 	assert.NotNil(t, err)
-	assert.Equal(t, "open /path/to/invalid/oidc.token: no such file or directory", err.Error())
+	assert.Contains(t, err.Error(), "/path/to/invalid/oidc.token")
+	assert.True(t, strings.Contains(err.Error(), "no such file") || strings.Contains(err.Error(), "cannot find the path"))
 
 	// case 1: mock new http request failed
 	wd, _ := os.Getwd()
