@@ -54,10 +54,10 @@ func main(){
     return
   }
   accessKeyId := credential.AccessKeyId
-  accessSecret := credential.AccessKeySecret
-  securityToken := credential.SecurityToken
-  credentialType := credential.Type
-  fmt.Println(accessKeyId, accessKeySecret, securityToken, credentialType)
+	accessSecret := credential.AccessKeySecret
+	securityToken := credential.SecurityToken
+	credentialType := credential.Type
+	fmt.Println(accessKeyId, accessSecret, securityToken, credentialType)
 }
 ```
 
