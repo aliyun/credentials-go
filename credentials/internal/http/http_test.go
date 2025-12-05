@@ -6,6 +6,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"runtime"
 	"testing"
 	"time"
 
@@ -177,7 +178,12 @@ func TestDoWithProxy(t *testing.T) {
 	}
 	_, err := Do(req)
 	assert.Contains(t, err.Error(), "proxyconnect tcp: dial tcp")
-	assert.Contains(t, err.Error(), "connect: connection refused")
+	// Windows uses different error message format
+	if runtime.GOOS == "windows" {
+		assert.Contains(t, err.Error(), "connectex:")
+	} else {
+		assert.Contains(t, err.Error(), "connect: connection refused")
+	}
 
 	// invalid proxy url
 	req.Proxy = string([]byte{0x7f})
