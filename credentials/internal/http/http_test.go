@@ -206,7 +206,7 @@ func TestDoWithConnectTimeout(t *testing.T) {
 		ConnectTimeout: 1 * time.Nanosecond,
 	}
 	_, err := Do(req)
-	assert.Contains(t, err.Error(), "dial tcp: ")
+	// Windows may not include "dial tcp: " prefix in timeout errors
 	assert.Contains(t, err.Error(), "i/o timeout")
 }
 
