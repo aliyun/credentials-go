@@ -3,6 +3,7 @@ package providers
 import (
 	"os"
 	"path"
+	"strings"
 	"testing"
 
 	httputil "github.com/aliyun/credentials-go/credentials/internal/http"
@@ -221,14 +222,18 @@ func TestProfileCredentialsProviderGetCredentials(t *testing.T) {
 	provider, err = NewProfileCredentialsProviderBuilder().WithProfileName("custom").Build()
 	assert.Nil(t, err)
 	_, err = provider.GetCredentials()
-	assert.EqualError(t, err, "ERROR: Can not open fileopen /path/invalid/home/dir/.alibabacloud/credentials: no such file or directory")
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "ERROR: Can not open fileopen /path/invalid/home/dir/.alibabacloud/credentials")
+	assert.True(t, strings.Contains(err.Error(), "no such file") || strings.Contains(err.Error(), "cannot find the path"))
 
 	// testcase: specify credentials file with env
 	os.Setenv("ALIBABA_CLOUD_CREDENTIALS_FILE", "/path/to/credentials.invalid")
 	provider, err = NewProfileCredentialsProviderBuilder().WithProfileName("custom").Build()
 	assert.Nil(t, err)
 	_, err = provider.GetCredentials()
-	assert.EqualError(t, err, "ERROR: Can not open fileopen /path/to/credentials.invalid: no such file or directory")
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "ERROR: Can not open fileopen /path/to/credentials.invalid")
+	assert.True(t, strings.Contains(err.Error(), "no such file") || strings.Contains(err.Error(), "cannot find the path"))
 	os.Unsetenv("ALIBABA_CLOUD_CREDENTIALS_FILE")
 
 	// get from credentials file
