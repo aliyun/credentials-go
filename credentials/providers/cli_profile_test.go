@@ -1530,3 +1530,600 @@ func TestCLIProfileCredentialsProvider_writeConfigurationToFile_Concurrent(t *te
 	assert.NotEmpty(t, loadedConf.Current)
 	assert.NotEmpty(t, loadedConf.Profiles)
 }
+
+func TestCLIProfileCredentialsProvider_External(t *testing.T) {
+	// 创建临时目录用于测试
+	tempDir, err := ioutil.TempDir("", "external_test")
+	assert.Nil(t, err)
+	defer os.RemoveAll(tempDir)
+
+	// 创建返回 AK 模式的脚本
+	akScriptPath := path.Join(tempDir, "ak_script")
+	var akScriptContent string
+	if runtime.GOOS == "windows" {
+		akScriptPath += ".bat"
+		akScriptContent = "@echo off\necho {\"mode\":\"AK\",\"access_key_id\":\"external_akid\",\"access_key_secret\":\"external_secret\"}\n"
+	} else {
+		akScriptContent = "#!/bin/sh\necho '{\"mode\":\"AK\",\"access_key_id\":\"external_akid\",\"access_key_secret\":\"external_secret\"}'\n"
+	}
+	err = ioutil.WriteFile(akScriptPath, []byte(akScriptContent), 0755)
+	assert.Nil(t, err)
+
+	// 创建返回 StsToken 模式的脚本
+	stsScriptPath := path.Join(tempDir, "sts_script")
+	var stsScriptContent string
+	if runtime.GOOS == "windows" {
+		stsScriptPath += ".bat"
+		stsScriptContent = "@echo off\necho {\"mode\":\"StsToken\",\"access_key_id\":\"external_akid\",\"access_key_secret\":\"external_secret\",\"sts_token\":\"external_sts_token\"}\n"
+	} else {
+		stsScriptContent = "#!/bin/sh\necho '{\"mode\":\"StsToken\",\"access_key_id\":\"external_akid\",\"access_key_secret\":\"external_secret\",\"sts_token\":\"external_sts_token\"}'\n"
+	}
+	err = ioutil.WriteFile(stsScriptPath, []byte(stsScriptContent), 0755)
+	assert.Nil(t, err)
+
+	// 创建返回无效 JSON 的脚本
+	invalidScriptPath := path.Join(tempDir, "invalid_script")
+	var invalidScriptContent string
+	if runtime.GOOS == "windows" {
+		invalidScriptPath += ".bat"
+		invalidScriptContent = "@echo off\necho invalid json\n"
+	} else {
+		invalidScriptContent = "#!/bin/sh\necho 'invalid json'\n"
+	}
+	err = ioutil.WriteFile(invalidScriptPath, []byte(invalidScriptContent), 0755)
+	assert.Nil(t, err)
+
+	// 创建返回失败退出码的脚本
+	failScriptPath := path.Join(tempDir, "fail_script")
+	var failScriptContent string
+	if runtime.GOOS == "windows" {
+		failScriptPath += ".bat"
+		failScriptContent = "@echo off\nexit /b 1\n"
+	} else {
+		failScriptContent = "#!/bin/sh\nexit 1\n"
+	}
+	err = ioutil.WriteFile(failScriptPath, []byte(failScriptContent), 0755)
+	assert.Nil(t, err)
+
+	conf := &configuration{
+		Current: "ExternalAK",
+		Profiles: []*profile{
+			{
+				Mode:          "External",
+				Name:          "ExternalAK",
+				ProcessCommand: akScriptPath,
+			},
+			{
+				Mode:          "External",
+				Name:          "ExternalStsToken",
+				ProcessCommand: stsScriptPath,
+			},
+			{
+				Mode:          "External",
+				Name:          "ExternalEmpty",
+				ProcessCommand: "",
+			},
+			{
+				Mode:          "External",
+				Name:          "ExternalInvalidMode",
+				ProcessCommand: akScriptPath, // 使用 AK 脚本但修改返回内容测试
+			},
+			{
+				Mode:          "External",
+				Name:          "ExternalInvalidJSON",
+				ProcessCommand: invalidScriptPath,
+			},
+			{
+				Mode:          "External",
+				Name:          "ExternalCommandFail",
+				ProcessCommand: failScriptPath,
+			},
+		},
+	}
+
+	// 创建临时配置文件用于测试回调函数
+	configPath := path.Join(tempDir, "config.json")
+	testConfig := &configuration{
+		Current: "ExternalAK",
+		Profiles: []*profile{
+			{
+				Mode:          "External",
+				Name:          "ExternalAK",
+				ProcessCommand: akScriptPath,
+			},
+		},
+	}
+	data, err := json.MarshalIndent(testConfig, "", "    ")
+	assert.Nil(t, err)
+	err = ioutil.WriteFile(configPath, data, 0644)
+	assert.Nil(t, err)
+
+	provider, err := NewCLIProfileCredentialsProviderBuilder().
+		WithProfileFile(configPath).
+		WithProfileName("ExternalAK").
+		Build()
+	assert.Nil(t, err)
+
+	// 测试 External - AK mode
+	cp, err := provider.getCredentialsProvider(conf, "ExternalAK")
+	assert.Nil(t, err)
+	externalProvider, ok := cp.(*ExternalCredentialsProvider)
+	assert.True(t, ok)
+	cc, err := externalProvider.GetCredentials()
+	assert.Nil(t, err)
+	assert.Equal(t, cc, &Credentials{AccessKeyId: "external_akid", AccessKeySecret: "external_secret", SecurityToken: "", ProviderName: "external"})
+
+	// 测试 External - StsToken mode
+	cp, err = provider.getCredentialsProvider(conf, "ExternalStsToken")
+	assert.Nil(t, err)
+	externalProvider, ok = cp.(*ExternalCredentialsProvider)
+	assert.True(t, ok)
+	cc, err = externalProvider.GetCredentials()
+	assert.Nil(t, err)
+	assert.Equal(t, cc, &Credentials{AccessKeyId: "external_akid", AccessKeySecret: "external_secret", SecurityToken: "external_sts_token", ProviderName: "external"})
+
+	// 测试 External - empty process_command
+	_, err = provider.getCredentialsProvider(conf, "ExternalEmpty")
+	assert.EqualError(t, err, "process_command is empty")
+
+	// 测试 External - command execution failure
+	// 注意：Build 时不会执行命令，只有在 GetCredentials 时才会执行
+	cp, err = provider.getCredentialsProvider(conf, "ExternalCommandFail")
+	assert.Nil(t, err) // Build 成功
+	externalProvider, ok = cp.(*ExternalCredentialsProvider)
+	assert.True(t, ok)
+	_, err = externalProvider.GetCredentials() // 这里才会执行命令并失败
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "failed to execute external command")
+
+	// 测试 External - invalid JSON
+	cp, err = provider.getCredentialsProvider(conf, "ExternalInvalidJSON")
+	assert.Nil(t, err) // Build 成功
+	externalProvider, ok = cp.(*ExternalCredentialsProvider)
+	assert.True(t, ok)
+	_, err = externalProvider.GetCredentials() // 这里才会执行命令并失败
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "failed to parse external command output")
+}
+
+func TestExternalCredentialsProvider_CredentialCaching(t *testing.T) {
+	// 创建临时目录用于测试
+	tempDir, err := ioutil.TempDir("", "external_cache_test")
+	assert.Nil(t, err)
+	defer os.RemoveAll(tempDir)
+
+	// 创建返回带过期时间的 StsToken 的脚本
+	expirationTime := time.Now().Add(1 * time.Hour).Format("2006-01-02T15:04:05Z")
+	stsScriptPath := path.Join(tempDir, "sts_with_expiration_script")
+	var stsScriptContent string
+	if runtime.GOOS == "windows" {
+		stsScriptPath += ".bat"
+		stsScriptContent = fmt.Sprintf("@echo off\necho {\"mode\":\"StsToken\",\"access_key_id\":\"cached_akid\",\"access_key_secret\":\"cached_secret\",\"sts_token\":\"cached_sts_token\",\"expiration\":\"%s\"}\n", expirationTime)
+	} else {
+		stsScriptContent = fmt.Sprintf("#!/bin/sh\necho '{\"mode\":\"StsToken\",\"access_key_id\":\"cached_akid\",\"access_key_secret\":\"cached_secret\",\"sts_token\":\"cached_sts_token\",\"expiration\":\"%s\"}'\n", expirationTime)
+	}
+	err = ioutil.WriteFile(stsScriptPath, []byte(stsScriptContent), 0755)
+	assert.Nil(t, err)
+
+	// 创建不带过期时间的脚本（应该每次都执行）
+	noExpirationScriptPath := path.Join(tempDir, "no_expiration_script")
+	var noExpirationScriptContent string
+	if runtime.GOOS == "windows" {
+		noExpirationScriptPath += ".bat"
+		noExpirationScriptContent = "@echo off\necho {\"mode\":\"AK\",\"access_key_id\":\"dynamic_akid\",\"access_key_secret\":\"dynamic_secret\"}\n"
+	} else {
+		noExpirationScriptContent = "#!/bin/sh\necho '{\"mode\":\"AK\",\"access_key_id\":\"dynamic_akid\",\"access_key_secret\":\"dynamic_secret\"}'\n"
+	}
+	err = ioutil.WriteFile(noExpirationScriptPath, []byte(noExpirationScriptContent), 0755)
+	assert.Nil(t, err)
+
+	// 测试带过期时间的凭证缓存
+	provider, err := NewExternalCredentialsProviderBuilder().
+		WithProcessCommand(stsScriptPath).
+		Build()
+	assert.Nil(t, err)
+
+	// 第一次调用，应该执行命令
+	cc1, err := provider.GetCredentials()
+	assert.Nil(t, err)
+	assert.Equal(t, "cached_akid", cc1.AccessKeyId)
+	assert.Equal(t, "cached_sts_token", cc1.SecurityToken)
+
+	// 第二次调用，应该使用缓存（因为还没过期）
+	cc2, err := provider.GetCredentials()
+	assert.Nil(t, err)
+	assert.Equal(t, cc1.AccessKeyId, cc2.AccessKeyId)
+	assert.Equal(t, cc1.SecurityToken, cc2.SecurityToken)
+
+	// 测试不带过期时间的凭证（应该每次都执行）
+	provider2, err := NewExternalCredentialsProviderBuilder().
+		WithProcessCommand(noExpirationScriptPath).
+		Build()
+	assert.Nil(t, err)
+
+	cc3, err := provider2.GetCredentials()
+	assert.Nil(t, err)
+	assert.Equal(t, "dynamic_akid", cc3.AccessKeyId)
+
+	// 再次调用，由于没有过期时间，应该重新执行命令
+	cc4, err := provider2.GetCredentials()
+	assert.Nil(t, err)
+	assert.Equal(t, "dynamic_akid", cc4.AccessKeyId)
+}
+
+func TestExternalCredentialsProvider_CallbackFunction(t *testing.T) {
+	// 创建临时目录用于测试
+	tempDir, err := ioutil.TempDir("", "external_callback_test")
+	assert.Nil(t, err)
+	defer os.RemoveAll(tempDir)
+
+	// 创建返回 AK 的脚本
+	akScriptPath := path.Join(tempDir, "ak_script")
+	var akScriptContent string
+	if runtime.GOOS == "windows" {
+		akScriptPath += ".bat"
+		akScriptContent = "@echo off\necho {\"mode\":\"AK\",\"access_key_id\":\"callback_akid\",\"access_key_secret\":\"callback_secret\"}\n"
+	} else {
+		akScriptContent = "#!/bin/sh\necho '{\"mode\":\"AK\",\"access_key_id\":\"callback_akid\",\"access_key_secret\":\"callback_secret\"}'\n"
+	}
+	err = ioutil.WriteFile(akScriptPath, []byte(akScriptContent), 0755)
+	assert.Nil(t, err)
+
+	// 创建临时配置文件
+	configPath := path.Join(tempDir, "config.json")
+	testConfig := &configuration{
+		Current: "ExternalCallback",
+		Profiles: []*profile{
+			{
+				Mode:          "External",
+				Name:          "ExternalCallback",
+				ProcessCommand: akScriptPath,
+			},
+		},
+	}
+	data, err := json.MarshalIndent(testConfig, "", "    ")
+	assert.Nil(t, err)
+	err = ioutil.WriteFile(configPath, data, 0644)
+	assert.Nil(t, err)
+
+	// 创建 CLI Profile 提供者
+	cliProvider, err := NewCLIProfileCredentialsProviderBuilder().
+		WithProfileFile(configPath).
+		WithProfileName("ExternalCallback").
+		Build()
+	assert.Nil(t, err)
+
+	conf := &configuration{
+		Current: "ExternalCallback",
+		Profiles: []*profile{
+			{
+				Mode:          "External",
+				Name:          "ExternalCallback",
+				ProcessCommand: akScriptPath,
+			},
+		},
+	}
+
+	// 获取 External 凭证提供者
+	cp, err := cliProvider.getCredentialsProvider(conf, "ExternalCallback")
+	assert.Nil(t, err)
+	externalProvider, ok := cp.(*ExternalCredentialsProvider)
+	assert.True(t, ok)
+
+	// 获取凭证，应该触发回调函数
+	cc, err := externalProvider.GetCredentials()
+	assert.Nil(t, err)
+	assert.Equal(t, "callback_akid", cc.AccessKeyId)
+	assert.Equal(t, "callback_secret", cc.AccessKeySecret)
+
+	// 验证配置文件已更新
+	updatedConf, err := newConfigurationFromPath(configPath)
+	assert.Nil(t, err)
+	updatedProfile, err := updatedConf.getProfile("ExternalCallback")
+	assert.Nil(t, err)
+	assert.Equal(t, "callback_akid", updatedProfile.AccessKeyID)
+	assert.Equal(t, "callback_secret", updatedProfile.AccessKeySecret)
+}
+
+func TestCLIProfileCredentialsProvider_updateExternalCredentials(t *testing.T) {
+	// 创建临时目录用于测试
+	tempDir, err := ioutil.TempDir("", "external_update_test")
+	assert.Nil(t, err)
+	defer os.RemoveAll(tempDir)
+	configPath := path.Join(tempDir, "config.json")
+
+	// 创建测试配置
+	testConfig := &configuration{
+		Current: "ExternalTest",
+		Profiles: []*profile{
+			{
+				Mode:          "External",
+				Name:          "ExternalTest",
+				ProcessCommand: "echo test",
+			},
+		},
+	}
+
+	// 写入测试配置
+	data, err := json.MarshalIndent(testConfig, "", "    ")
+	assert.Nil(t, err)
+	err = ioutil.WriteFile(configPath, data, 0644)
+	assert.Nil(t, err)
+
+	// 创建CLI Profile提供者
+	provider, err := NewCLIProfileCredentialsProviderBuilder().
+		WithProfileFile(configPath).
+		WithProfileName("ExternalTest").
+		Build()
+	assert.Nil(t, err)
+
+	// 测试更新External凭证（expiration > 0）
+	accessKeyId := "updated_akid"
+	accessKeySecret := "updated_secret"
+	securityToken := "updated_sts_token"
+	expiration := time.Now().Unix() + 3600
+
+	err = provider.updateExternalCredentials(accessKeyId, accessKeySecret, securityToken, expiration)
+	assert.Nil(t, err)
+
+	// 验证配置文件已更新
+	updatedConf, err := newConfigurationFromPath(configPath)
+	assert.Nil(t, err)
+	updatedProfile, err := updatedConf.getProfile("ExternalTest")
+	assert.Nil(t, err)
+	assert.Equal(t, accessKeyId, updatedProfile.AccessKeyID)
+	assert.Equal(t, accessKeySecret, updatedProfile.AccessKeySecret)
+	assert.Equal(t, securityToken, updatedProfile.SecurityToken)
+	assert.Equal(t, expiration, updatedProfile.StsExpire)
+
+	// 测试更新External凭证（expiration = 0，不更新 StsExpire）
+	err = provider.updateExternalCredentials("akid2", "secret2", "token2", 0)
+	assert.Nil(t, err)
+
+	// 验证 StsExpire 保持不变（仍然是最初设置的值）
+	updatedConf2, err := newConfigurationFromPath(configPath)
+	assert.Nil(t, err)
+	updatedProfile2, err := updatedConf2.getProfile("ExternalTest")
+	assert.Nil(t, err)
+	assert.Equal(t, "akid2", updatedProfile2.AccessKeyID)
+	assert.Equal(t, "secret2", updatedProfile2.AccessKeySecret)
+	assert.Equal(t, "token2", updatedProfile2.SecurityToken)
+	// StsExpire 应该保持之前的值（expiration > 0 时设置的值）
+	assert.Equal(t, expiration, updatedProfile2.StsExpire)
+}
+
+func TestCLIProfileCredentialsProvider_updateExternalCredentials_Error(t *testing.T) {
+	// 测试1: 配置文件读取失败
+	provider := &CLIProfileCredentialsProvider{
+		profileFile: "/nonexistent/path/config.json",
+		profileName: "test",
+	}
+
+	err := provider.updateExternalCredentials("akid", "secret", "token", 1234567890)
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "failed to read config file")
+
+	// 测试2: 配置文件存在但格式错误
+	tempDir, err := ioutil.TempDir("", "external_update_error_test")
+	assert.Nil(t, err)
+	defer os.RemoveAll(tempDir)
+
+	invalidConfigPath := path.Join(tempDir, "invalid_config.json")
+	err = ioutil.WriteFile(invalidConfigPath, []byte("invalid json"), 0644)
+	assert.Nil(t, err)
+
+	provider = &CLIProfileCredentialsProvider{
+		profileFile: invalidConfigPath,
+		profileName: "test",
+	}
+
+	err = provider.updateExternalCredentials("akid", "secret", "token", 1234567890)
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "failed to read config file")
+
+	// 测试3: 配置文件存在但找不到指定的 profile
+	validConfig := `{
+		"current": "test",
+		"profiles": [
+			{
+				"name": "other",
+				"mode": "AK"
+			}
+		]
+	}`
+	validConfigPath := path.Join(tempDir, "valid_config.json")
+	err = ioutil.WriteFile(validConfigPath, []byte(validConfig), 0644)
+	assert.Nil(t, err)
+
+	provider = &CLIProfileCredentialsProvider{
+		profileFile: validConfigPath,
+		profileName: "nonexistent",
+	}
+
+	err = provider.updateExternalCredentials("akid", "secret", "token", 1234567890)
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "failed to get profile nonexistent")
+}
+
+func TestExternalCredentialsProvider_InvalidResponses(t *testing.T) {
+	// 创建临时目录用于测试
+	tempDir, err := ioutil.TempDir("", "external_invalid_test")
+	assert.Nil(t, err)
+	defer os.RemoveAll(tempDir)
+
+	// 创建返回空 access_key_id 的脚本
+	emptyAkIdScriptPath := path.Join(tempDir, "empty_akid_script")
+	var emptyAkIdScriptContent string
+	if runtime.GOOS == "windows" {
+		emptyAkIdScriptPath += ".bat"
+		emptyAkIdScriptContent = "@echo off\necho {\"mode\":\"AK\",\"access_key_id\":\"\",\"access_key_secret\":\"secret\"}\n"
+	} else {
+		emptyAkIdScriptContent = "#!/bin/sh\necho '{\"mode\":\"AK\",\"access_key_id\":\"\",\"access_key_secret\":\"secret\"}'\n"
+	}
+	err = ioutil.WriteFile(emptyAkIdScriptPath, []byte(emptyAkIdScriptContent), 0755)
+	assert.Nil(t, err)
+
+	// 创建返回空 access_key_secret 的脚本
+	emptyAkSecretScriptPath := path.Join(tempDir, "empty_aksecret_script")
+	var emptyAkSecretScriptContent string
+	if runtime.GOOS == "windows" {
+		emptyAkSecretScriptPath += ".bat"
+		emptyAkSecretScriptContent = "@echo off\necho {\"mode\":\"AK\",\"access_key_id\":\"akid\",\"access_key_secret\":\"\"}\n"
+	} else {
+		emptyAkSecretScriptContent = "#!/bin/sh\necho '{\"mode\":\"AK\",\"access_key_id\":\"akid\",\"access_key_secret\":\"\"}'\n"
+	}
+	err = ioutil.WriteFile(emptyAkSecretScriptPath, []byte(emptyAkSecretScriptContent), 0755)
+	assert.Nil(t, err)
+
+	// 创建返回 StsToken 但缺少 sts_token 的脚本
+	emptyStsTokenScriptPath := path.Join(tempDir, "empty_sts_token_script")
+	var emptyStsTokenScriptContent string
+	if runtime.GOOS == "windows" {
+		emptyStsTokenScriptPath += ".bat"
+		emptyStsTokenScriptContent = "@echo off\necho {\"mode\":\"StsToken\",\"access_key_id\":\"akid\",\"access_key_secret\":\"secret\",\"sts_token\":\"\"}\n"
+	} else {
+		emptyStsTokenScriptContent = "#!/bin/sh\necho '{\"mode\":\"StsToken\",\"access_key_id\":\"akid\",\"access_key_secret\":\"secret\",\"sts_token\":\"\"}'\n"
+	}
+	err = ioutil.WriteFile(emptyStsTokenScriptPath, []byte(emptyStsTokenScriptContent), 0755)
+	assert.Nil(t, err)
+
+	// 测试空 access_key_id
+	provider1, err := NewExternalCredentialsProviderBuilder().
+		WithProcessCommand(emptyAkIdScriptPath).
+		Build()
+	assert.Nil(t, err)
+	_, err = provider1.GetCredentials()
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "access_key_id or access_key_secret is empty")
+
+	// 测试空 access_key_secret
+	provider2, err := NewExternalCredentialsProviderBuilder().
+		WithProcessCommand(emptyAkSecretScriptPath).
+		Build()
+	assert.Nil(t, err)
+	_, err = provider2.GetCredentials()
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "access_key_id or access_key_secret is empty")
+
+	// 测试 StsToken 模式但缺少 sts_token
+	provider3, err := NewExternalCredentialsProviderBuilder().
+		WithProcessCommand(emptyStsTokenScriptPath).
+		Build()
+	assert.Nil(t, err)
+	_, err = provider3.GetCredentials()
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "sts_token is empty")
+}
+
+func TestExternalCredentialsProvider_ExpirationParsing(t *testing.T) {
+	// 创建临时目录用于测试
+	tempDir, err := ioutil.TempDir("", "external_expiration_test")
+	assert.Nil(t, err)
+	defer os.RemoveAll(tempDir)
+
+	// 创建返回有效过期时间的脚本
+	validExpirationTime := time.Now().Add(1 * time.Hour).Format("2006-01-02T15:04:05Z")
+	validExpirationScriptPath := path.Join(tempDir, "valid_expiration_script")
+	var validExpirationScriptContent string
+	if runtime.GOOS == "windows" {
+		validExpirationScriptPath += ".bat"
+		validExpirationScriptContent = fmt.Sprintf("@echo off\necho {\"mode\":\"StsToken\",\"access_key_id\":\"akid\",\"access_key_secret\":\"secret\",\"sts_token\":\"token\",\"expiration\":\"%s\"}\n", validExpirationTime)
+	} else {
+		validExpirationScriptContent = fmt.Sprintf("#!/bin/sh\necho '{\"mode\":\"StsToken\",\"access_key_id\":\"akid\",\"access_key_secret\":\"secret\",\"sts_token\":\"token\",\"expiration\":\"%s\"}'\n", validExpirationTime)
+	}
+	err = ioutil.WriteFile(validExpirationScriptPath, []byte(validExpirationScriptContent), 0755)
+	assert.Nil(t, err)
+
+	// 创建返回无效过期时间格式的脚本
+	invalidExpirationScriptPath := path.Join(tempDir, "invalid_expiration_script")
+	var invalidExpirationScriptContent string
+	if runtime.GOOS == "windows" {
+		invalidExpirationScriptPath += ".bat"
+		invalidExpirationScriptContent = "@echo off\necho {\"mode\":\"StsToken\",\"access_key_id\":\"akid\",\"access_key_secret\":\"secret\",\"sts_token\":\"token\",\"expiration\":\"invalid-date\"}\n"
+	} else {
+		invalidExpirationScriptContent = "#!/bin/sh\necho '{\"mode\":\"StsToken\",\"access_key_id\":\"akid\",\"access_key_secret\":\"secret\",\"sts_token\":\"token\",\"expiration\":\"invalid-date\"}'\n"
+	}
+	err = ioutil.WriteFile(invalidExpirationScriptPath, []byte(invalidExpirationScriptContent), 0755)
+	assert.Nil(t, err)
+
+	// 测试有效过期时间
+	provider1, err := NewExternalCredentialsProviderBuilder().
+		WithProcessCommand(validExpirationScriptPath).
+		Build()
+	assert.Nil(t, err)
+	cc1, err := provider1.GetCredentials()
+	assert.Nil(t, err)
+	assert.Equal(t, "akid", cc1.AccessKeyId)
+
+	// 再次调用应该使用缓存
+	cc2, err := provider1.GetCredentials()
+	assert.Nil(t, err)
+	assert.Equal(t, cc1.AccessKeyId, cc2.AccessKeyId)
+
+	// 测试无效过期时间格式（应该仍然工作，但不缓存）
+	provider2, err := NewExternalCredentialsProviderBuilder().
+		WithProcessCommand(invalidExpirationScriptPath).
+		Build()
+	assert.Nil(t, err)
+	cc3, err := provider2.GetCredentials()
+	assert.Nil(t, err)
+	assert.Equal(t, "akid", cc3.AccessKeyId)
+
+	// 由于过期时间解析失败，下次调用应该重新执行命令
+	cc4, err := provider2.GetCredentials()
+	assert.Nil(t, err)
+	assert.Equal(t, "akid", cc4.AccessKeyId)
+}
+
+func TestExternalCredentialsProvider_ConcurrentAccess(t *testing.T) {
+	// 创建临时目录用于测试
+	tempDir, err := ioutil.TempDir("", "external_concurrent_test")
+	assert.Nil(t, err)
+	defer os.RemoveAll(tempDir)
+
+	// 创建返回 AK 的脚本
+	akScriptPath := path.Join(tempDir, "ak_script")
+	var akScriptContent string
+	if runtime.GOOS == "windows" {
+		akScriptPath += ".bat"
+		akScriptContent = "@echo off\necho {\"mode\":\"AK\",\"access_key_id\":\"concurrent_akid\",\"access_key_secret\":\"concurrent_secret\"}\n"
+	} else {
+		akScriptContent = "#!/bin/sh\necho '{\"mode\":\"AK\",\"access_key_id\":\"concurrent_akid\",\"access_key_secret\":\"concurrent_secret\"}'\n"
+	}
+	err = ioutil.WriteFile(akScriptPath, []byte(akScriptContent), 0755)
+	assert.Nil(t, err)
+
+	provider, err := NewExternalCredentialsProviderBuilder().
+		WithProcessCommand(akScriptPath).
+		Build()
+	assert.Nil(t, err)
+
+	// 并发获取凭证
+	var wg sync.WaitGroup
+	numGoroutines := 10
+	results := make([]*Credentials, numGoroutines)
+	errors := make([]error, numGoroutines)
+
+	for i := 0; i < numGoroutines; i++ {
+		wg.Add(1)
+		go func(index int) {
+			defer wg.Done()
+			cc, err := provider.GetCredentials()
+			results[index] = cc
+			errors[index] = err
+		}(i)
+	}
+
+	wg.Wait()
+
+	// 验证所有调用都成功
+	for i := 0; i < numGoroutines; i++ {
+		assert.Nil(t, errors[i], "goroutine %d should not have error", i)
+		assert.NotNil(t, results[i], "goroutine %d should have credentials", i)
+		if results[i] != nil {
+			assert.Equal(t, "concurrent_akid", results[i].AccessKeyId)
+			assert.Equal(t, "concurrent_secret", results[i].AccessKeySecret)
+		}
+	}
+}
+
