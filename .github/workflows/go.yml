@@ -5,8 +5,7 @@ on:
     branches: [ master ]
   pull_request:
     branches: [ master ]
-
-# 注意：fork PR 即使写了 id-token: write，也可能拿不到 OIDC；我们用 TRUSTED 来保护相关 step
+    
 permissions:
   contents: read
   id-token: write
