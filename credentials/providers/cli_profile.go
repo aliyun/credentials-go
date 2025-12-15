@@ -96,6 +96,7 @@ type profile struct {
 	OauthAccessToken       string `json:"oauth_access_token"`
 	OauthAccessTokenExpire int64  `json:"oauth_access_token_expire"`
 	StsExpire              int64  `json:"sts_expiration"`
+	ProcessCommand         string `json:"process_command"`
 }
 
 type configuration struct {
@@ -238,6 +239,11 @@ func (provider *CLIProfileCredentialsProvider) getCredentialsProvider(conf *conf
 			WithAccessToken(p.OauthAccessToken).
 			WithAccessTokenExpire(p.OauthAccessTokenExpire).
 			WithTokenUpdateCallback(provider.getOAuthTokenUpdateCallback()).
+			Build()
+	case "External":
+		credentialsProvider, err = NewExternalCredentialsProviderBuilder().
+			WithProcessCommand(p.ProcessCommand).
+			WithCredentialUpdateCallback(provider.getExternalCredentialUpdateCallback()).
 			Build()
 	default:
 		err = fmt.Errorf("unsupported profile mode '%s'", p.Mode)
@@ -434,4 +440,40 @@ func (provider *CLIProfileCredentialsProvider) getOAuthTokenUpdateCallback() OAu
 	return func(refreshToken, accessToken, accessKey, secret, securityToken string, accessTokenExpire, stsExpire int64) error {
 		return provider.updateOAuthTokens(refreshToken, accessToken, accessKey, secret, securityToken, accessTokenExpire, stsExpire)
 	}
+}
+
+// getExternalCredentialUpdateCallback 获取External凭证更新回调函数
+func (provider *CLIProfileCredentialsProvider) getExternalCredentialUpdateCallback() ExternalCredentialUpdateCallback {
+	return func(accessKeyId, accessKeySecret, securityToken string, expiration int64) error {
+		return provider.updateExternalCredentials(accessKeyId, accessKeySecret, securityToken, expiration)
+	}
+}
+
+// updateExternalCredentials 更新External凭证并写回配置文件
+func (provider *CLIProfileCredentialsProvider) updateExternalCredentials(accessKeyId, accessKeySecret, securityToken string, expiration int64) error {
+	provider.fileMutex.Lock()
+	defer provider.fileMutex.Unlock()
+
+	cfgPath := provider.profileFile
+	conf, err := newConfigurationFromPath(cfgPath)
+	if err != nil {
+		return fmt.Errorf("failed to read config file: %v", err)
+	}
+
+	profileName := provider.profileName
+	profile, err := conf.getProfile(profileName)
+	if err != nil {
+		return fmt.Errorf("failed to get profile %s: %v", profileName, err)
+	}
+
+	// update
+	profile.AccessKeyID = accessKeyId
+	profile.AccessKeySecret = accessKeySecret
+	profile.SecurityToken = securityToken
+	if expiration > 0 {
+		profile.StsExpire = expiration
+	}
+
+	// write back with file lock
+	return provider.writeConfigurationToFileWithLock(cfgPath, conf)
 }
