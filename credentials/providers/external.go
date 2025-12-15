@@ -2,14 +2,21 @@ package providers
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 	"os/exec"
 	"strings"
 	"sync"
 	"time"
 )
+
+type ExternalOptions struct {
+	// Timeout, in milliseconds.
+	Timeout int
+}
 
 // ExternalCredentialUpdateCallback 定义External凭证更新回调函数类型
 type ExternalCredentialUpdateCallback func(accessKeyId, accessKeySecret, securityToken string, expiration int64) error
@@ -24,6 +31,7 @@ type externalCredentialResponse struct {
 
 type ExternalCredentialsProvider struct {
 	processCommand string
+	options        *ExternalOptions
 
 	lastUpdateTimestamp int64
 	expirationTimestamp int64
@@ -49,6 +57,11 @@ func (b *ExternalCredentialsProviderBuilder) WithProcessCommand(processCommand s
 	return b
 }
 
+func (b *ExternalCredentialsProviderBuilder) WithExternalOptions(options *ExternalOptions) *ExternalCredentialsProviderBuilder {
+	b.provider.options = options
+	return b
+}
+
 func (b *ExternalCredentialsProviderBuilder) WithCredentialUpdateCallback(callback ExternalCredentialUpdateCallback) *ExternalCredentialsProviderBuilder {
 	b.provider.credentialUpdateCallback = callback
 	return b
@@ -71,7 +84,18 @@ func (provider *ExternalCredentialsProvider) getCredentials() (session *sessionC
 		return
 	}
 
-	cmd := exec.Command(args[0], args[1:]...)
+	// 确保 options 不为 nil，并设置默认超时时间
+	timeout := 60 * 1000 // 默认 60 秒
+	if provider.options != nil && provider.options.Timeout > 0 {
+		timeout = provider.options.Timeout
+	}
+
+	var cancelFunc func()
+	ctx, cancelFunc := context.WithTimeout(context.Background(), time.Duration(timeout)*time.Millisecond)
+	defer cancelFunc()
+
+	cmd := exec.CommandContext(ctx, args[0], args[1:]...)
+	cmd.Env = os.Environ()
 
 	// 创建一个buffer来捕获标准输出
 	var stdoutBuf bytes.Buffer
@@ -81,10 +105,29 @@ func (provider *ExternalCredentialsProvider) getCredentials() (session *sessionC
 	var stderrBuf bytes.Buffer
 	cmd.Stderr = &stderrBuf
 
-	// 执行命令
-	err = cmd.Run()
-	if err != nil {
+	// Start the command
+	if err := cmd.Start(); err != nil {
 		return nil, fmt.Errorf("failed to execute external command: %w\nstderr: %s", err, stderrBuf.String())
+	}
+
+	done := make(chan error, 1)
+	go func() {
+		done <- cmd.Wait()
+	}()
+
+	select {
+	case <-ctx.Done():
+		// 超时了，context 会自动终止命令
+		<-done
+		return nil, fmt.Errorf("command process timed out after %d milliseconds", timeout)
+	case execError := <-done:
+		if execError != nil {
+			// 检查是否是超时导致的错误
+			if errors.Is(execError, context.DeadlineExceeded) {
+				return nil, fmt.Errorf("command process timed out after %d milliseconds", timeout)
+			}
+			return nil, fmt.Errorf("failed to execute external command: %w\nstderr: %s", execError, stderrBuf.String())
+		}
 	}
 
 	// 只解析标准输出

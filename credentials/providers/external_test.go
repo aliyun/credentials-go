@@ -2,6 +2,7 @@ package providers
 
 import (
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path"
@@ -58,7 +59,7 @@ func TestExternalCredentialsProvider_WithCredentialUpdateCallback(t *testing.T) 
 	}
 	builder.WithCredentialUpdateCallback(callback)
 	assert.NotNil(t, builder.provider.credentialUpdateCallback)
-	
+
 	// 测试回调函数被调用
 	err := builder.provider.credentialUpdateCallback("akid", "secret", "token", 1234567890)
 	assert.Nil(t, err)
@@ -625,3 +626,248 @@ func TestExternalCredentialsProvider_EmptyCommand(t *testing.T) {
 	assert.EqualError(t, err, "process_command is empty")
 }
 
+func TestExternalCredentialsProvider_Timeout_Success(t *testing.T) {
+	tempDir, err := ioutil.TempDir("", "external_timeout_success_test")
+	assert.Nil(t, err)
+	defer os.RemoveAll(tempDir)
+
+	// 创建一个快速执行的脚本
+	fastScriptPath := path.Join(tempDir, "fast_script")
+	var fastScriptContent string
+	if runtime.GOOS == "windows" {
+		fastScriptPath += ".bat"
+		fastScriptContent = "@echo off\necho {\"mode\":\"AK\",\"access_key_id\":\"akid\",\"access_key_secret\":\"secret\"}\n"
+	} else {
+		fastScriptContent = "#!/bin/sh\necho '{\"mode\":\"AK\",\"access_key_id\":\"akid\",\"access_key_secret\":\"secret\"}'\n"
+	}
+	err = ioutil.WriteFile(fastScriptPath, []byte(fastScriptContent), 0755)
+	assert.Nil(t, err)
+
+	provider, err := NewExternalCredentialsProviderBuilder().
+		WithProcessCommand(fastScriptPath).
+		WithExternalOptions(&ExternalOptions{
+			Timeout: 5000, // 5秒
+		}).
+		Build()
+	assert.Nil(t, err)
+
+	startTime := time.Now()
+	session, err := provider.getCredentials()
+	duration := time.Since(startTime)
+
+	assert.Nil(t, err)
+	assert.NotNil(t, session)
+	assert.Equal(t, "akid", session.AccessKeyId)
+	// 验证执行时间远小于超时时间
+	assert.True(t, duration < 1*time.Second, "command should complete quickly")
+}
+
+func TestExternalCredentialsProvider_Timeout_ErrorStderr(t *testing.T) {
+	tempDir, err := ioutil.TempDir("", "external_timeout_stderr_test")
+	assert.Nil(t, err)
+	defer os.RemoveAll(tempDir)
+
+	// 创建一个长时间运行并输出到 stderr 的脚本
+	slowScriptPath := path.Join(tempDir, "slow_script")
+	var slowScriptContent string
+	if runtime.GOOS == "windows" {
+		slowScriptPath += ".bat"
+		slowScriptContent = "@echo off\necho error message >&2\nping 127.0.0.1 -n 6 > nul\necho {\"mode\":\"AK\",\"access_key_id\":\"akid\",\"access_key_secret\":\"secret\"}\n"
+	} else {
+		slowScriptContent = "#!/bin/sh\necho 'error message' >&2\nsleep 3\necho '{\"mode\":\"AK\",\"access_key_id\":\"akid\",\"access_key_secret\":\"secret\"}'\n"
+	}
+	err = ioutil.WriteFile(slowScriptPath, []byte(slowScriptContent), 0755)
+	assert.Nil(t, err)
+
+	// 设置一个很短的超时时间
+	provider := &ExternalCredentialsProvider{
+		processCommand: slowScriptPath,
+		options: &ExternalOptions{
+			Timeout: 500, // 500毫秒
+		},
+	}
+
+	_, err = provider.getCredentials()
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "command process timed out")
+}
+
+func TestExternalCredentialsProvider_Timeout_Exceeded(t *testing.T) {
+	tempDir, err := ioutil.TempDir("", "external_timeout_exceeded_test")
+	assert.Nil(t, err)
+	defer os.RemoveAll(tempDir)
+
+	// 创建一个长时间运行的脚本（会超过超时时间）
+	slowScriptPath := path.Join(tempDir, "slow_script")
+	var slowScriptContent string
+	if runtime.GOOS == "windows" {
+		slowScriptPath += ".bat"
+		// Windows 使用 ping 来延迟
+		slowScriptContent = "@echo off\nping 127.0.0.1 -n 6 > nul\necho {\"mode\":\"AK\",\"access_key_id\":\"akid\",\"access_key_secret\":\"secret\"}\n"
+	} else {
+		slowScriptContent = "#!/bin/sh\nsleep 3\necho '{\"mode\":\"AK\",\"access_key_id\":\"akid\",\"access_key_secret\":\"secret\"}'\n"
+	}
+	err = ioutil.WriteFile(slowScriptPath, []byte(slowScriptContent), 0755)
+	assert.Nil(t, err)
+
+	// 设置一个很短的超时时间（500毫秒）
+	timeout := 500
+	provider := &ExternalCredentialsProvider{
+		processCommand: slowScriptPath,
+		options: &ExternalOptions{
+			Timeout: timeout,
+		},
+	}
+
+	startTime := time.Now()
+	_, err = provider.getCredentials()
+	duration := time.Since(startTime)
+
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "command process timed out")
+	// 验证错误信息中包含超时时间
+	assert.Contains(t, err.Error(), fmt.Sprintf("%d milliseconds", timeout))
+	// 验证在超时时间附近返回（允许一些误差，因为需要等待命令终止）
+	assert.True(t, duration >= 400*time.Millisecond, "should timeout around 500ms")
+	// 允许更多时间，因为等待 <-done 需要等待命令真正被终止
+	// Windows 下 ping 命令终止较慢，需要更长时间
+	maxWaitTime := 4 * time.Second
+	if runtime.GOOS == "windows" {
+		maxWaitTime = 6 * time.Second
+	}
+	assert.True(t, duration < maxWaitTime, "should timeout within reasonable time, not wait for full command execution (took %v)", duration)
+}
+
+func TestExternalCredentialsProvider_Timeout_DifferentTimeoutValues(t *testing.T) {
+	tempDir, err := ioutil.TempDir("", "external_timeout_values_test")
+	assert.Nil(t, err)
+	defer os.RemoveAll(tempDir)
+
+	// 创建一个长时间运行的脚本
+	slowScriptPath := path.Join(tempDir, "slow_script")
+	var slowScriptContent string
+	if runtime.GOOS == "windows" {
+		slowScriptPath += ".bat"
+		slowScriptContent = "@echo off\nping 127.0.0.1 -n 6 > nul\necho {\"mode\":\"AK\",\"access_key_id\":\"akid\",\"access_key_secret\":\"secret\"}\n"
+	} else {
+		slowScriptContent = "#!/bin/sh\nsleep 2\necho '{\"mode\":\"AK\",\"access_key_id\":\"akid\",\"access_key_secret\":\"secret\"}'\n"
+	}
+	err = ioutil.WriteFile(slowScriptPath, []byte(slowScriptContent), 0755)
+	assert.Nil(t, err)
+
+	// 测试不同的超时时间值
+	timeoutValues := []int{100, 300, 1000}
+	for _, timeout := range timeoutValues {
+		provider := &ExternalCredentialsProvider{
+			processCommand: slowScriptPath,
+			options: &ExternalOptions{
+				Timeout: timeout,
+			},
+		}
+
+		startTime := time.Now()
+		_, err := provider.getCredentials()
+		duration := time.Since(startTime)
+
+		assert.NotNil(t, err, "should timeout for timeout value %d", timeout)
+		assert.Contains(t, err.Error(), "command process timed out")
+		assert.Contains(t, err.Error(), fmt.Sprintf("%d milliseconds", timeout))
+		// 验证超时时间在合理范围内（允许一些误差，因为等待命令终止需要时间）
+		assert.True(t, duration >= time.Duration(timeout-100)*time.Millisecond,
+			"timeout %d: should timeout around %dms, but took %v", timeout, timeout, duration)
+		// 对于较长的超时时间，允许更多的等待时间（等待命令终止）
+		// Windows 下 ping 命令终止较慢，需要更长时间
+		maxWaitTime := time.Duration(timeout+2000) * time.Millisecond
+		if timeout >= 1000 {
+			maxWaitTime = time.Duration(timeout+3000) * time.Millisecond
+		}
+		if runtime.GOOS == "windows" {
+			// Windows 下 ping 命令可能需要 5-6 秒才能被终止
+			maxWaitTime = 6 * time.Second
+		}
+		assert.True(t, duration < maxWaitTime,
+			"timeout %d: should timeout within reasonable time, but took %v", timeout, duration)
+	}
+}
+
+func TestExternalCredentialsProvider_Timeout_CommandTerminated(t *testing.T) {
+	tempDir, err := ioutil.TempDir("", "external_timeout_terminated_test")
+	assert.Nil(t, err)
+	defer os.RemoveAll(tempDir)
+
+	// 创建一个会创建文件的长时间运行脚本，用于验证命令确实被终止
+	slowScriptPath := path.Join(tempDir, "slow_script")
+	outputFile := path.Join(tempDir, "output_file")
+	var slowScriptContent string
+	if runtime.GOOS == "windows" {
+		slowScriptPath += ".bat"
+		slowScriptContent = fmt.Sprintf("@echo off\nping 127.0.0.1 -n 10 > nul\necho done > %s\necho {\"mode\":\"AK\",\"access_key_id\":\"akid\",\"access_key_secret\":\"secret\"}\n", outputFile)
+	} else {
+		slowScriptContent = fmt.Sprintf("#!/bin/sh\nsleep 5\necho 'done' > %s\necho '{\"mode\":\"AK\",\"access_key_id\":\"akid\",\"access_key_secret\":\"secret\"}'\n", outputFile)
+	}
+	err = ioutil.WriteFile(slowScriptPath, []byte(slowScriptContent), 0755)
+	assert.Nil(t, err)
+
+	// 设置一个很短的超时时间（500毫秒）
+	provider := &ExternalCredentialsProvider{
+		processCommand: slowScriptPath,
+		options: &ExternalOptions{
+			Timeout: 500, // 500毫秒
+		},
+	}
+
+	_, err = provider.getCredentials()
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "command process timed out")
+
+	// 等待一小段时间，确保如果命令没有被终止，文件应该被创建
+	time.Sleep(1 * time.Second)
+
+	// 验证输出文件没有被创建，说明命令确实被终止了
+	_, err = os.Stat(outputFile)
+	assert.True(t, os.IsNotExist(err), "output file should not exist, command should be terminated")
+}
+
+func TestExternalCredentialsProvider_Timeout_ContextDoneBranch(t *testing.T) {
+	tempDir, err := ioutil.TempDir("", "external_timeout_context_done_test")
+	assert.Nil(t, err)
+	defer os.RemoveAll(tempDir)
+
+	// 创建一个长时间运行的脚本
+	slowScriptPath := path.Join(tempDir, "slow_script")
+	var slowScriptContent string
+	if runtime.GOOS == "windows" {
+		slowScriptPath += ".bat"
+		slowScriptContent = "@echo off\nping 127.0.0.1 -n 6 > nul\necho {\"mode\":\"AK\",\"access_key_id\":\"akid\",\"access_key_secret\":\"secret\"}\n"
+	} else {
+		slowScriptContent = "#!/bin/sh\nsleep 3\necho '{\"mode\":\"AK\",\"access_key_id\":\"akid\",\"access_key_secret\":\"secret\"}'\n"
+	}
+	err = ioutil.WriteFile(slowScriptPath, []byte(slowScriptContent), 0755)
+	assert.Nil(t, err)
+
+	// 设置一个很短的超时时间，确保 ctx.Done() 分支被触发
+	timeout := 200
+	provider := &ExternalCredentialsProvider{
+		processCommand: slowScriptPath,
+		options: &ExternalOptions{
+			Timeout: timeout,
+		},
+	}
+
+	startTime := time.Now()
+	_, err = provider.getCredentials()
+	duration := time.Since(startTime)
+
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "command process timed out")
+	assert.Contains(t, err.Error(), fmt.Sprintf("%d milliseconds", timeout))
+	// 验证超时确实发生，且等待了 done channel（命令被终止）
+	assert.True(t, duration >= 150*time.Millisecond, "should wait for command termination")
+	// 允许更多时间，因为等待 <-done 需要等待命令真正被终止（可能需要几秒）
+	// Windows 下 ping 命令终止较慢，需要更长时间
+	maxWaitTime := 5 * time.Second
+	if runtime.GOOS == "windows" {
+		maxWaitTime = 6 * time.Second
+	}
+	assert.True(t, duration < maxWaitTime, "should timeout within reasonable time, took %v", duration)
+}
