@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
 	"os/exec"
 	"strings"
 	"sync"
@@ -78,14 +77,14 @@ func (provider *ExternalCredentialsProvider) getCredentials() (session *sessionC
 	var stdoutBuf bytes.Buffer
 	cmd.Stdout = &stdoutBuf
 
-	// 将标准错误输出直接传递到终端
-	cmd.Stderr = os.Stderr
-	cmd.Stdin = os.Stdin
+	// 创建一个buffer来捕获标准错误输出
+	var stderrBuf bytes.Buffer
+	cmd.Stderr = &stderrBuf
 
 	// 执行命令
 	err = cmd.Run()
 	if err != nil {
-		return nil, fmt.Errorf("failed to execute external command: %w", err)
+		return nil, fmt.Errorf("failed to execute external command: %w\nstderr: %s", err, stderrBuf.String())
 	}
 
 	// 只解析标准输出
@@ -209,4 +208,3 @@ func (provider *ExternalCredentialsProvider) GetCredentials() (cc *Credentials, 
 func (provider *ExternalCredentialsProvider) GetProviderName() string {
 	return "external"
 }
-
