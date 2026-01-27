@@ -152,7 +152,7 @@ func TestCLIProfileCredentialsProvider_getCredentialsProvider(t *testing.T) {
 				Mode:              "CloudSSO",
 				SignInUrl:         "url",
 				AccessToken:       "token",
-				AccessTokenExpire: time.Now().Unix() + 1000,
+				AccessTokenExpire: time.Now().Unix() + 2000,
 				AccessConfig:      "config",
 				AccountId:         "uid",
 			},
@@ -162,7 +162,7 @@ func TestCLIProfileCredentialsProvider_getCredentialsProvider(t *testing.T) {
 				OauthSiteType:          "CN",
 				OauthRefreshToken:      "refresh_token",
 				OauthAccessToken:       "access_token",
-				OauthAccessTokenExpire: time.Now().Unix() + 1000,
+				OauthAccessTokenExpire: time.Now().Unix() + 2000,
 			},
 			{
 				Mode: "Unsupported",
@@ -249,7 +249,7 @@ func TestCLIProfileCredentialsProvider_OAuthProfile(t *testing.T) {
 				OauthSiteType:          "CN",
 				OauthRefreshToken:      "refresh_token",
 				OauthAccessToken:       "access_token",
-				OauthAccessTokenExpire: time.Now().Unix() + 1000,
+				OauthAccessTokenExpire: time.Now().Unix() + 2000,
 			},
 			{
 				Mode:                   "OAuth",
@@ -257,7 +257,7 @@ func TestCLIProfileCredentialsProvider_OAuthProfile(t *testing.T) {
 				OauthSiteType:          "INTL",
 				OauthRefreshToken:      "refresh_token",
 				OauthAccessToken:       "access_token",
-				OauthAccessTokenExpire: time.Now().Unix() + 1000,
+				OauthAccessTokenExpire: time.Now().Unix() + 2000,
 			},
 			{
 				Mode:                   "OAuth",
@@ -265,7 +265,7 @@ func TestCLIProfileCredentialsProvider_OAuthProfile(t *testing.T) {
 				OauthSiteType:          "INVALID",
 				OauthRefreshToken:      "refresh_token",
 				OauthAccessToken:       "access_token",
-				OauthAccessTokenExpire: time.Now().Unix() + 1000,
+				OauthAccessTokenExpire: time.Now().Unix() + 2000,
 			},
 		},
 	}
@@ -313,7 +313,7 @@ func TestCLIProfileCredentialsProvider_updateOAuthTokens(t *testing.T) {
 				OauthSiteType:          "CN",
 				OauthRefreshToken:      "old_refresh_token",
 				OauthAccessToken:       "old_access_token",
-				OauthAccessTokenExpire: time.Now().Unix() + 1000,
+				OauthAccessTokenExpire: time.Now().Unix() + 2000,
 			},
 		},
 	}
@@ -375,7 +375,7 @@ func TestCLIProfileCredentialsProvider_writeConfigurationToFile(t *testing.T) {
 				OauthSiteType:          "CN",
 				OauthRefreshToken:      "test_refresh_token",
 				OauthAccessToken:       "test_access_token",
-				OauthAccessTokenExpire: time.Now().Unix() + 1000,
+				OauthAccessTokenExpire: time.Now().Unix() + 2000,
 			},
 		},
 	}
@@ -429,7 +429,7 @@ func TestCLIProfileCredentialsProvider_writeConfigurationToFile_Error(t *testing
 				OauthSiteType:          "CN",
 				OauthRefreshToken:      "test_refresh_token",
 				OauthAccessToken:       "test_access_token",
-				OauthAccessTokenExpire: time.Now().Unix() + 1000,
+				OauthAccessTokenExpire: time.Now().Unix() + 2000,
 			},
 		},
 	}
@@ -464,7 +464,7 @@ func TestCLIProfileCredentialsProvider_writeConfigurationToFileWithLock(t *testi
 				OauthSiteType:          "CN",
 				OauthRefreshToken:      "test_refresh_token",
 				OauthAccessToken:       "test_access_token",
-				OauthAccessTokenExpire: time.Now().Unix() + 1000,
+				OauthAccessTokenExpire: time.Now().Unix() + 2000,
 			},
 		},
 	}
@@ -518,7 +518,7 @@ func TestCLIProfileCredentialsProvider_writeConfigurationToFileWithLock_Error(t 
 				OauthSiteType:          "CN",
 				OauthRefreshToken:      "test_refresh_token",
 				OauthAccessToken:       "test_access_token",
-				OauthAccessTokenExpire: time.Now().Unix() + 1000,
+				OauthAccessTokenExpire: time.Now().Unix() + 2000,
 			},
 		},
 	}
@@ -553,7 +553,7 @@ func TestCLIProfileCredentialsProvider_getOAuthTokenUpdateCallback(t *testing.T)
 				OauthSiteType:          "CN",
 				OauthRefreshToken:      "test_refresh_token",
 				OauthAccessToken:       "test_access_token",
-				OauthAccessTokenExpire: time.Now().Unix() + 1000,
+				OauthAccessTokenExpire: time.Now().Unix() + 2000,
 			},
 		},
 	}
@@ -647,7 +647,7 @@ func TestCLIProfileCredentialsProvider_updateOAuthTokens_ProfileNotFound(t *test
 				OauthSiteType:          "CN",
 				OauthRefreshToken:      "test_refresh_token",
 				OauthAccessToken:       "test_access_token",
-				OauthAccessTokenExpire: time.Now().Unix() + 1000,
+				OauthAccessTokenExpire: time.Now().Unix() + 2000, // 改为 2000秒（>1200秒）
 			},
 		},
 	}
@@ -676,7 +676,7 @@ func TestCLIProfileCredentialsProvider_updateOAuthTokens_ProfileNotFound(t *test
 
 	err = provider.updateOAuthTokens(newRefreshToken, newAccessToken, newAccessKey, newSecret, newSecurityToken, newExpireTime, newStsExpire)
 	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "failed to get profile NonExistentProfile")
+	assert.Contains(t, err.Error(), "failed to find OAuth source profile")
 }
 
 func TestCLIProfileCredentialsProvider_ConcurrentUpdate(t *testing.T) {
@@ -696,7 +696,7 @@ func TestCLIProfileCredentialsProvider_ConcurrentUpdate(t *testing.T) {
 				OauthSiteType:          "CN",
 				OauthRefreshToken:      "initial_refresh_token",
 				OauthAccessToken:       "initial_access_token",
-				OauthAccessTokenExpire: time.Now().Unix() + 1000,
+				OauthAccessTokenExpire: time.Now().Unix() + 2000,
 			},
 		},
 	}
@@ -766,7 +766,7 @@ func TestCLIProfileCredentialsProvider_FileLock(t *testing.T) {
 				OauthSiteType:          "CN",
 				OauthRefreshToken:      "initial_refresh_token",
 				OauthAccessToken:       "initial_access_token",
-				OauthAccessTokenExpire: time.Now().Unix() + 1000,
+				OauthAccessTokenExpire: time.Now().Unix() + 2000,
 			},
 		},
 	}
@@ -919,7 +919,7 @@ func TestCLIProfileCredentialsProvider_writeConfigurationToFile_RenameError(t *t
 				OauthSiteType:          "CN",
 				OauthRefreshToken:      "test_refresh_token",
 				OauthAccessToken:       "test_access_token",
-				OauthAccessTokenExpire: time.Now().Unix() + 1000,
+				OauthAccessTokenExpire: time.Now().Unix() + 2000,
 			},
 		},
 	}
@@ -958,7 +958,7 @@ func TestCLIProfileCredentialsProvider_writeConfigurationToFileWithLock_RenameEr
 				OauthSiteType:          "CN",
 				OauthRefreshToken:      "test_refresh_token",
 				OauthAccessToken:       "test_access_token",
-				OauthAccessTokenExpire: time.Now().Unix() + 1000,
+				OauthAccessTokenExpire: time.Now().Unix() + 2000,
 			},
 		},
 	}
@@ -997,7 +997,7 @@ func TestCLIProfileCredentialsProvider_updateOAuthTokens_WriteError(t *testing.T
 				OauthSiteType:          "CN",
 				OauthRefreshToken:      "test_refresh_token",
 				OauthAccessToken:       "test_access_token",
-				OauthAccessTokenExpire: time.Now().Unix() + 1000,
+				OauthAccessTokenExpire: time.Now().Unix() + 2000,
 			},
 		},
 	}
@@ -1050,7 +1050,7 @@ func TestCLIProfileCredentialsProvider_GetCredentials_WithOAuthProfile(t *testin
 				OauthSiteType:          "CN",
 				OauthRefreshToken:      "test_refresh_token",
 				OauthAccessToken:       "test_access_token",
-				OauthAccessTokenExpire: time.Now().Unix() + 1000,
+				OauthAccessTokenExpire: time.Now().Unix() + 2000, // 改为 2000秒（>1200秒），避免触发刷新
 			},
 		},
 	}
@@ -1092,7 +1092,7 @@ func TestCLIProfileCredentialsProvider_FileLock_ConcurrentAccess(t *testing.T) {
 				OauthSiteType:          "CN",
 				OauthRefreshToken:      "test_refresh_token",
 				OauthAccessToken:       "test_access_token",
-				OauthAccessTokenExpire: time.Now().Unix() + 1000,
+				OauthAccessTokenExpire: time.Now().Unix() + 2000,
 			},
 		},
 	}
@@ -1177,7 +1177,7 @@ func TestCLIProfileCredentialsProvider_ProfileName_Empty(t *testing.T) {
 				OauthSiteType:          "CN",
 				OauthRefreshToken:      "test_refresh_token",
 				OauthAccessToken:       "test_access_token",
-				OauthAccessTokenExpire: time.Now().Unix() + 1000,
+				OauthAccessTokenExpire: time.Now().Unix() + 2000,
 			},
 		},
 	}
@@ -1384,7 +1384,7 @@ func TestCLIProfileCredentialsProvider_UpdateOAuthTokens_ErrorScenarios(t *testi
 
 	err = provider.updateOAuthTokens("refresh", "access", "ak", "sk", "token", 1234567890, 1234567890)
 	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "failed to get profile nonexistent")
+	assert.Contains(t, err.Error(), "failed to find OAuth source profile")
 
 	// 测试4: 配置文件写入失败 - 通过创建只读目录来模拟 (仅在Unix上测试)
 	if runtime.GOOS != "windows" {
@@ -2125,5 +2125,168 @@ func TestExternalCredentialsProvider_ConcurrentAccess(t *testing.T) {
 			assert.Equal(t, "concurrent_secret", results[i].AccessKeySecret)
 		}
 	}
+}
+
+func TestCLIProfileFindSourceOAuthProfile(t *testing.T) {
+	// 测试 findSourceOAuthProfile 递归查找功能
+	conf := &configuration{
+		Current: "chainable_oauth",
+		Profiles: []*profile{
+			{
+				Name:              "oauth_source",
+				Mode:              "OAuth",
+				OauthRefreshToken: "initial_refresh_token",
+				OauthAccessToken:  "initial_access_token",
+			},
+			{
+				Name:          "chainable_oauth",
+				Mode:          "ChainableRamRoleArn",
+				SourceProfile: "oauth_source",
+				RoleArn:       "acs:ram::123456789012:role/test-role",
+			},
+		},
+	}
+
+	// 测试从 chainable profile 查找到 OAuth source profile
+	sourceProfile, err := conf.findSourceOAuthProfile("chainable_oauth")
+	assert.Nil(t, err)
+	assert.NotNil(t, sourceProfile)
+	assert.Equal(t, "oauth_source", sourceProfile.Name)
+	assert.Equal(t, "OAuth", sourceProfile.Mode)
+
+	// 测试直接查找 OAuth profile
+	sourceProfile, err = conf.findSourceOAuthProfile("oauth_source")
+	assert.Nil(t, err)
+	assert.NotNil(t, sourceProfile)
+	assert.Equal(t, "oauth_source", sourceProfile.Name)
+
+	// 测试查找不存在的 profile
+	_, err = conf.findSourceOAuthProfile("nonexistent")
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "unable to get profile with name 'nonexistent'")
+
+	// 测试 profile 链中没有 OAuth
+	conf.Profiles = append(conf.Profiles, &profile{
+		Name:          "no_oauth_chain",
+		Mode:          "AK",
+		AccessKeyID:   "akid",
+		AccessKeySecret: "secret",
+	})
+	_, err = conf.findSourceOAuthProfile("no_oauth_chain")
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "unable to get OAuth profile")
+}
+
+func TestCLIProfileNestedChainableRamRoleWithOAuthSource(t *testing.T) {
+	// 测试多层嵌套 ChainableRamRoleArn 使用 OAuth source profile
+	conf := &configuration{
+		Current: "chainable_level2",
+		Profiles: []*profile{
+			{
+				Name:              "oauth_source",
+				Mode:              "OAuth",
+				OauthRefreshToken: "initial_refresh_token",
+				OauthAccessToken:  "initial_access_token",
+			},
+			{
+				Name:          "chainable_level1",
+				Mode:          "ChainableRamRoleArn",
+				SourceProfile: "oauth_source",
+				RoleArn:       "acs:ram::123456789012:role/level1-role",
+			},
+			{
+				Name:          "chainable_level2",
+				Mode:          "ChainableRamRoleArn",
+				SourceProfile: "chainable_level1",
+				RoleArn:       "acs:ram::123456789012:role/level2-role",
+			},
+		},
+	}
+
+	// 测试从最外层 chainable profile 递归查找到 OAuth source profile
+	sourceProfile, err := conf.findSourceOAuthProfile("chainable_level2")
+	assert.Nil(t, err)
+	assert.NotNil(t, sourceProfile)
+	assert.Equal(t, "oauth_source", sourceProfile.Name)
+	assert.Equal(t, "OAuth", sourceProfile.Mode)
+
+	// 测试从中间层 chainable profile 查找
+	sourceProfile, err = conf.findSourceOAuthProfile("chainable_level1")
+	assert.Nil(t, err)
+	assert.NotNil(t, sourceProfile)
+	assert.Equal(t, "oauth_source", sourceProfile.Name)
+}
+
+func TestCLIProfileUpdateOAuthTokensWithChainable(t *testing.T) {
+	// 测试 ChainableRamRoleArn 场景下 OAuth token 更新到正确的 source profile
+	wd, _ := os.Getwd()
+	tmpDir := path.Join(wd, ".tmp_test")
+	os.MkdirAll(tmpDir, 0755)
+	defer os.RemoveAll(tmpDir)
+
+	configPath := path.Join(tmpDir, "config_chainable_oauth.json")
+
+	// 创建测试配置：OAuth profile <- ChainableRamRoleArn profile
+	testConfig := &configuration{
+		Current: "chainable_oauth",
+		Profiles: []*profile{
+			{
+				Name:                   "oauth_source",
+				Mode:                   "OAuth",
+				OauthRefreshToken:      "initial_refresh_token",
+				OauthAccessToken:       "initial_access_token",
+				OauthAccessTokenExpire: time.Now().Unix() + 3600,
+			},
+			{
+				Name:          "chainable_oauth",
+				Mode:          "ChainableRamRoleArn",
+				SourceProfile: "oauth_source",
+				RoleArn:       "acs:ram::123456789012:role/test-role",
+			},
+		},
+	}
+
+	// 写入配置文件
+	data, _ := json.MarshalIndent(testConfig, "", "    ")
+	ioutil.WriteFile(configPath, data, 0644)
+
+	provider, err := NewCLIProfileCredentialsProviderBuilder().
+		WithProfileFile(configPath).
+		WithProfileName("chainable_oauth").
+		Build()
+	assert.Nil(t, err)
+
+	// 更新 OAuth tokens
+	newRefreshToken := "new_refresh_token"
+	newAccessToken := "new_access_token"
+	newAccessKey := "new_access_key"
+	newSecret := "new_secret"
+	newSecurityToken := "new_security_token"
+	newExpire := time.Now().Unix() + 7200
+	newStsExpire := time.Now().Unix() + 10800
+
+	err = provider.updateOAuthTokens(newRefreshToken, newAccessToken, newAccessKey, newSecret, newSecurityToken, newExpire, newStsExpire)
+	assert.Nil(t, err)
+
+	// 读取更新后的配置
+	updatedConf, err := newConfigurationFromPath(configPath)
+	assert.Nil(t, err)
+
+	// 验证 OAuth source profile 被正确更新
+	oauthProfile, err := updatedConf.getProfile("oauth_source")
+	assert.Nil(t, err)
+	assert.Equal(t, newRefreshToken, oauthProfile.OauthRefreshToken)
+	assert.Equal(t, newAccessToken, oauthProfile.OauthAccessToken)
+	assert.Equal(t, newAccessKey, oauthProfile.AccessKeyID)
+	assert.Equal(t, newSecret, oauthProfile.AccessKeySecret)
+	assert.Equal(t, newSecurityToken, oauthProfile.SecurityToken)
+	assert.Equal(t, newExpire, oauthProfile.OauthAccessTokenExpire)
+	assert.Equal(t, newStsExpire, oauthProfile.StsExpire)
+
+	// 验证 chainable profile 没有被错误更新
+	chainableProfile, err := updatedConf.getProfile("chainable_oauth")
+	assert.Nil(t, err)
+	assert.Equal(t, "", chainableProfile.OauthRefreshToken)
+	assert.Equal(t, "", chainableProfile.OauthAccessToken)
 }
 
