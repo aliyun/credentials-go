@@ -32,7 +32,7 @@ func TestNewOAuthCredentialsProvider(t *testing.T) {
 		WithSignInUrl("https://oauth.aliyun.com").
 		WithRefreshToken("refreshToken").
 		WithAccessToken("accessToken").
-		WithAccessTokenExpire(time.Now().Unix() + 1000).
+		WithAccessTokenExpire(time.Now().Unix() + 2000).
 		Build()
 	assert.Nil(t, err)
 	assert.Equal(t, "clientId", p.clientId)
@@ -50,7 +50,7 @@ func TestOAuthCredentialsProvider_getCredentials(t *testing.T) {
 		WithSignInUrl("https://oauth.aliyun.com").
 		WithRefreshToken("refreshToken").
 		WithAccessToken("token").
-		WithAccessTokenExpire(time.Now().Unix() + 1000).
+		WithAccessTokenExpire(time.Now().Unix() + 2000). // 改为 2000秒（>1200秒），避免触发刷新
 		Build()
 	assert.Nil(t, err)
 
@@ -154,7 +154,7 @@ func TestOAuthCredentialsProviderGetCredentials(t *testing.T) {
 		WithSignInUrl("https://oauth.aliyun.com").
 		WithRefreshToken("refreshToken").
 		WithAccessToken("token").
-		WithAccessTokenExpire(time.Now().Unix() + 1000).
+		WithAccessTokenExpire(time.Now().Unix() + 2000). // 改为 2000秒（>1200秒），避免触发刷新
 		WithHttpOptions(&HttpOptions{
 			ConnectTimeout: 10000,
 		}).
@@ -213,7 +213,7 @@ func TestOAuthCredentialsProviderGetCredentialsWithHttpOptions(t *testing.T) {
 		WithSignInUrl("https://oauth.aliyun.com").
 		WithRefreshToken("refreshToken").
 		WithAccessToken("token").
-		WithAccessTokenExpire(time.Now().Unix() + 1000).
+		WithAccessTokenExpire(time.Now().Unix() + 2000).
 		WithHttpOptions(&HttpOptions{
 			ConnectTimeout: 1000,
 			ReadTimeout:    1000,
@@ -233,7 +233,7 @@ func TestOAuthCredentialsProviderGetProviderName(t *testing.T) {
 		WithSignInUrl("https://oauth.aliyun.com").
 		WithRefreshToken("refreshToken").
 		WithAccessToken("token").
-		WithAccessTokenExpire(time.Now().Unix() + 1000).
+		WithAccessTokenExpire(time.Now().Unix() + 2000).
 		Build()
 	assert.Nil(t, err)
 	assert.Equal(t, "oauth", p.GetProviderName())
@@ -251,7 +251,7 @@ func TestOAuthCredentialsProviderWithHttpOptions(t *testing.T) {
 		WithSignInUrl("https://oauth.aliyun.com").
 		WithRefreshToken("refreshToken").
 		WithAccessToken("token").
-		WithAccessTokenExpire(time.Now().Unix() + 1000).
+		WithAccessTokenExpire(time.Now().Unix() + 2000).
 		WithHttpOptions(httpOptions).
 		Build()
 
@@ -271,7 +271,7 @@ func TestOAuthCredentialsProviderCredentialCaching(t *testing.T) {
 		WithSignInUrl("https://oauth.aliyun.com").
 		WithRefreshToken("refreshToken").
 		WithAccessToken("token").
-		WithAccessTokenExpire(time.Now().Unix() + 1000).
+		WithAccessTokenExpire(time.Now().Unix() + 2000).
 		Build()
 	assert.Nil(t, err)
 
@@ -302,7 +302,7 @@ func TestOAuthCredentialsProviderNeedUpdateCredential(t *testing.T) {
 		WithSignInUrl("https://oauth.aliyun.com").
 		WithRefreshToken("refreshToken").
 		WithAccessToken("token").
-		WithAccessTokenExpire(time.Now().Unix() + 1000).
+		WithAccessTokenExpire(time.Now().Unix() + 2000).
 		Build()
 	assert.Nil(t, err)
 
@@ -331,7 +331,7 @@ func TestOAuthCredentialsProviderTryRefreshOauthToken(t *testing.T) {
 		WithSignInUrl("https://oauth.aliyun.com").
 		WithRefreshToken("refreshToken").
 		WithAccessToken("accessToken").
-		WithAccessTokenExpire(time.Now().Unix() + 1000).
+		WithAccessTokenExpire(time.Now().Unix() + 2000).
 		Build()
 	assert.Nil(t, err)
 
@@ -472,7 +472,7 @@ func TestOAuthCredentialsProvider_TokenUpdateCallback(t *testing.T) {
 		WithSignInUrl("https://oauth.aliyun.com").
 		WithRefreshToken("refreshToken").
 		WithAccessToken("accessToken").
-		WithAccessTokenExpire(time.Now().Unix() + 1000).
+		WithAccessTokenExpire(time.Now().Unix() + 2000).
 		WithTokenUpdateCallback(callback).
 		Build()
 	assert.Nil(t, err)
@@ -522,7 +522,7 @@ func TestOAuthCredentialsProvider_TokenUpdateCallback_Error(t *testing.T) {
 		WithSignInUrl("https://oauth.aliyun.com").
 		WithRefreshToken("refreshToken").
 		WithAccessToken("accessToken").
-		WithAccessTokenExpire(time.Now().Unix() + 1000).
+		WithAccessTokenExpire(time.Now().Unix() + 2000).
 		WithTokenUpdateCallback(callback).
 		Build()
 	assert.Nil(t, err)
@@ -561,7 +561,7 @@ func TestOAuthCredentialsProvider_WithoutTokenUpdateCallback(t *testing.T) {
 		WithSignInUrl("https://oauth.aliyun.com").
 		WithRefreshToken("refreshToken").
 		WithAccessToken("accessToken").
-		WithAccessTokenExpire(time.Now().Unix() + 1000).
+		WithAccessTokenExpire(time.Now().Unix() + 2000).
 		Build()
 	assert.Nil(t, err)
 	assert.Nil(t, p.tokenUpdateCallback)
@@ -608,7 +608,7 @@ func TestOAuthCredentialsProvider_TryRefreshOauthToken_WithCallback(t *testing.T
 		WithSignInUrl("https://oauth.aliyun.com").
 		WithRefreshToken("refreshToken").
 		WithAccessToken("accessToken").
-		WithAccessTokenExpire(time.Now().Unix() + 1000).
+		WithAccessTokenExpire(time.Now().Unix() + 2000).
 		WithTokenUpdateCallback(callback).
 		Build()
 	assert.Nil(t, err)
@@ -677,7 +677,7 @@ func TestOAuthCredentialsProvider_GetCredentials_WithEmptyAccessToken(t *testing
 		WithSignInUrl("https://oauth.aliyun.com").
 		WithRefreshToken("refreshToken").
 		WithAccessToken(""). // empty access token
-		WithAccessTokenExpire(time.Now().Unix() + 1000).
+		WithAccessTokenExpire(time.Now().Unix() + 2000).
 		Build()
 	assert.Nil(t, err)
 
@@ -788,7 +788,7 @@ func TestOAuthCredentialsProvider_TryRefreshOauthToken_InvalidURL(t *testing.T) 
 		WithSignInUrl("invalid-url"). // invalid URL
 		WithRefreshToken("refreshToken").
 		WithAccessToken("accessToken").
-		WithAccessTokenExpire(time.Now().Unix() + 1000).
+		WithAccessTokenExpire(time.Now().Unix() + 2000).
 		Build()
 	assert.Nil(t, err)
 
@@ -806,7 +806,7 @@ func TestOAuthCredentialsProvider_TryRefreshOauthToken_NetworkError(t *testing.T
 		WithSignInUrl("https://oauth.aliyun.com").
 		WithRefreshToken("refreshToken").
 		WithAccessToken("accessToken").
-		WithAccessTokenExpire(time.Now().Unix() + 1000).
+		WithAccessTokenExpire(time.Now().Unix() + 2000).
 		Build()
 	assert.Nil(t, err)
 
@@ -829,7 +829,7 @@ func TestOAuthCredentialsProvider_TryRefreshOauthToken_Non200Status(t *testing.T
 		WithSignInUrl("https://oauth.aliyun.com").
 		WithRefreshToken("refreshToken").
 		WithAccessToken("accessToken").
-		WithAccessTokenExpire(time.Now().Unix() + 1000).
+		WithAccessTokenExpire(time.Now().Unix() + 2000).
 		Build()
 	assert.Nil(t, err)
 
@@ -856,7 +856,7 @@ func TestOAuthCredentialsProvider_TryRefreshOauthToken_InvalidJSON(t *testing.T)
 		WithSignInUrl("https://oauth.aliyun.com").
 		WithRefreshToken("refreshToken").
 		WithAccessToken("accessToken").
-		WithAccessTokenExpire(time.Now().Unix() + 1000).
+		WithAccessTokenExpire(time.Now().Unix() + 2000).
 		Build()
 	assert.Nil(t, err)
 
@@ -883,7 +883,7 @@ func TestOAuthCredentialsProvider_TryRefreshOauthToken_EmptyTokens(t *testing.T)
 		WithSignInUrl("https://oauth.aliyun.com").
 		WithRefreshToken("refreshToken").
 		WithAccessToken("accessToken").
-		WithAccessTokenExpire(time.Now().Unix() + 1000).
+		WithAccessTokenExpire(time.Now().Unix() + 2000).
 		Build()
 	assert.Nil(t, err)
 
@@ -907,7 +907,7 @@ func TestOAuthCredentialsProvider_NeedUpdateCredential_EdgeCases(t *testing.T) {
 		WithSignInUrl("https://oauth.aliyun.com").
 		WithRefreshToken("refreshToken").
 		WithAccessToken("accessToken").
-		WithAccessTokenExpire(time.Now().Unix() + 1000).
+		WithAccessTokenExpire(time.Now().Unix() + 2000).
 		Build()
 	assert.Nil(t, err)
 
@@ -931,7 +931,7 @@ func TestOAuthCredentialsProvider_HttpOptions_EdgeCases(t *testing.T) {
 		WithSignInUrl("https://oauth.aliyun.com").
 		WithRefreshToken("refreshToken").
 		WithAccessToken("accessToken").
-		WithAccessTokenExpire(time.Now().Unix() + 1000).
+		WithAccessTokenExpire(time.Now().Unix() + 2000).
 		WithHttpOptions(&HttpOptions{
 			ConnectTimeout: 0,
 			ReadTimeout:    0,
@@ -947,7 +947,7 @@ func TestOAuthCredentialsProvider_HttpOptions_EdgeCases(t *testing.T) {
 		WithSignInUrl("https://oauth.aliyun.com").
 		WithRefreshToken("refreshToken").
 		WithAccessToken("accessToken").
-		WithAccessTokenExpire(time.Now().Unix() + 1000).
+		WithAccessTokenExpire(time.Now().Unix() + 2000).
 		WithHttpOptions(&HttpOptions{
 			ConnectTimeout: -1000,
 			ReadTimeout:    -2000,
@@ -967,7 +967,7 @@ func TestOAuthCredentialsProvider_GetCredentials_CachedCredentials(t *testing.T)
 		WithSignInUrl("https://oauth.aliyun.com").
 		WithRefreshToken("refreshToken").
 		WithAccessToken("accessToken").
-		WithAccessTokenExpire(time.Now().Unix() + 1000).
+		WithAccessTokenExpire(time.Now().Unix() + 2000).
 		Build()
 	assert.Nil(t, err)
 
@@ -996,3 +996,199 @@ func TestOAuthCredentialsProvider_GetCredentials_CachedCredentials(t *testing.T)
 	assert.Equal(t, cc1.AccessKeySecret, cc2.AccessKeySecret)
 	assert.Equal(t, cc1.SecurityToken, cc2.SecurityToken)
 }
+
+func TestOAuthTokenRefreshTimingSufficientTime(t *testing.T) {
+	// 测试当 OAuth token 剩余时间 > 1200秒时，不触发刷新
+	originHttpDo := httpDo
+	defer func() { httpDo = originHttpDo }()
+
+	callCount := 0
+	httpDo = func(req *httputil.Request) (res *httputil.Response, err error) {
+		callCount++
+		// 只应该调用一次 /v1/exchange，不应该调用 /v1/token
+		if req.Path == "/v1/token" {
+			t.Error("Should not refresh token when remaining time > 1200s")
+		}
+		res = &httputil.Response{
+			StatusCode: 200,
+			Body:       []byte(`{"accessKeyId":"akid","accessKeySecret":"aksecret","securityToken":"token","expiration":"2030-12-31T23:59:59Z"}`),
+		}
+		return
+	}
+
+	// access_token 还有 25 分钟（1500秒）过期，大于 1200秒阈值
+	p, err := NewOAuthCredentialsProviderBuilder().
+		WithClientId("clientId").
+		WithSignInUrl("https://oauth.aliyun.com").
+		WithRefreshToken("refreshToken").
+		WithAccessToken("validToken").
+		WithAccessTokenExpire(time.Now().Unix() + 1500).
+		Build()
+	assert.Nil(t, err)
+
+	_, err = p.getCredentials()
+	assert.Nil(t, err)
+	// 应该只调用了一次（/v1/exchange）
+	assert.Equal(t, 1, callCount)
+	assert.Equal(t, "validToken", p.accessToken)
+}
+
+func TestOAuthTokenRefreshTimingInsufficientTime(t *testing.T) {
+	// 测试当 OAuth token 剩余时间 <= 1200秒时，触发刷新
+	originHttpDo := httpDo
+	defer func() { httpDo = originHttpDo }()
+
+	callCount := 0
+	httpDo = func(req *httputil.Request) (res *httputil.Response, err error) {
+		callCount++
+		if req.Path == "/v1/token" {
+			// Token 刷新请求
+			res = &httputil.Response{
+				StatusCode: 200,
+				Body:       []byte(`{"access_token":"newToken","refresh_token":"newRefreshToken","expires_in":3600}`),
+			}
+		} else if req.Path == "/v1/exchange" {
+			// 凭据交换请求
+			res = &httputil.Response{
+				StatusCode: 200,
+				Body:       []byte(`{"accessKeyId":"akid","accessKeySecret":"aksecret","securityToken":"token","expiration":"2030-12-31T23:59:59Z"}`),
+			}
+		}
+		return
+	}
+
+	// access_token 还有 15 分钟（900秒）过期，小于 1200秒阈值
+	p, err := NewOAuthCredentialsProviderBuilder().
+		WithClientId("clientId").
+		WithSignInUrl("https://oauth.aliyun.com").
+		WithRefreshToken("oldRefreshToken").
+		WithAccessToken("oldToken").
+		WithAccessTokenExpire(time.Now().Unix() + 900).
+		Build()
+	assert.Nil(t, err)
+
+	_, err = p.getCredentials()
+	assert.Nil(t, err)
+	// 应该调用了两次：1. /v1/token（刷新），2. /v1/exchange（交换）
+	assert.Equal(t, 2, callCount)
+	assert.Equal(t, "newToken", p.accessToken)
+	assert.Equal(t, "newRefreshToken", p.refreshToken)
+}
+
+func TestOAuthTokenRefreshTimingExactlyThreshold(t *testing.T) {
+	// 测试当 OAuth token 剩余时间正好等于 1200秒时，触发刷新
+	originHttpDo := httpDo
+	defer func() { httpDo = originHttpDo }()
+
+	refreshCalled := false
+	httpDo = func(req *httputil.Request) (res *httputil.Response, err error) {
+		if req.Path == "/v1/token" {
+			refreshCalled = true
+			res = &httputil.Response{
+				StatusCode: 200,
+				Body:       []byte(`{"access_token":"newToken","refresh_token":"newRefreshToken","expires_in":3600}`),
+			}
+		} else if req.Path == "/v1/exchange" {
+			res = &httputil.Response{
+				StatusCode: 200,
+				Body:       []byte(`{"accessKeyId":"akid","accessKeySecret":"aksecret","securityToken":"token","expiration":"2030-12-31T23:59:59Z"}`),
+			}
+		}
+		return
+	}
+
+	// access_token 还有正好 1200秒（20分钟）过期
+	p, err := NewOAuthCredentialsProviderBuilder().
+		WithClientId("clientId").
+		WithSignInUrl("https://oauth.aliyun.com").
+		WithRefreshToken("oldRefreshToken").
+		WithAccessToken("oldToken").
+		WithAccessTokenExpire(time.Now().Unix() + 1200).
+		Build()
+	assert.Nil(t, err)
+
+	_, err = p.getCredentials()
+	assert.Nil(t, err)
+	// 应该触发了刷新
+	assert.True(t, refreshCalled)
+	assert.Equal(t, "newToken", p.accessToken)
+}
+
+func TestOAuthTokenRefreshTimingZeroExpire(t *testing.T) {
+	// 测试边界情况：access_token_expire 为 0 时触发刷新
+	originHttpDo := httpDo
+	defer func() { httpDo = originHttpDo }()
+
+	refreshCalled := false
+	httpDo = func(req *httputil.Request) (res *httputil.Response, err error) {
+		if req.Path == "/v1/token" {
+			refreshCalled = true
+			res = &httputil.Response{
+				StatusCode: 200,
+				Body:       []byte(`{"access_token":"newToken","refresh_token":"newRefreshToken","expires_in":3600}`),
+			}
+		} else if req.Path == "/v1/exchange" {
+			res = &httputil.Response{
+				StatusCode: 200,
+				Body:       []byte(`{"accessKeyId":"akid","accessKeySecret":"aksecret","securityToken":"token","expiration":"2030-12-31T23:59:59Z"}`),
+			}
+		}
+		return
+	}
+
+	// access_token_expire 为 0
+	p, err := NewOAuthCredentialsProviderBuilder().
+		WithClientId("clientId").
+		WithSignInUrl("https://oauth.aliyun.com").
+		WithRefreshToken("oldRefreshToken").
+		WithAccessToken("oldToken").
+		WithAccessTokenExpire(0).
+		Build()
+	assert.Nil(t, err)
+
+	_, err = p.getCredentials()
+	assert.Nil(t, err)
+	// 应该触发了刷新
+	assert.True(t, refreshCalled)
+	assert.Equal(t, "newToken", p.accessToken)
+}
+
+func TestOAuthTokenRefreshTimingEmptyToken(t *testing.T) {
+	// 测试边界情况：access_token 为空时触发刷新
+	originHttpDo := httpDo
+	defer func() { httpDo = originHttpDo }()
+
+	refreshCalled := false
+	httpDo = func(req *httputil.Request) (res *httputil.Response, err error) {
+		if req.Path == "/v1/token" {
+			refreshCalled = true
+			res = &httputil.Response{
+				StatusCode: 200,
+				Body:       []byte(`{"access_token":"newToken","refresh_token":"newRefreshToken","expires_in":3600}`),
+			}
+		} else if req.Path == "/v1/exchange" {
+			res = &httputil.Response{
+				StatusCode: 200,
+				Body:       []byte(`{"accessKeyId":"akid","accessKeySecret":"aksecret","securityToken":"token","expiration":"2030-12-31T23:59:59Z"}`),
+			}
+		}
+		return
+	}
+
+	// access_token 为空
+	p, err := NewOAuthCredentialsProviderBuilder().
+		WithClientId("clientId").
+		WithSignInUrl("https://oauth.aliyun.com").
+		WithRefreshToken("refreshToken").
+		WithAccessToken("").
+		WithAccessTokenExpire(time.Now().Unix() + 3600).
+		Build()
+	assert.Nil(t, err)
+
+	_, err = p.getCredentials()
+	assert.Nil(t, err)
+	// 应该触发了刷新
+	assert.True(t, refreshCalled)
+	assert.Equal(t, "newToken", p.accessToken)
+}
+
