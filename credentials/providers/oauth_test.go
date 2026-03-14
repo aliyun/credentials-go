@@ -19,15 +19,18 @@ func TestNewOAuthCredentialsProvider(t *testing.T) {
 	assert.NotNil(t, err)
 	assert.Equal(t, "the url for sign-in is empty", err.Error())
 
-	_, err = NewOAuthCredentialsProviderBuilder().
+	// Test valid OAuth provider without refresh token
+	p, err := NewOAuthCredentialsProviderBuilder().
 		WithClientId("clientId").
 		WithSignInUrl("https://oauth.aliyun.com").
 		Build()
-	assert.NotNil(t, err)
-	assert.Equal(t, "OAuth access token is empty or expired, please re-login with cli", err.Error())
+	assert.Nil(t, err)
+	assert.Equal(t, "clientId", p.clientId)
+	assert.Equal(t, "https://oauth.aliyun.com", p.signInUrl)
+	assert.Equal(t, "", p.refreshToken)
 
-	// Test valid OAuth provider
-	p, err := NewOAuthCredentialsProviderBuilder().
+	// Test valid OAuth provider with refresh token
+	p, err = NewOAuthCredentialsProviderBuilder().
 		WithClientId("clientId").
 		WithSignInUrl("https://oauth.aliyun.com").
 		WithRefreshToken("refreshToken").
