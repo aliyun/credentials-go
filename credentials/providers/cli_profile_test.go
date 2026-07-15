@@ -920,7 +920,8 @@ func TestCLIProfileCredentialsProvider_GetCredentials(t *testing.T) {
 	provider, err = NewCLIProfileCredentialsProviderBuilder().Build()
 	assert.Nil(t, err)
 	_, err = provider.GetCredentials()
-	assert.Contains(t, err.Error(), "reading aliyun cli config from '/path/invalid/home/dir/.aliyun/config.json' failed")
+	expectedCfg := filepath.Join("/path/invalid/home/dir", ".aliyun", "config.json")
+	assert.Contains(t, err.Error(), "reading aliyun cli config from '"+expectedCfg+"' failed")
 
 	// testcase: specify credentials file
 	provider, err = NewCLIProfileCredentialsProviderBuilder().WithProfileFile("/path/to/config.invalid").Build()
