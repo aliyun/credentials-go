@@ -466,7 +466,11 @@ func (provider *CLIProfileCredentialsProvider) writeConfigurationToFileWithLock(
 // replaceFile 将 src 原子替换到 dst。
 // POSIX 上 os.Rename 可覆盖已存在目标；Windows 上需先删除目标，否则报 ERROR_ALREADY_EXISTS。
 func replaceFile(src, dst string) error {
-	if runtime.GOOS == "windows" {
+	return replaceFileForOS(runtime.GOOS, src, dst)
+}
+
+func replaceFileForOS(goos, src, dst string) error {
+	if goos == "windows" {
 		if err := os.Remove(dst); err != nil && !os.IsNotExist(err) {
 			return err
 		}

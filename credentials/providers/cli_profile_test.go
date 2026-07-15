@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"sync"
@@ -317,6 +318,68 @@ func TestReplaceFileOverwriteExisting(t *testing.T) {
 	assert.Equal(t, `{"current":"new"}`, string(data))
 	_, err = os.Stat(src)
 	assert.True(t, os.IsNotExist(err))
+}
+
+func TestReplaceFileForOSWindowsOverwrite(t *testing.T) {
+	tempDir, err := ioutil.TempDir("", "replace_file_windows")
+	assert.Nil(t, err)
+	defer os.RemoveAll(tempDir)
+
+	dst := path.Join(tempDir, "config.json")
+	src := path.Join(tempDir, "config.json.tmp")
+	assert.Nil(t, ioutil.WriteFile(dst, []byte(`{"current":"old"}`), 0644))
+	assert.Nil(t, ioutil.WriteFile(src, []byte(`{"current":"new"}`), 0644))
+
+	// Simulate Windows semantics on any OS: remove then rename.
+	err = replaceFileForOS("windows", src, dst)
+	assert.Nil(t, err)
+	data, err := ioutil.ReadFile(dst)
+	assert.Nil(t, err)
+	assert.Equal(t, `{"current":"new"}`, string(data))
+}
+
+func TestReplaceFileForOSWindowsRemoveError(t *testing.T) {
+	tempDir, err := ioutil.TempDir("", "replace_file_windows_err")
+	assert.Nil(t, err)
+	defer os.RemoveAll(tempDir)
+
+	dst := path.Join(tempDir, "config-dir")
+	src := path.Join(tempDir, "config.json.tmp")
+	assert.Nil(t, os.Mkdir(dst, 0755))
+	assert.Nil(t, ioutil.WriteFile(path.Join(dst, "keep.txt"), []byte("x"), 0644))
+	assert.Nil(t, ioutil.WriteFile(src, []byte(`{"current":"new"}`), 0644))
+
+	err = replaceFileForOS("windows", src, dst)
+	assert.NotNil(t, err)
+}
+
+func TestReplaceFileForOSWindowsMissingDst(t *testing.T) {
+	tempDir, err := ioutil.TempDir("", "replace_file_windows_missing")
+	assert.Nil(t, err)
+	defer os.RemoveAll(tempDir)
+
+	dst := path.Join(tempDir, "config.json")
+	src := path.Join(tempDir, "config.json.tmp")
+	assert.Nil(t, ioutil.WriteFile(src, []byte(`{"current":"new"}`), 0644))
+
+	err = replaceFileForOS("windows", src, dst)
+	assert.Nil(t, err)
+	data, err := ioutil.ReadFile(dst)
+	assert.Nil(t, err)
+	assert.Equal(t, `{"current":"new"}`, string(data))
+}
+
+func TestDefaultProfileFileUsesOSSep(t *testing.T) {
+	origin := getHomePath
+	defer func() { getHomePath = origin }()
+	getHomePath = func() string { return "/tmp/fake-home" }
+
+	provider, err := NewCLIProfileCredentialsProviderBuilder().Build()
+	assert.Nil(t, err)
+	// Force lazy default path resolution
+	_, _ = provider.GetCredentials()
+	expected := filepath.Join("/tmp/fake-home", ".aliyun", "config.json")
+	assert.Equal(t, expected, provider.profileFile)
 }
 
 func TestCLIProfileCredentialsProvider_updateOAuthTokens(t *testing.T) {
