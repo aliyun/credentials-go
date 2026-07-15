@@ -296,6 +296,29 @@ func TestCLIProfileCredentialsProvider_OAuthProfile(t *testing.T) {
 	assert.EqualError(t, err, "invalid site type, support CN or INTL")
 }
 
+func TestReplaceFileOverwriteExisting(t *testing.T) {
+	tempDir, err := ioutil.TempDir("", "replace_file_test")
+	assert.Nil(t, err)
+	defer os.RemoveAll(tempDir)
+
+	dst := path.Join(tempDir, "config.json")
+	src := path.Join(tempDir, "config.json.tmp")
+
+	err = ioutil.WriteFile(dst, []byte(`{"current":"old"}`), 0644)
+	assert.Nil(t, err)
+	err = ioutil.WriteFile(src, []byte(`{"current":"new"}`), 0644)
+	assert.Nil(t, err)
+
+	err = replaceFile(src, dst)
+	assert.Nil(t, err)
+
+	data, err := ioutil.ReadFile(dst)
+	assert.Nil(t, err)
+	assert.Equal(t, `{"current":"new"}`, string(data))
+	_, err = os.Stat(src)
+	assert.True(t, os.IsNotExist(err))
+}
+
 func TestCLIProfileCredentialsProvider_updateOAuthTokens(t *testing.T) {
 	// 创建临时配置文件用于测试
 	tempDir, err := ioutil.TempDir("", "oauth_test")
