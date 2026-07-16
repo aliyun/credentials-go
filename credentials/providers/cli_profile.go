@@ -7,7 +7,6 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -384,8 +383,8 @@ func (provider *CLIProfileCredentialsProvider) writeConfigurationToFile(cfgPath 
 		return fmt.Errorf("failed to write temp file: %v", err)
 	}
 
-	// 原子性替换，确保文件完整性（Windows 上 os.Rename 无法覆盖已存在文件）
-	err = replaceFile(tempFile, cfgPath)
+	// 原子性重命名：Go 的 os.Rename 在 Windows 上等价于 MoveFileEx(REPLACE_EXISTING)
+	err = os.Rename(tempFile, cfgPath)
 	if err != nil {
 		// 清理临时文件
 		os.Remove(tempFile)
@@ -453,29 +452,14 @@ func (provider *CLIProfileCredentialsProvider) writeConfigurationToFileWithLock(
 	unlockFile(int(file.Fd()))
 	file.Close()
 
-	// 原子性替换（Windows 上 os.Rename 无法覆盖已存在文件）
-	err = replaceFile(tempFile, cfgPath)
+	// 原子性重命名：Go 的 os.Rename 在 Windows 上等价于 MoveFileEx(REPLACE_EXISTING)
+	err = os.Rename(tempFile, cfgPath)
 	if err != nil {
 		os.Remove(tempFile)
 		return fmt.Errorf("failed to rename temp file: %v", err)
 	}
 
 	return nil
-}
-
-// replaceFile 将 src 原子替换到 dst。
-// POSIX 上 os.Rename 可覆盖已存在目标；Windows 上需先删除目标，否则报 ERROR_ALREADY_EXISTS。
-func replaceFile(src, dst string) error {
-	return replaceFileForOS(runtime.GOOS, src, dst)
-}
-
-func replaceFileForOS(goos, src, dst string) error {
-	if goos == "windows" {
-		if err := os.Remove(dst); err != nil && !os.IsNotExist(err) {
-			return err
-		}
-	}
-	return os.Rename(src, dst)
 }
 
 // getOAuthTokenUpdateCallback 获取OAuth令牌更新回调函数

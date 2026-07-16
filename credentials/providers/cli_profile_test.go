@@ -297,8 +297,9 @@ func TestCLIProfileCredentialsProvider_OAuthProfile(t *testing.T) {
 	assert.EqualError(t, err, "invalid site type, support CN or INTL")
 }
 
-func TestReplaceFileOverwriteExisting(t *testing.T) {
-	tempDir, err := ioutil.TempDir("", "replace_file_test")
+func TestOsRenameOverwriteExisting(t *testing.T) {
+	// Go's os.Rename already replaces an existing destination (Windows: MoveFileEx REPLACE).
+	tempDir, err := ioutil.TempDir("", "rename_overwrite_test")
 	assert.Nil(t, err)
 	defer os.RemoveAll(tempDir)
 
@@ -310,7 +311,7 @@ func TestReplaceFileOverwriteExisting(t *testing.T) {
 	err = ioutil.WriteFile(src, []byte(`{"current":"new"}`), 0644)
 	assert.Nil(t, err)
 
-	err = replaceFile(src, dst)
+	err = os.Rename(src, dst)
 	assert.Nil(t, err)
 
 	data, err := ioutil.ReadFile(dst)
@@ -318,55 +319,6 @@ func TestReplaceFileOverwriteExisting(t *testing.T) {
 	assert.Equal(t, `{"current":"new"}`, string(data))
 	_, err = os.Stat(src)
 	assert.True(t, os.IsNotExist(err))
-}
-
-func TestReplaceFileForOSWindowsOverwrite(t *testing.T) {
-	tempDir, err := ioutil.TempDir("", "replace_file_windows")
-	assert.Nil(t, err)
-	defer os.RemoveAll(tempDir)
-
-	dst := path.Join(tempDir, "config.json")
-	src := path.Join(tempDir, "config.json.tmp")
-	assert.Nil(t, ioutil.WriteFile(dst, []byte(`{"current":"old"}`), 0644))
-	assert.Nil(t, ioutil.WriteFile(src, []byte(`{"current":"new"}`), 0644))
-
-	// Simulate Windows semantics on any OS: remove then rename.
-	err = replaceFileForOS("windows", src, dst)
-	assert.Nil(t, err)
-	data, err := ioutil.ReadFile(dst)
-	assert.Nil(t, err)
-	assert.Equal(t, `{"current":"new"}`, string(data))
-}
-
-func TestReplaceFileForOSWindowsRemoveError(t *testing.T) {
-	tempDir, err := ioutil.TempDir("", "replace_file_windows_err")
-	assert.Nil(t, err)
-	defer os.RemoveAll(tempDir)
-
-	dst := path.Join(tempDir, "config-dir")
-	src := path.Join(tempDir, "config.json.tmp")
-	assert.Nil(t, os.Mkdir(dst, 0755))
-	assert.Nil(t, ioutil.WriteFile(path.Join(dst, "keep.txt"), []byte("x"), 0644))
-	assert.Nil(t, ioutil.WriteFile(src, []byte(`{"current":"new"}`), 0644))
-
-	err = replaceFileForOS("windows", src, dst)
-	assert.NotNil(t, err)
-}
-
-func TestReplaceFileForOSWindowsMissingDst(t *testing.T) {
-	tempDir, err := ioutil.TempDir("", "replace_file_windows_missing")
-	assert.Nil(t, err)
-	defer os.RemoveAll(tempDir)
-
-	dst := path.Join(tempDir, "config.json")
-	src := path.Join(tempDir, "config.json.tmp")
-	assert.Nil(t, ioutil.WriteFile(src, []byte(`{"current":"new"}`), 0644))
-
-	err = replaceFileForOS("windows", src, dst)
-	assert.Nil(t, err)
-	data, err := ioutil.ReadFile(dst)
-	assert.Nil(t, err)
-	assert.Equal(t, `{"current":"new"}`, string(data))
 }
 
 func TestDefaultProfileFileUsesOSSep(t *testing.T) {
