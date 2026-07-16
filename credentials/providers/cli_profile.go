@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"path"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
@@ -41,7 +41,7 @@ func (b *CLIProfileCredentialsProviderBuilder) Build() (provider *CLIProfileCred
 	// 优先级：
 	// 1. 使用显示指定的 profileFile
 	// 2. 使用环境变量（ALIBABA_CLOUD_CONFIG_FILE）指定的 profileFile
-	// 3. 兜底使用 path.Join(homeDir, ".aliyun/config") 作为 profileFile
+	// 3. 兜底使用 filepath.Join(homeDir, ".aliyun", "config.json") 作为 profileFile
 	if b.provider.profileFile == "" {
 		b.provider.profileFile = os.Getenv("ALIBABA_CLOUD_CONFIG_FILE")
 	}
@@ -265,7 +265,7 @@ func (provider *CLIProfileCredentialsProvider) GetCredentials() (cc *Credentials
 				return
 			}
 
-			cfgPath = path.Join(homeDir, ".aliyun/config.json")
+			cfgPath = filepath.Join(homeDir, ".aliyun", "config.json")
 			provider.profileFile = cfgPath
 		}
 
@@ -383,7 +383,7 @@ func (provider *CLIProfileCredentialsProvider) writeConfigurationToFile(cfgPath 
 		return fmt.Errorf("failed to write temp file: %v", err)
 	}
 
-	// 原子性重命名，确保文件完整性
+	// 原子性重命名：Go 的 os.Rename 在 Windows 上等价于 MoveFileEx(REPLACE_EXISTING)
 	err = os.Rename(tempFile, cfgPath)
 	if err != nil {
 		// 清理临时文件
@@ -452,7 +452,7 @@ func (provider *CLIProfileCredentialsProvider) writeConfigurationToFileWithLock(
 	unlockFile(int(file.Fd()))
 	file.Close()
 
-	// 原子性重命名
+	// 原子性重命名：Go 的 os.Rename 在 Windows 上等价于 MoveFileEx(REPLACE_EXISTING)
 	err = os.Rename(tempFile, cfgPath)
 	if err != nil {
 		os.Remove(tempFile)

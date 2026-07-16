@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"sync"
@@ -294,6 +295,43 @@ func TestCLIProfileCredentialsProvider_OAuthProfile(t *testing.T) {
 	// Test invalid site type
 	_, err = provider.getCredentialsProvider(conf, "OAuthInvalid")
 	assert.EqualError(t, err, "invalid site type, support CN or INTL")
+}
+
+func TestOsRenameOverwriteExisting(t *testing.T) {
+	// Go's os.Rename already replaces an existing destination (Windows: MoveFileEx REPLACE).
+	tempDir, err := ioutil.TempDir("", "rename_overwrite_test")
+	assert.Nil(t, err)
+	defer os.RemoveAll(tempDir)
+
+	dst := path.Join(tempDir, "config.json")
+	src := path.Join(tempDir, "config.json.tmp")
+
+	err = ioutil.WriteFile(dst, []byte(`{"current":"old"}`), 0644)
+	assert.Nil(t, err)
+	err = ioutil.WriteFile(src, []byte(`{"current":"new"}`), 0644)
+	assert.Nil(t, err)
+
+	err = os.Rename(src, dst)
+	assert.Nil(t, err)
+
+	data, err := ioutil.ReadFile(dst)
+	assert.Nil(t, err)
+	assert.Equal(t, `{"current":"new"}`, string(data))
+	_, err = os.Stat(src)
+	assert.True(t, os.IsNotExist(err))
+}
+
+func TestDefaultProfileFileUsesOSSep(t *testing.T) {
+	origin := getHomePath
+	defer func() { getHomePath = origin }()
+	getHomePath = func() string { return "/tmp/fake-home" }
+
+	provider, err := NewCLIProfileCredentialsProviderBuilder().Build()
+	assert.Nil(t, err)
+	// Force lazy default path resolution
+	_, _ = provider.GetCredentials()
+	expected := filepath.Join("/tmp/fake-home", ".aliyun", "config.json")
+	assert.Equal(t, expected, provider.profileFile)
 }
 
 func TestCLIProfileCredentialsProvider_updateOAuthTokens(t *testing.T) {
@@ -834,7 +872,8 @@ func TestCLIProfileCredentialsProvider_GetCredentials(t *testing.T) {
 	provider, err = NewCLIProfileCredentialsProviderBuilder().Build()
 	assert.Nil(t, err)
 	_, err = provider.GetCredentials()
-	assert.Contains(t, err.Error(), "reading aliyun cli config from '/path/invalid/home/dir/.aliyun/config.json' failed")
+	expectedCfg := filepath.Join("/path/invalid/home/dir", ".aliyun", "config.json")
+	assert.Contains(t, err.Error(), "reading aliyun cli config from '"+expectedCfg+"' failed")
 
 	// testcase: specify credentials file
 	provider, err = NewCLIProfileCredentialsProviderBuilder().WithProfileFile("/path/to/config.invalid").Build()
