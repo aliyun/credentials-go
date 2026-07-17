@@ -8,6 +8,7 @@ import (
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/credentials-go/credentials"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -71,10 +72,11 @@ func TestOidc(t *testing.T) {
 		RoleSessionName:   tea.String("credentials-go-test"),
 	}
 	cred, err := credentials.NewCredential(config)
-	assert.Nil(t, err)
-	assert.NotNil(t, cred)
+	require.NoError(t, err)
+	require.NotNil(t, cred)
 	c, err := cred.GetCredential()
-	assert.Nil(t, err)
+	require.NoError(t, err)
+	require.NotNil(t, c)
 	assert.NotNil(t, c.AccessKeyId)
 	assert.NotNil(t, c.AccessKeySecret)
 	assert.NotNil(t, c.SecurityToken)
@@ -84,10 +86,11 @@ func TestOidc(t *testing.T) {
 
 func TestDefaultProvider(t *testing.T) {
 	cred, err := credentials.NewCredential(nil)
-	assert.Nil(t, err)
-	assert.NotNil(t, cred)
+	require.NoError(t, err)
+	require.NotNil(t, cred)
 	c, err := cred.GetCredential()
-	assert.Nil(t, err)
+	require.NoError(t, err)
+	require.NotNil(t, c)
 	assert.NotNil(t, c.AccessKeyId)
 	assert.NotNil(t, c.AccessKeySecret)
 	assert.NotNil(t, c.SecurityToken)
