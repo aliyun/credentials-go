@@ -12,8 +12,9 @@ import (
 // single argument so Windows paths like "C:\Program Files\tool.exe" work.
 //
 // On Unix, escape rules follow POSIX shlex: outside quotes, '\' escapes the
-// next rune; inside double quotes, '\' only escapes '"', '\', '$', '`' and
-// newline; inside single quotes, all characters are literal.
+// next rune; inside double quotes, '\' only escapes '"', '\', '$' and '`';
+// backslash-newline is a line continuation (both removed) outside single
+// quotes; inside single quotes, all characters are literal.
 //
 // On Windows, '\' is a path separator and is treated as a literal (except
 // '\"' inside double quotes), so unquoted paths from filepath.Join keep their
@@ -70,7 +71,11 @@ func splitProcessCommandForOS(command, goos string) ([]string, error) {
 						i++
 						continue
 					}
-				} else if next == '"' || next == '\\' || next == '$' || next == '`' || next == '\n' {
+				} else if next == '\n' {
+					// Backslash-newline is a line continuation: both removed.
+					i++
+					continue
+				} else if next == '"' || next == '\\' || next == '$' || next == '`' {
 					current.WriteRune(next)
 					i++
 					continue
@@ -89,6 +94,11 @@ func splitProcessCommandForOS(command, goos string) ([]string, error) {
 			}
 			if i+1 >= len(runes) {
 				return nil, fmt.Errorf("invalid process_command: trailing backslash")
+			}
+			if runes[i+1] == '\n' {
+				// Backslash-newline is a line continuation: both removed.
+				i++
+				continue
 			}
 			hasToken = true
 			current.WriteRune(runes[i+1])
