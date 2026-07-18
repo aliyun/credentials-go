@@ -33,11 +33,15 @@ func splitProcessCommandForOS(command, goos string) ([]string, error) {
 	var current strings.Builder
 	inSingle := false
 	inDouble := false
+	// hasToken tracks that a token has started even if it is empty, so quoted
+	// empty arguments like `tool "" arg` keep their empty argv element.
+	hasToken := false
 
 	flush := func() {
-		if current.Len() > 0 {
+		if hasToken {
 			args = append(args, current.String())
 			current.Reset()
+			hasToken = false
 		}
 	}
 
@@ -79,28 +83,33 @@ func splitProcessCommandForOS(command, goos string) ([]string, error) {
 		if r == '\\' {
 			if windows {
 				// Path separator — keep literal.
+				hasToken = true
 				current.WriteRune(r)
 				continue
 			}
 			if i+1 >= len(runes) {
 				return nil, fmt.Errorf("invalid process_command: trailing backslash")
 			}
+			hasToken = true
 			current.WriteRune(runes[i+1])
 			i++
 			continue
 		}
 		if r == '\'' {
 			inSingle = true
+			hasToken = true
 			continue
 		}
 		if r == '"' {
 			inDouble = true
+			hasToken = true
 			continue
 		}
 		if unicode.IsSpace(r) {
 			flush()
 			continue
 		}
+		hasToken = true
 		current.WriteRune(r)
 	}
 
@@ -108,7 +117,7 @@ func splitProcessCommandForOS(command, goos string) ([]string, error) {
 		return nil, fmt.Errorf("invalid process_command: unclosed quote")
 	}
 	flush()
-	if len(args) == 0 {
+	if len(args) == 0 || args[0] == "" {
 		return nil, fmt.Errorf("process_command is empty")
 	}
 	return args, nil
