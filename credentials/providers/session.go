@@ -15,11 +15,11 @@ const (
 	// EcsPrefetchTimeSeconds is how soon after a successful IMDS fetch the ECS provider
 	// may initiate an async prefetch refresh (every 1 hour), matching Python/Java/Node.
 	EcsPrefetchTimeSeconds int64 = 60 * 60
-)
 
-// ecsAsyncCheckInterval is the background check interval for ECS IMDS credentials
-// (default 1 minute). Overridable in tests to exercise the async checker quickly.
-var ecsAsyncCheckInterval = time.Minute
+	// defaultEcsAsyncCheckInterval is the background IMDS check interval (1 minute).
+	// Tests override via ECSRAMRoleCredentialsProviderBuilder.withAsyncCheckInterval.
+	defaultEcsAsyncCheckInterval = time.Minute
+)
 
 // isSessionCredentialStale reports whether the credential should be refreshed based on
 // the shared 15-minute stale window.

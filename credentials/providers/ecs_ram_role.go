@@ -17,6 +17,7 @@ type ECSRAMRoleCredentialsProvider struct {
 	roleName                     string
 	disableIMDSv1                bool
 	asyncCredentialUpdateEnabled bool
+	asyncCheckInterval           time.Duration
 	// for sts
 	session             *sessionCredentials
 	expirationTimestamp int64
@@ -64,6 +65,12 @@ func (builder *ECSRAMRoleCredentialsProviderBuilder) WithAsyncCredentialUpdateEn
 	return builder
 }
 
+// withAsyncCheckInterval sets the background checker interval (tests only).
+func (builder *ECSRAMRoleCredentialsProviderBuilder) withAsyncCheckInterval(d time.Duration) *ECSRAMRoleCredentialsProviderBuilder {
+	builder.provider.asyncCheckInterval = d
+	return builder
+}
+
 const defaultMetadataTokenDuration = 21600 // 6 hours
 
 func (builder *ECSRAMRoleCredentialsProviderBuilder) Build() (provider *ECSRAMRoleCredentialsProvider, err error) {
@@ -84,6 +91,9 @@ func (builder *ECSRAMRoleCredentialsProviderBuilder) Build() (provider *ECSRAMRo
 
 	provider = builder.provider
 	if provider.asyncCredentialUpdateEnabled {
+		if provider.asyncCheckInterval <= 0 {
+			provider.asyncCheckInterval = defaultEcsAsyncCheckInterval
+		}
 		provider.stopCh = make(chan struct{})
 		provider.startAsyncRefreshChecker()
 	}
@@ -111,8 +121,9 @@ func (provider *ECSRAMRoleCredentialsProvider) shouldPrefetchCredential() bool {
 }
 
 func (provider *ECSRAMRoleCredentialsProvider) startAsyncRefreshChecker() {
+	interval := provider.asyncCheckInterval
 	go func() {
-		ticker := time.NewTicker(ecsAsyncCheckInterval)
+		ticker := time.NewTicker(interval)
 		defer ticker.Stop()
 		for {
 			select {
