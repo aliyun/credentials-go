@@ -116,11 +116,7 @@ func (provider *URLCredentialsProvider) getCredentials() (session *sessionCreden
 }
 
 func (provider *URLCredentialsProvider) needUpdateCredential() (result bool) {
-	if provider.expirationTimestamp == 0 {
-		return true
-	}
-
-	return provider.expirationTimestamp-time.Now().Unix() <= 180
+	return isSessionCredentialStale(provider.expirationTimestamp)
 }
 
 func (provider *URLCredentialsProvider) GetCredentials() (cc *Credentials, err error) {

@@ -7,19 +7,28 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	httputil "github.com/aliyun/credentials-go/credentials/internal/http"
 )
 
 type ECSRAMRoleCredentialsProvider struct {
-	roleName      string
-	disableIMDSv1 bool
+	roleName                     string
+	disableIMDSv1                bool
+	asyncCredentialUpdateEnabled bool
+	asyncCheckInterval           time.Duration
 	// for sts
 	session             *sessionCredentials
 	expirationTimestamp int64
+	prefetchTimestamp   int64
+	shouldRefresh       bool
 	// for http options
 	httpOptions *HttpOptions
+	// async refresh
+	mu     sync.Mutex
+	stopCh chan struct{}
+	once   sync.Once
 }
 
 type ECSRAMRoleCredentialsProviderBuilder struct {
@@ -28,7 +37,9 @@ type ECSRAMRoleCredentialsProviderBuilder struct {
 
 func NewECSRAMRoleCredentialsProviderBuilder() *ECSRAMRoleCredentialsProviderBuilder {
 	return &ECSRAMRoleCredentialsProviderBuilder{
-		provider: &ECSRAMRoleCredentialsProvider{},
+		provider: &ECSRAMRoleCredentialsProvider{
+			asyncCredentialUpdateEnabled: true,
+		},
 	}
 }
 
@@ -44,6 +55,19 @@ func (builder *ECSRAMRoleCredentialsProviderBuilder) WithDisableIMDSv1(disableIM
 
 func (builder *ECSRAMRoleCredentialsProviderBuilder) WithHttpOptions(httpOptions *HttpOptions) *ECSRAMRoleCredentialsProviderBuilder {
 	builder.provider.httpOptions = httpOptions
+	return builder
+}
+
+// WithAsyncCredentialUpdateEnabled controls the 1-minute background IMDS check
+// and 1-hour async prefetch, matching Python/Java/Node ECS providers.
+func (builder *ECSRAMRoleCredentialsProviderBuilder) WithAsyncCredentialUpdateEnabled(enabled bool) *ECSRAMRoleCredentialsProviderBuilder {
+	builder.provider.asyncCredentialUpdateEnabled = enabled
+	return builder
+}
+
+// withAsyncCheckInterval sets the background checker interval (tests only).
+func (builder *ECSRAMRoleCredentialsProviderBuilder) withAsyncCheckInterval(d time.Duration) *ECSRAMRoleCredentialsProviderBuilder {
+	builder.provider.asyncCheckInterval = d
 	return builder
 }
 
@@ -66,6 +90,13 @@ func (builder *ECSRAMRoleCredentialsProviderBuilder) Build() (provider *ECSRAMRo
 	}
 
 	provider = builder.provider
+	if provider.asyncCredentialUpdateEnabled {
+		if provider.asyncCheckInterval <= 0 {
+			provider.asyncCheckInterval = defaultEcsAsyncCheckInterval
+		}
+		provider.stopCh = make(chan struct{})
+		provider.startAsyncRefreshChecker()
+	}
 	return
 }
 
@@ -79,11 +110,46 @@ type ecsRAMRoleResponse struct {
 }
 
 func (provider *ECSRAMRoleCredentialsProvider) needUpdateCredential() bool {
-	if provider.expirationTimestamp == 0 {
-		return true
-	}
+	return isSessionCredentialStale(provider.expirationTimestamp)
+}
 
-	return provider.expirationTimestamp-time.Now().Unix() <= 180
+func (provider *ECSRAMRoleCredentialsProvider) shouldPrefetchCredential() bool {
+	if provider.prefetchTimestamp == 0 {
+		return false
+	}
+	return time.Now().Unix() >= provider.prefetchTimestamp
+}
+
+func (provider *ECSRAMRoleCredentialsProvider) startAsyncRefreshChecker() {
+	interval := provider.asyncCheckInterval
+	go func() {
+		ticker := time.NewTicker(interval)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-provider.stopCh:
+				return
+			case <-ticker.C:
+				provider.mu.Lock()
+				shouldRefresh := provider.shouldRefresh
+				provider.mu.Unlock()
+				if !shouldRefresh {
+					continue
+				}
+				_, _ = provider.GetCredentials()
+			}
+		}
+	}()
+}
+
+// Close stops the background IMDS check goroutine.
+func (provider *ECSRAMRoleCredentialsProvider) Close() {
+	if provider.stopCh == nil {
+		return
+	}
+	provider.once.Do(func() {
+		close(provider.stopCh)
+	})
 }
 
 func (provider *ECSRAMRoleCredentialsProvider) getRoleName() (roleName string, err error) {
@@ -210,25 +276,51 @@ func (provider *ECSRAMRoleCredentialsProvider) getCredentials() (session *sessio
 	return
 }
 
+func (provider *ECSRAMRoleCredentialsProvider) refreshCredentials() error {
+	session, err := provider.getCredentials()
+	if err != nil {
+		return err
+	}
+
+	expirationTime, err := time.Parse("2006-01-02T15:04:05Z", session.Expiration)
+	if err != nil {
+		return err
+	}
+
+	provider.mu.Lock()
+	provider.session = session
+	provider.expirationTimestamp = expirationTime.Unix()
+	provider.prefetchTimestamp = time.Now().Unix() + EcsPrefetchTimeSeconds
+	provider.shouldRefresh = true
+	provider.mu.Unlock()
+	return nil
+}
+
 func (provider *ECSRAMRoleCredentialsProvider) GetCredentials() (cc *Credentials, err error) {
-	if provider.session == nil || provider.needUpdateCredential() {
-		session, err1 := provider.getCredentials()
-		if err1 != nil {
+	provider.mu.Lock()
+	needSync := provider.session == nil || provider.needUpdateCredential()
+	needPrefetch := !needSync && provider.shouldPrefetchCredential()
+	session := provider.session
+	provider.mu.Unlock()
+
+	if needSync {
+		if err1 := provider.refreshCredentials(); err1 != nil {
 			return nil, err1
 		}
-
-		provider.session = session
-		expirationTime, err2 := time.Parse("2006-01-02T15:04:05Z", session.Expiration)
-		if err2 != nil {
-			return nil, err2
-		}
-		provider.expirationTimestamp = expirationTime.Unix()
+		provider.mu.Lock()
+		session = provider.session
+		provider.mu.Unlock()
+	} else if needPrefetch {
+		// Async prefetch: refresh in background, return current still-valid credentials.
+		go func() {
+			_ = provider.refreshCredentials()
+		}()
 	}
 
 	cc = &Credentials{
-		AccessKeyId:     provider.session.AccessKeyId,
-		AccessKeySecret: provider.session.AccessKeySecret,
-		SecurityToken:   provider.session.SecurityToken,
+		AccessKeyId:     session.AccessKeyId,
+		AccessKeySecret: session.AccessKeySecret,
+		SecurityToken:   session.SecurityToken,
 		ProviderName:    provider.GetProviderName(),
 	}
 	return
