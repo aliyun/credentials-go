@@ -178,11 +178,7 @@ func (provider *CloudSSOCredentialsProvider) getCredentials() (session *sessionC
 }
 
 func (provider *CloudSSOCredentialsProvider) needUpdateCredential() (result bool) {
-	if provider.expirationTimestamp == 0 {
-		return true
-	}
-
-	return provider.expirationTimestamp-time.Now().Unix() <= 180
+	return isSessionCredentialStale(provider.expirationTimestamp)
 }
 
 func (provider *CloudSSOCredentialsProvider) GetCredentials() (cc *Credentials, err error) {
