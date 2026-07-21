@@ -244,11 +244,7 @@ func (provider *OAuthCredentialsProvider) tryRefreshOauthToken() (err error) {
 }
 
 func (provider *OAuthCredentialsProvider) needUpdateCredential() (result bool) {
-	if provider.expirationTimestamp == 0 {
-		return true
-	}
-
-	return provider.expirationTimestamp-time.Now().Unix() <= 180
+	return isSessionCredentialStale(provider.expirationTimestamp)
 }
 
 func (provider *OAuthCredentialsProvider) GetCredentials() (cc *Credentials, err error) {

@@ -146,7 +146,7 @@ func TestOAuthCredentialsProvider_getCredentials(t *testing.T) {
 	p.expirationTimestamp = time.Now().Unix()
 	assert.True(t, p.needUpdateCredential())
 
-	p.expirationTimestamp = time.Now().Unix() + 300
+	p.expirationTimestamp = time.Now().Unix() + 1000
 	assert.False(t, p.needUpdateCredential())
 }
 
@@ -316,7 +316,7 @@ func TestOAuthCredentialsProviderNeedUpdateCredential(t *testing.T) {
 	p.expirationTimestamp = time.Now().Unix() + 3600 // 1 hour
 	assert.False(t, p.needUpdateCredential())
 
-	// Set expiration close to now (within 180 seconds)
+	// Set expiration close to now (within 15 minutes)
 	p.expirationTimestamp = time.Now().Unix() + 100
 	assert.True(t, p.needUpdateCredential())
 
@@ -756,7 +756,7 @@ func TestOAuthCredentialsProvider_GetCredentials_WithNearExpiredToken(t *testing
 		WithSignInUrl("https://oauth.aliyun.com").
 		WithRefreshToken("refreshToken").
 		WithAccessToken("accessToken").
-		WithAccessTokenExpire(time.Now().Unix() + 100). // near expired (within 180 seconds)
+		WithAccessTokenExpire(time.Now().Unix() + 100). // near expired (within 15 minutes)
 		Build()
 	assert.Nil(t, err)
 
@@ -918,12 +918,12 @@ func TestOAuthCredentialsProvider_NeedUpdateCredential_EdgeCases(t *testing.T) {
 	p.expirationTimestamp = 0
 	assert.True(t, p.needUpdateCredential())
 
-	// Test with expiration exactly 180 seconds from now
-	p.expirationTimestamp = time.Now().Unix() + 180
+	// Test with expiration exactly 15 minutes from now
+	p.expirationTimestamp = time.Now().Unix() + SessionStaleTimeSeconds
 	assert.True(t, p.needUpdateCredential())
 
-	// Test with expiration 181 seconds from now
-	p.expirationTimestamp = time.Now().Unix() + 181
+	// Test with expiration just beyond 15 minutes
+	p.expirationTimestamp = time.Now().Unix() + SessionStaleTimeSeconds + 1
 	assert.False(t, p.needUpdateCredential())
 }
 

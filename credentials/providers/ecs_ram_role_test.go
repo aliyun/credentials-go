@@ -3,6 +3,7 @@ package providers
 import (
 	"errors"
 	"os"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -16,32 +17,32 @@ func TestNewECSRAMRoleCredentialsProvider(t *testing.T) {
 	defer func() {
 		rollback()
 	}()
-	p, err := NewECSRAMRoleCredentialsProviderBuilder().Build()
+	p, err := NewECSRAMRoleCredentialsProviderBuilder().WithAsyncCredentialUpdateEnabled(false).Build()
 	assert.Nil(t, err)
 	assert.Equal(t, "", p.roleName)
 
 	os.Setenv("ALIBABA_CLOUD_ECS_METADATA", "rolename")
-	p, err = NewECSRAMRoleCredentialsProviderBuilder().Build()
+	p, err = NewECSRAMRoleCredentialsProviderBuilder().WithAsyncCredentialUpdateEnabled(false).Build()
 	assert.Nil(t, err)
 	assert.Equal(t, "rolename", p.roleName)
 
-	p, err = NewECSRAMRoleCredentialsProviderBuilder().WithRoleName("role").Build()
+	p, err = NewECSRAMRoleCredentialsProviderBuilder().WithRoleName("role").WithAsyncCredentialUpdateEnabled(false).Build()
 	assert.Nil(t, err)
 	assert.Equal(t, "role", p.roleName)
 	assert.False(t, p.disableIMDSv1)
 
 	os.Setenv("ALIBABA_CLOUD_IMDSV1_DISABLED", "True")
-	p, err = NewECSRAMRoleCredentialsProviderBuilder().Build()
+	p, err = NewECSRAMRoleCredentialsProviderBuilder().WithAsyncCredentialUpdateEnabled(false).Build()
 	assert.Nil(t, err)
 	assert.True(t, p.disableIMDSv1)
 
 	os.Setenv("ALIBABA_CLOUD_IMDSV1_DISABLED", "1")
-	p, err = NewECSRAMRoleCredentialsProviderBuilder().WithDisableIMDSv1(true).Build()
+	p, err = NewECSRAMRoleCredentialsProviderBuilder().WithDisableIMDSv1(true).WithAsyncCredentialUpdateEnabled(false).Build()
 	assert.Nil(t, err)
 	assert.True(t, p.disableIMDSv1)
 
 	os.Setenv("ALIBABA_CLOUD_ECS_METADATA_DISABLED", "True")
-	_, err = NewECSRAMRoleCredentialsProviderBuilder().Build()
+	_, err = NewECSRAMRoleCredentialsProviderBuilder().WithAsyncCredentialUpdateEnabled(false).Build()
 	assert.Equal(t, "IMDS credentials is disabled", err.Error())
 
 	assert.True(t, p.needUpdateCredential())
@@ -51,7 +52,7 @@ func TestECSRAMRoleCredentialsProvider_getRoleName(t *testing.T) {
 	originHttpDo := httpDo
 	defer func() { httpDo = originHttpDo }()
 
-	p, err := NewECSRAMRoleCredentialsProviderBuilder().Build()
+	p, err := NewECSRAMRoleCredentialsProviderBuilder().WithAsyncCredentialUpdateEnabled(false).Build()
 	assert.Nil(t, err)
 
 	// case 1: server error
@@ -94,7 +95,7 @@ func TestECSRAMRoleCredentialsProvider_getRoleNameWithMetadataV2(t *testing.T) {
 	originHttpDo := httpDo
 	defer func() { httpDo = originHttpDo }()
 
-	p, err := NewECSRAMRoleCredentialsProviderBuilder().WithDisableIMDSv1(true).Build()
+	p, err := NewECSRAMRoleCredentialsProviderBuilder().WithDisableIMDSv1(true).WithAsyncCredentialUpdateEnabled(false).Build()
 	assert.Nil(t, err)
 
 	// case 1: get metadata token failed
@@ -134,7 +135,7 @@ func TestECSRAMRoleCredentialsProvider_getCredentials(t *testing.T) {
 	originHttpDo := httpDo
 	defer func() { httpDo = originHttpDo }()
 
-	p, err := NewECSRAMRoleCredentialsProviderBuilder().Build()
+	p, err := NewECSRAMRoleCredentialsProviderBuilder().WithAsyncCredentialUpdateEnabled(false).Build()
 	assert.Nil(t, err)
 
 	// case 1: server error
@@ -294,7 +295,7 @@ func TestECSRAMRoleCredentialsProvider_getCredentials(t *testing.T) {
 	p.expirationTimestamp = time.Now().Unix()
 	assert.True(t, p.needUpdateCredential())
 
-	p.expirationTimestamp = time.Now().Unix() + 300
+	p.expirationTimestamp = time.Now().Unix() + 1000
 	assert.False(t, p.needUpdateCredential())
 }
 
@@ -302,7 +303,7 @@ func TestECSRAMRoleCredentialsProvider_getCredentialsWithMetadataV2(t *testing.T
 	originHttpDo := httpDo
 	defer func() { httpDo = originHttpDo }()
 
-	p, err := NewECSRAMRoleCredentialsProviderBuilder().WithDisableIMDSv1(true).WithRoleName("rolename").Build()
+	p, err := NewECSRAMRoleCredentialsProviderBuilder().WithDisableIMDSv1(true).WithRoleName("rolename").WithAsyncCredentialUpdateEnabled(false).Build()
 	assert.Nil(t, err)
 
 	// case 1: get metadata token failed
@@ -344,7 +345,7 @@ func TestECSRAMRoleCredentialsProvider_getCredentialsWithMetadataV2(t *testing.T
 	p.expirationTimestamp = time.Now().Unix()
 	assert.True(t, p.needUpdateCredential())
 
-	p.expirationTimestamp = time.Now().Unix() + 300
+	p.expirationTimestamp = time.Now().Unix() + 1000
 	assert.False(t, p.needUpdateCredential())
 }
 
@@ -352,7 +353,7 @@ func TestECSRAMRoleCredentialsProviderGetCredentials(t *testing.T) {
 	originHttpDo := httpDo
 	defer func() { httpDo = originHttpDo }()
 
-	p, err := NewECSRAMRoleCredentialsProviderBuilder().WithRoleName("rolename").Build()
+	p, err := NewECSRAMRoleCredentialsProviderBuilder().WithRoleName("rolename").WithAsyncCredentialUpdateEnabled(false).Build()
 	assert.Nil(t, err)
 	// case 1: get credentials failed
 	httpDo = func(req *httputil.Request) (res *httputil.Response, err error) {
@@ -400,7 +401,7 @@ func TestECSRAMRoleCredentialsProvider_getMetadataToken(t *testing.T) {
 	originHttpDo := httpDo
 	defer func() { httpDo = originHttpDo }()
 
-	p, err := NewECSRAMRoleCredentialsProviderBuilder().Build()
+	p, err := NewECSRAMRoleCredentialsProviderBuilder().WithAsyncCredentialUpdateEnabled(false).Build()
 	assert.Nil(t, err)
 
 	// case 1: server error
@@ -412,27 +413,27 @@ func TestECSRAMRoleCredentialsProvider_getMetadataToken(t *testing.T) {
 	_, err = p.getMetadataToken()
 	assert.Nil(t, err)
 
-	p, err = NewECSRAMRoleCredentialsProviderBuilder().WithDisableIMDSv1(false).Build()
+	p, err = NewECSRAMRoleCredentialsProviderBuilder().WithDisableIMDSv1(false).WithAsyncCredentialUpdateEnabled(false).Build()
 	assert.Nil(t, err)
 
 	_, err = p.getMetadataToken()
 	assert.Nil(t, err)
 
 	os.Setenv("ALIBABA_CLOUD_IMDSV1_DISABLED", "true")
-	p, err = NewECSRAMRoleCredentialsProviderBuilder().Build()
+	p, err = NewECSRAMRoleCredentialsProviderBuilder().WithAsyncCredentialUpdateEnabled(false).Build()
 	assert.Nil(t, err)
 
 	_, err = p.getMetadataToken()
 	assert.NotNil(t, err)
 
 	os.Setenv("ALIBABA_CLOUD_IMDSV1_DISABLED", "")
-	p, err = NewECSRAMRoleCredentialsProviderBuilder().Build()
+	p, err = NewECSRAMRoleCredentialsProviderBuilder().WithAsyncCredentialUpdateEnabled(false).Build()
 	assert.Nil(t, err)
 
 	_, err = p.getMetadataToken()
 	assert.Nil(t, err)
 
-	p, err = NewECSRAMRoleCredentialsProviderBuilder().WithDisableIMDSv1(true).Build()
+	p, err = NewECSRAMRoleCredentialsProviderBuilder().WithDisableIMDSv1(true).WithAsyncCredentialUpdateEnabled(false).Build()
 	assert.Nil(t, err)
 
 	_, err = p.getMetadataToken()
@@ -453,7 +454,7 @@ func TestECSRAMRoleCredentialsProvider_getMetadataToken(t *testing.T) {
 	assert.Equal(t, "tokenxxxxx", metadataToken)
 
 	// case 3: return 404
-	p, err = NewECSRAMRoleCredentialsProviderBuilder().WithDisableIMDSv1(false).Build()
+	p, err = NewECSRAMRoleCredentialsProviderBuilder().WithDisableIMDSv1(false).WithAsyncCredentialUpdateEnabled(false).Build()
 	assert.Nil(t, err)
 
 	httpDo = func(req *httputil.Request) (res *httputil.Response, err error) {
@@ -467,7 +468,7 @@ func TestECSRAMRoleCredentialsProvider_getMetadataToken(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, "", metadataToken)
 
-	p, err = NewECSRAMRoleCredentialsProviderBuilder().WithDisableIMDSv1(true).Build()
+	p, err = NewECSRAMRoleCredentialsProviderBuilder().WithDisableIMDSv1(true).WithAsyncCredentialUpdateEnabled(false).Build()
 	assert.Nil(t, err)
 
 	metadataToken, err = p.getMetadataToken()
@@ -483,8 +484,10 @@ func TestNewECSRAMRoleCredentialsProviderWithHttpOptions(t *testing.T) {
 			ReadTimeout:    1000,
 			Proxy:          "localhost:3999",
 		}).
+		WithAsyncCredentialUpdateEnabled(false).
 		Build()
 	assert.Nil(t, err)
+	defer p.Close()
 
 	_, err = p.getRoleName()
 	assert.NotNil(t, err)
@@ -498,3 +501,109 @@ func TestNewECSRAMRoleCredentialsProviderWithHttpOptions(t *testing.T) {
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "proxyconnect tcp:")
 }
+
+func TestECSRAMRoleCredentialsProvider_staleWindow15Minutes(t *testing.T) {
+	p, err := NewECSRAMRoleCredentialsProviderBuilder().
+		WithRoleName("rolename").
+		WithAsyncCredentialUpdateEnabled(false).
+		Build()
+	assert.Nil(t, err)
+	defer p.Close()
+
+	assert.True(t, p.needUpdateCredential())
+
+	p.expirationTimestamp = time.Now().Unix() + SessionStaleTimeSeconds
+	assert.True(t, p.needUpdateCredential())
+
+	p.expirationTimestamp = time.Now().Unix() + SessionStaleTimeSeconds + 1
+	assert.False(t, p.needUpdateCredential())
+}
+
+func TestECSRAMRoleCredentialsProvider_prefetchAndAsync(t *testing.T) {
+	originHttpDo := httpDo
+	originInterval := ecsAsyncCheckInterval
+	defer func() {
+		httpDo = originHttpDo
+		ecsAsyncCheckInterval = originInterval
+	}()
+	ecsAsyncCheckInterval = 30 * time.Millisecond
+
+	var callCount int32
+	httpDo = func(req *httputil.Request) (res *httputil.Response, err error) {
+		if req.Path == "/latest/api/token" {
+			return &httputil.Response{StatusCode: 200, Body: []byte("token")}, nil
+		}
+		atomic.AddInt32(&callCount, 1)
+		expiration := time.Now().UTC().Add(2 * time.Hour).Format("2006-01-02T15:04:05Z")
+		body := []byte(`{"AccessKeyId":"ak","AccessKeySecret":"sk","SecurityToken":"token","Expiration":"` + expiration + `","Code":"Success"}`)
+		return &httputil.Response{StatusCode: 200, Body: body}, nil
+	}
+
+	// Before first refresh, async checker should no-op (shouldRefresh=false)
+	pIdle, err := NewECSRAMRoleCredentialsProviderBuilder().
+		WithRoleName("rolename").
+		WithAsyncCredentialUpdateEnabled(true).
+		Build()
+	assert.Nil(t, err)
+	time.Sleep(80 * time.Millisecond)
+	assert.Equal(t, int32(0), atomic.LoadInt32(&callCount))
+	pIdle.Close()
+
+	p, err := NewECSRAMRoleCredentialsProviderBuilder().
+		WithRoleName("rolename").
+		WithAsyncCredentialUpdateEnabled(true).
+		Build()
+	assert.Nil(t, err)
+	defer p.Close()
+
+	creds, err := p.GetCredentials()
+	assert.Nil(t, err)
+	assert.Equal(t, "ak", creds.AccessKeyId)
+	assert.Equal(t, int32(1), atomic.LoadInt32(&callCount))
+	assert.True(t, p.shouldRefresh)
+	assert.False(t, p.needUpdateCredential())
+	assert.False(t, p.shouldPrefetchCredential())
+
+	// Zero prefetchTimestamp branch
+	p.mu.Lock()
+	savedPrefetch := p.prefetchTimestamp
+	p.prefetchTimestamp = 0
+	p.mu.Unlock()
+	assert.False(t, p.shouldPrefetchCredential())
+	p.mu.Lock()
+	p.prefetchTimestamp = savedPrefetch
+	p.mu.Unlock()
+
+	// Force prefetch window
+	p.mu.Lock()
+	p.prefetchTimestamp = time.Now().Unix() - 1
+	p.mu.Unlock()
+	assert.True(t, p.shouldPrefetchCredential())
+
+	creds, err = p.GetCredentials()
+	assert.Nil(t, err)
+	assert.Equal(t, "ak", creds.AccessKeyId)
+
+	// Wait for async prefetch refresh and/or background checker
+	deadline := time.Now().Add(2 * time.Second)
+	for time.Now().Before(deadline) {
+		if atomic.LoadInt32(&callCount) >= 2 {
+			break
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+	assert.GreaterOrEqual(t, atomic.LoadInt32(&callCount), int32(2))
+
+	// Close is idempotent
+	p.Close()
+	p.Close()
+}
+
+func TestECSRAMRoleCredentialsProvider_CloseWithoutAsync(t *testing.T) {
+	p, err := NewECSRAMRoleCredentialsProviderBuilder().
+		WithAsyncCredentialUpdateEnabled(false).
+		Build()
+	assert.Nil(t, err)
+	p.Close() // no-op when async disabled
+}
+
