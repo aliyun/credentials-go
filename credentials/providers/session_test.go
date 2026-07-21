@@ -11,7 +11,7 @@ func TestSessionStaleConstants(t *testing.T) {
 	assert.Equal(t, int64(15*60), SessionStaleTimeSeconds)
 	assert.Equal(t, int64(180), ExternalExpirationSlotSeconds)
 	assert.Equal(t, int64(60*60), EcsPrefetchTimeSeconds)
-	assert.Equal(t, time.Minute, ecsAsyncCheckInterval)
+	assert.Equal(t, time.Minute, defaultEcsAsyncCheckInterval)
 }
 
 func TestIsSessionCredentialStale(t *testing.T) {

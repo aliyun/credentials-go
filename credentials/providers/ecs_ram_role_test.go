@@ -521,12 +521,9 @@ func TestECSRAMRoleCredentialsProvider_staleWindow15Minutes(t *testing.T) {
 
 func TestECSRAMRoleCredentialsProvider_prefetchAndAsync(t *testing.T) {
 	originHttpDo := httpDo
-	originInterval := ecsAsyncCheckInterval
 	defer func() {
 		httpDo = originHttpDo
-		ecsAsyncCheckInterval = originInterval
 	}()
-	ecsAsyncCheckInterval = 30 * time.Millisecond
 
 	var callCount int32
 	httpDo = func(req *httputil.Request) (res *httputil.Response, err error) {
@@ -543,6 +540,7 @@ func TestECSRAMRoleCredentialsProvider_prefetchAndAsync(t *testing.T) {
 	pIdle, err := NewECSRAMRoleCredentialsProviderBuilder().
 		WithRoleName("rolename").
 		WithAsyncCredentialUpdateEnabled(true).
+		withAsyncCheckInterval(30 * time.Millisecond).
 		Build()
 	assert.Nil(t, err)
 	time.Sleep(80 * time.Millisecond)
@@ -552,6 +550,7 @@ func TestECSRAMRoleCredentialsProvider_prefetchAndAsync(t *testing.T) {
 	p, err := NewECSRAMRoleCredentialsProviderBuilder().
 		WithRoleName("rolename").
 		WithAsyncCredentialUpdateEnabled(true).
+		withAsyncCheckInterval(30 * time.Millisecond).
 		Build()
 	assert.Nil(t, err)
 	defer p.Close()
@@ -560,25 +559,22 @@ func TestECSRAMRoleCredentialsProvider_prefetchAndAsync(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, "ak", creds.AccessKeyId)
 	assert.Equal(t, int32(1), atomic.LoadInt32(&callCount))
+
+	p.mu.Lock()
 	assert.True(t, p.shouldRefresh)
 	assert.False(t, p.needUpdateCredential())
 	assert.False(t, p.shouldPrefetchCredential())
 
 	// Zero prefetchTimestamp branch
-	p.mu.Lock()
 	savedPrefetch := p.prefetchTimestamp
 	p.prefetchTimestamp = 0
-	p.mu.Unlock()
 	assert.False(t, p.shouldPrefetchCredential())
-	p.mu.Lock()
 	p.prefetchTimestamp = savedPrefetch
-	p.mu.Unlock()
 
 	// Force prefetch window
-	p.mu.Lock()
 	p.prefetchTimestamp = time.Now().Unix() - 1
-	p.mu.Unlock()
 	assert.True(t, p.shouldPrefetchCredential())
+	p.mu.Unlock()
 
 	creds, err = p.GetCredentials()
 	assert.Nil(t, err)
