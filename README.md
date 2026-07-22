@@ -490,6 +490,10 @@ The external service response structure should be as follows:
 }
 ```
 
+## FAQ
+
+For common issues and solutions, please refer to [FAQ (Chinese)](FAQ-CN.md).
+
 ## License
 
 [Apache-2.0](/LICENSE)
