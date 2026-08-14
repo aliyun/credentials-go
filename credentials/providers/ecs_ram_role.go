@@ -13,8 +13,10 @@ import (
 )
 
 type ECSRAMRoleCredentialsProvider struct {
-	roleName      string
-	disableIMDSv1 bool
+	roleName         string
+	disableIMDSv1    bool
+	enableIMDSv2     bool
+	enableIMDSv2Set  bool
 	// for sts
 	session             *sessionCredentials
 	expirationTimestamp int64
@@ -42,6 +44,12 @@ func (builder *ECSRAMRoleCredentialsProviderBuilder) WithDisableIMDSv1(disableIM
 	return builder
 }
 
+func (builder *ECSRAMRoleCredentialsProviderBuilder) WithEnableIMDSv2(enableIMDSv2 bool) *ECSRAMRoleCredentialsProviderBuilder {
+	builder.provider.enableIMDSv2 = enableIMDSv2
+	builder.provider.enableIMDSv2Set = true
+	return builder
+}
+
 func (builder *ECSRAMRoleCredentialsProviderBuilder) WithHttpOptions(httpOptions *HttpOptions) *ECSRAMRoleCredentialsProviderBuilder {
 	builder.provider.httpOptions = httpOptions
 	return builder
@@ -65,6 +73,11 @@ func (builder *ECSRAMRoleCredentialsProviderBuilder) Build() (provider *ECSRAMRo
 		builder.provider.disableIMDSv1 = strings.ToLower(os.Getenv("ALIBABA_CLOUD_IMDSV1_DISABLED")) == "true"
 	}
 
+	if !builder.provider.enableIMDSv2Set {
+		// Default: try IMDSv2. Explicit false or ALIBABA_CLOUD_ECS_IMDSV2_ENABLE=false skips the probe.
+		builder.provider.enableIMDSv2 = strings.ToLower(os.Getenv("ALIBABA_CLOUD_ECS_IMDSV2_ENABLE")) != "false"
+	}
+
 	provider = builder.provider
 	return
 }
@@ -86,18 +99,9 @@ func (provider *ECSRAMRoleCredentialsProvider) needUpdateCredential() bool {
 	return provider.expirationTimestamp-time.Now().Unix() <= 180
 }
 
-func (provider *ECSRAMRoleCredentialsProvider) getRoleName() (roleName string, err error) {
-	req := &httputil.Request{
-		Method:   "GET",
-		Protocol: "http",
-		Host:     "100.100.100.200",
-		Path:     "/latest/meta-data/ram/security-credentials/",
-		Headers:  map[string]string{},
-	}
-
+func (provider *ECSRAMRoleCredentialsProvider) applyTimeouts(req *httputil.Request) {
 	connectTimeout := 1 * time.Second
 	readTimeout := 1 * time.Second
-
 	if provider.httpOptions != nil && provider.httpOptions.ConnectTimeout > 0 {
 		connectTimeout = time.Duration(provider.httpOptions.ConnectTimeout) * time.Millisecond
 	}
@@ -109,27 +113,69 @@ func (provider *ECSRAMRoleCredentialsProvider) getRoleName() (roleName string, e
 	}
 	req.ConnectTimeout = connectTimeout
 	req.ReadTimeout = readTimeout
+}
 
+func (provider *ECSRAMRoleCredentialsProvider) shouldFallbackToIMDSv1(metadataToken string) bool {
+	return metadataToken != "" && !provider.disableIMDSv1
+}
+
+type metadataGetResult struct {
+	body       string
+	statusCode int
+	requestURL string
+	netErr     error
+}
+
+func (r metadataGetResult) failed() bool {
+	return r.netErr != nil || r.statusCode != 200
+}
+
+func (provider *ECSRAMRoleCredentialsProvider) doGet(path string, metadataToken string) metadataGetResult {
+	req := &httputil.Request{
+		Method:   "GET",
+		Protocol: "http",
+		Host:     "100.100.100.200",
+		Path:     path,
+		Headers:  map[string]string{},
+	}
+	provider.applyTimeouts(req)
+	if metadataToken != "" {
+		req.Headers["x-aliyun-ecs-metadata-token"] = metadataToken
+	}
+	res, err := httpDo(req)
+	result := metadataGetResult{requestURL: req.BuildRequestURL()}
+	if err != nil {
+		result.netErr = err
+		return result
+	}
+	result.statusCode = res.StatusCode
+	result.body = string(res.Body)
+	return result
+}
+
+func (provider *ECSRAMRoleCredentialsProvider) getWithFallback(path string, metadataToken string) metadataGetResult {
+	result := provider.doGet(path, metadataToken)
+	if result.failed() && provider.shouldFallbackToIMDSv1(metadataToken) {
+		return provider.doGet(path, "")
+	}
+	return result
+}
+
+func (provider *ECSRAMRoleCredentialsProvider) getRoleName() (roleName string, err error) {
 	metadataToken, err := provider.getMetadataToken()
 	if err != nil {
 		return "", err
 	}
-	if metadataToken != "" {
-		req.Headers["x-aliyun-ecs-metadata-token"] = metadataToken
-	}
-
-	res, err := httpDo(req)
-	if err != nil {
-		err = fmt.Errorf("get role name failed: %s", err.Error())
+	result := provider.getWithFallback("/latest/meta-data/ram/security-credentials/", metadataToken)
+	if result.netErr != nil {
+		err = fmt.Errorf("get role name failed: %s", result.netErr.Error())
 		return
 	}
-
-	if res.StatusCode != 200 {
-		err = fmt.Errorf("get role name failed: %s %d", req.BuildRequestURL(), res.StatusCode)
+	if result.statusCode != 200 {
+		err = fmt.Errorf("get role name failed: %s %d", result.requestURL, result.statusCode)
 		return
 	}
-
-	roleName = strings.TrimSpace(string(res.Body))
+	roleName = strings.TrimSpace(result.body)
 	return
 }
 
@@ -142,50 +188,26 @@ func (provider *ECSRAMRoleCredentialsProvider) getCredentials() (session *sessio
 		}
 	}
 
-	req := &httputil.Request{
-		Method:   "GET",
-		Protocol: "http",
-		Host:     "100.100.100.200",
-		Path:     "/latest/meta-data/ram/security-credentials/" + roleName,
-		Headers:  map[string]string{},
-	}
-
-	connectTimeout := 1 * time.Second
-	readTimeout := 1 * time.Second
-
-	if provider.httpOptions != nil && provider.httpOptions.ConnectTimeout > 0 {
-		connectTimeout = time.Duration(provider.httpOptions.ConnectTimeout) * time.Millisecond
-	}
-	if provider.httpOptions != nil && provider.httpOptions.ReadTimeout > 0 {
-		readTimeout = time.Duration(provider.httpOptions.ReadTimeout) * time.Millisecond
-	}
-	if provider.httpOptions != nil && provider.httpOptions.Proxy != "" {
-		req.Proxy = provider.httpOptions.Proxy
-	}
-	req.ConnectTimeout = connectTimeout
-	req.ReadTimeout = readTimeout
-
 	metadataToken, err := provider.getMetadataToken()
 	if err != nil {
 		return nil, err
 	}
-	if metadataToken != "" {
-		req.Headers["x-aliyun-ecs-metadata-token"] = metadataToken
-	}
+	return provider.parseCredentials(roleName, metadataToken)
+}
 
-	res, err := httpDo(req)
-	if err != nil {
-		err = fmt.Errorf("refresh Ecs sts token err: %s", err.Error())
+func (provider *ECSRAMRoleCredentialsProvider) parseCredentials(roleName string, metadataToken string) (session *sessionCredentials, err error) {
+	result := provider.getWithFallback("/latest/meta-data/ram/security-credentials/"+roleName, metadataToken)
+	if result.netErr != nil {
+		err = fmt.Errorf("refresh Ecs sts token err: %s", result.netErr.Error())
 		return
 	}
-
-	if res.StatusCode != 200 {
-		err = fmt.Errorf("refresh Ecs sts token err, httpStatus: %d, message = %s", res.StatusCode, string(res.Body))
+	if result.statusCode != 200 {
+		err = fmt.Errorf("refresh Ecs sts token err, httpStatus: %d, message = %s", result.statusCode, result.body)
 		return
 	}
 
 	var data ecsRAMRoleResponse
-	err = json.Unmarshal(res.Body, &data)
+	err = json.Unmarshal([]byte(result.body), &data)
 	if err != nil {
 		err = fmt.Errorf("refresh Ecs sts token err, json.Unmarshal fail: %s", err.Error())
 		return
@@ -239,6 +261,9 @@ func (provider *ECSRAMRoleCredentialsProvider) GetProviderName() string {
 }
 
 func (provider *ECSRAMRoleCredentialsProvider) getMetadataToken() (metadataToken string, err error) {
+	if !provider.enableIMDSv2 {
+		return "", nil
+	}
 	// PUT http://100.100.100.200/latest/api/token
 	req := &httputil.Request{
 		Method:   "PUT",
@@ -250,20 +275,7 @@ func (provider *ECSRAMRoleCredentialsProvider) getMetadataToken() (metadataToken
 		},
 	}
 
-	connectTimeout := 1 * time.Second
-	readTimeout := 1 * time.Second
-
-	if provider.httpOptions != nil && provider.httpOptions.ConnectTimeout > 0 {
-		connectTimeout = time.Duration(provider.httpOptions.ConnectTimeout) * time.Millisecond
-	}
-	if provider.httpOptions != nil && provider.httpOptions.ReadTimeout > 0 {
-		readTimeout = time.Duration(provider.httpOptions.ReadTimeout) * time.Millisecond
-	}
-	if provider.httpOptions != nil && provider.httpOptions.Proxy != "" {
-		req.Proxy = provider.httpOptions.Proxy
-	}
-	req.ConnectTimeout = connectTimeout
-	req.ReadTimeout = readTimeout
+	provider.applyTimeouts(req)
 
 	res, _err := httpDo(req)
 	if _err != nil {

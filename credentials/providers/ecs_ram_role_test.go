@@ -12,7 +12,7 @@ import (
 )
 
 func TestNewECSRAMRoleCredentialsProvider(t *testing.T) {
-	rollback := utils.Memory("ALIBABA_CLOUD_ECS_METADATA_DISABLED", "ALIBABA_CLOUD_ECS_METADATA", "ALIBABA_CLOUD_IMDSV1_DISABLED")
+	rollback := utils.Memory("ALIBABA_CLOUD_ECS_METADATA_DISABLED", "ALIBABA_CLOUD_ECS_METADATA", "ALIBABA_CLOUD_IMDSV1_DISABLED", "ALIBABA_CLOUD_ECS_IMDSV2_ENABLE")
 	defer func() {
 		rollback()
 	}()
@@ -29,6 +29,21 @@ func TestNewECSRAMRoleCredentialsProvider(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, "role", p.roleName)
 	assert.False(t, p.disableIMDSv1)
+	assert.True(t, p.enableIMDSv2)
+
+	os.Setenv("ALIBABA_CLOUD_ECS_IMDSV2_ENABLE", "false")
+	p, err = NewECSRAMRoleCredentialsProviderBuilder().Build()
+	assert.Nil(t, err)
+	assert.False(t, p.enableIMDSv2)
+	os.Unsetenv("ALIBABA_CLOUD_ECS_IMDSV2_ENABLE")
+
+	p, err = NewECSRAMRoleCredentialsProviderBuilder().WithEnableIMDSv2(false).Build()
+	assert.Nil(t, err)
+	assert.False(t, p.enableIMDSv2)
+
+	p, err = NewECSRAMRoleCredentialsProviderBuilder().WithEnableIMDSv2(true).Build()
+	assert.Nil(t, err)
+	assert.True(t, p.enableIMDSv2)
 
 	os.Setenv("ALIBABA_CLOUD_IMDSV1_DISABLED", "True")
 	p, err = NewECSRAMRoleCredentialsProviderBuilder().Build()
@@ -497,4 +512,99 @@ func TestNewECSRAMRoleCredentialsProviderWithHttpOptions(t *testing.T) {
 	_, err = p.GetCredentials()
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "proxyconnect tcp:")
+}
+
+func TestECSRAMRoleCredentialsProvider_fallbackToIMDSv1(t *testing.T) {
+	originHttpDo := httpDo
+	defer func() { httpDo = originHttpDo }()
+
+	p, err := NewECSRAMRoleCredentialsProviderBuilder().Build()
+	assert.Nil(t, err)
+
+	httpDo = func(req *httputil.Request) (res *httputil.Response, err error) {
+		if req.Path == "/latest/api/token" {
+			return &httputil.Response{StatusCode: 200, Body: []byte("tokenxxxxx")}, nil
+		}
+		if req.Headers["x-aliyun-ecs-metadata-token"] != "" {
+			return &httputil.Response{StatusCode: 500, Body: []byte("v2 failed")}, nil
+		}
+		return &httputil.Response{StatusCode: 200, Body: []byte("rolename")}, nil
+	}
+	roleName, err := p.getRoleName()
+	assert.Nil(t, err)
+	assert.Equal(t, "rolename", roleName)
+
+	p, err = NewECSRAMRoleCredentialsProviderBuilder().WithRoleName("rolename").Build()
+	assert.Nil(t, err)
+	httpDo = func(req *httputil.Request) (res *httputil.Response, err error) {
+		if req.Path == "/latest/api/token" {
+			return &httputil.Response{StatusCode: 200, Body: []byte("tokenxxxxx")}, nil
+		}
+		if req.Headers["x-aliyun-ecs-metadata-token"] != "" {
+			return &httputil.Response{StatusCode: 404, Body: []byte("not found")}, nil
+		}
+		return &httputil.Response{
+			StatusCode: 200,
+			Body: []byte(`{
+  "AccessKeyId" : "akid",
+  "AccessKeySecret" : "aksecret",
+  "Expiration" : "2200-04-01T05:20:01Z",
+  "SecurityToken" : "token",
+  "Code" : "Success"
+}`),
+		}, nil
+	}
+	creds, err := p.getCredentials()
+	assert.Nil(t, err)
+	assert.Equal(t, "akid", creds.AccessKeyId)
+	assert.Equal(t, "aksecret", creds.AccessKeySecret)
+	assert.Equal(t, "token", creds.SecurityToken)
+
+	p, err = NewECSRAMRoleCredentialsProviderBuilder().WithDisableIMDSv1(true).Build()
+	assert.Nil(t, err)
+	httpDo = func(req *httputil.Request) (res *httputil.Response, err error) {
+		if req.Path == "/latest/api/token" {
+			return &httputil.Response{StatusCode: 200, Body: []byte("tokenxxxxx")}, nil
+		}
+		return &httputil.Response{StatusCode: 500, Body: []byte("v2 failed")}, nil
+	}
+	_, err = p.getRoleName()
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "500")
+}
+
+func TestECSRAMRoleCredentialsProvider_skipIMDSv2(t *testing.T) {
+	originHttpDo := httpDo
+	defer func() { httpDo = originHttpDo }()
+
+	p, err := NewECSRAMRoleCredentialsProviderBuilder().WithEnableIMDSv2(false).Build()
+	assert.Nil(t, err)
+	assert.False(t, p.enableIMDSv2)
+
+	putCalled := false
+	httpDo = func(req *httputil.Request) (res *httputil.Response, err error) {
+		if req.Path == "/latest/api/token" {
+			putCalled = true
+			return &httputil.Response{StatusCode: 200, Body: []byte("tokenxxxxx")}, nil
+		}
+		assert.Equal(t, "", req.Headers["x-aliyun-ecs-metadata-token"])
+		return &httputil.Response{StatusCode: 200, Body: []byte("rolename")}, nil
+	}
+	roleName, err := p.getRoleName()
+	assert.Nil(t, err)
+	assert.Equal(t, "rolename", roleName)
+	assert.False(t, putCalled)
+
+	rollback := utils.Memory("ALIBABA_CLOUD_ECS_IMDSV2_ENABLE")
+	defer rollback()
+	os.Setenv("ALIBABA_CLOUD_ECS_IMDSV2_ENABLE", "false")
+	p, err = NewECSRAMRoleCredentialsProviderBuilder().Build()
+	assert.Nil(t, err)
+	assert.False(t, p.enableIMDSv2)
+
+	putCalled = false
+	roleName, err = p.getRoleName()
+	assert.Nil(t, err)
+	assert.Equal(t, "rolename", roleName)
+	assert.False(t, putCalled)
 }
