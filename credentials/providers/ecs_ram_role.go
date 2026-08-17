@@ -13,10 +13,8 @@ import (
 )
 
 type ECSRAMRoleCredentialsProvider struct {
-	roleName         string
-	disableIMDSv1    bool
-	enableIMDSv2     bool
-	enableIMDSv2Set  bool
+	roleName      string
+	disableIMDSv1 bool
 	// for sts
 	session             *sessionCredentials
 	expirationTimestamp int64
@@ -44,12 +42,6 @@ func (builder *ECSRAMRoleCredentialsProviderBuilder) WithDisableIMDSv1(disableIM
 	return builder
 }
 
-func (builder *ECSRAMRoleCredentialsProviderBuilder) WithEnableIMDSv2(enableIMDSv2 bool) *ECSRAMRoleCredentialsProviderBuilder {
-	builder.provider.enableIMDSv2 = enableIMDSv2
-	builder.provider.enableIMDSv2Set = true
-	return builder
-}
-
 func (builder *ECSRAMRoleCredentialsProviderBuilder) WithHttpOptions(httpOptions *HttpOptions) *ECSRAMRoleCredentialsProviderBuilder {
 	builder.provider.httpOptions = httpOptions
 	return builder
@@ -71,11 +63,6 @@ func (builder *ECSRAMRoleCredentialsProviderBuilder) Build() (provider *ECSRAMRo
 
 	if !builder.provider.disableIMDSv1 {
 		builder.provider.disableIMDSv1 = strings.ToLower(os.Getenv("ALIBABA_CLOUD_IMDSV1_DISABLED")) == "true"
-	}
-
-	if !builder.provider.enableIMDSv2Set {
-		// Default: try IMDSv2. Explicit false or ALIBABA_CLOUD_ECS_IMDSV2_ENABLE=false skips the probe.
-		builder.provider.enableIMDSv2 = strings.ToLower(os.Getenv("ALIBABA_CLOUD_ECS_IMDSV2_ENABLE")) != "false"
 	}
 
 	provider = builder.provider
@@ -261,9 +248,6 @@ func (provider *ECSRAMRoleCredentialsProvider) GetProviderName() string {
 }
 
 func (provider *ECSRAMRoleCredentialsProvider) getMetadataToken() (metadataToken string, err error) {
-	if !provider.enableIMDSv2 {
-		return "", nil
-	}
 	// PUT http://100.100.100.200/latest/api/token
 	req := &httputil.Request{
 		Method:   "PUT",

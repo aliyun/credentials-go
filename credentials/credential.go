@@ -287,13 +287,10 @@ func NewCredential(config *Config) (credential Credential, err error) {
 
 		credential = FromCredentialsProvider("sts", provider)
 	case "ecs_ram_role":
-		ecsBuilder := providers.NewECSRAMRoleCredentialsProviderBuilder().
+		provider, err := providers.NewECSRAMRoleCredentialsProviderBuilder().
 			WithRoleName(tea.StringValue(config.RoleName)).
-			WithDisableIMDSv1(tea.BoolValue(config.DisableIMDSv1))
-		if config.EnableIMDSv2 != nil {
-			ecsBuilder = ecsBuilder.WithEnableIMDSv2(tea.BoolValue(config.EnableIMDSv2))
-		}
-		provider, err := ecsBuilder.Build()
+			WithDisableIMDSv1(tea.BoolValue(config.DisableIMDSv1)).
+			Build()
 
 		if err != nil {
 			return nil, err
