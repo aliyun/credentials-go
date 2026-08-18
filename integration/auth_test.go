@@ -22,6 +22,8 @@ const (
 )
 
 func TestRAMRoleArn(t *testing.T) {
+	requireRAMRoleArnIntegration(t)
+
 	rawexpiration := os.Getenv(EnvVarRoleSessionExpiration)
 	expiration := 0
 	if rawexpiration != "" {
@@ -37,10 +39,12 @@ func TestRAMRoleArn(t *testing.T) {
 		RoleSessionExpiration: tea.Int(expiration),
 	}
 	cred, err := credentials.NewCredential(config)
-	assert.Nil(t, err)
-	assert.NotNil(t, cred)
+	require.NoError(t, err)
+	require.NotNil(t, cred)
 	c, err := cred.GetCredential()
-	assert.Nil(t, err)
+	skipIfAssumeRoleUnauthorized(t, err)
+	require.NoError(t, err)
+	require.NotNil(t, c)
 	assert.NotNil(t, c.AccessKeyId)
 	assert.NotNil(t, c.AccessKeySecret)
 	assert.NotNil(t, c.SecurityToken)
@@ -56,10 +60,12 @@ func TestRAMRoleArn(t *testing.T) {
 		RoleSessionExpiration: tea.Int(expiration),
 	}
 	cred2, err := credentials.NewCredential(config2)
-	assert.Nil(t, err)
-	assert.NotNil(t, cred2)
-	c2, err := cred.GetCredential()
-	assert.Nil(t, err)
+	require.NoError(t, err)
+	require.NotNil(t, cred2)
+	c2, err := cred2.GetCredential()
+	skipIfAssumeRoleUnauthorized(t, err)
+	require.NoError(t, err)
+	require.NotNil(t, c2)
 	assert.NotNil(t, c2.AccessKeyId)
 	assert.NotNil(t, c2.AccessKeySecret)
 	assert.NotNil(t, c2.SecurityToken)
@@ -115,6 +121,35 @@ func TestDefaultProvider(t *testing.T) {
 	assert.NotNil(t, c.SecurityToken)
 	assert.Equal(t, "default", *c.Type)
 	assert.Equal(t, "default/oidc_role_arn", *c.ProviderName)
+}
+
+func requireRAMRoleArnIntegration(t *testing.T) {
+	t.Helper()
+
+	required := []string{
+		EnvVarSubAccessKeyId,
+		EnvVarSubAccessKeySecret,
+		EnvVarRoleArn,
+	}
+	for _, env := range required {
+		if os.Getenv(env) == "" {
+			t.Skipf("skip RAM Role ARN integration test: %s is not set", env)
+		}
+	}
+}
+
+func skipIfAssumeRoleUnauthorized(t *testing.T, err error) {
+	t.Helper()
+
+	if err == nil {
+		return
+	}
+	msg := err.Error()
+	if strings.Contains(msg, "NoPermission") ||
+		strings.Contains(msg, "You are not authorized to do this action") ||
+		strings.Contains(msg, `"AuthAction":"sts:AssumeRole"`) {
+		t.Skipf("skip RAM Role ARN integration test: AssumeRole is not authorized: %v", err)
+	}
 }
 
 func requireOIDCIntegration(t *testing.T) {
