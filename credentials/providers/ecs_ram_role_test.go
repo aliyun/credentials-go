@@ -498,3 +498,62 @@ func TestNewECSRAMRoleCredentialsProviderWithHttpOptions(t *testing.T) {
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "proxyconnect tcp:")
 }
+
+func TestECSRAMRoleCredentialsProvider_fallbackToIMDSv1(t *testing.T) {
+	originHttpDo := httpDo
+	defer func() { httpDo = originHttpDo }()
+
+	p, err := NewECSRAMRoleCredentialsProviderBuilder().Build()
+	assert.Nil(t, err)
+
+	httpDo = func(req *httputil.Request) (res *httputil.Response, err error) {
+		if req.Path == "/latest/api/token" {
+			return &httputil.Response{StatusCode: 200, Body: []byte("tokenxxxxx")}, nil
+		}
+		if req.Headers["x-aliyun-ecs-metadata-token"] != "" {
+			return &httputil.Response{StatusCode: 500, Body: []byte("v2 failed")}, nil
+		}
+		return &httputil.Response{StatusCode: 200, Body: []byte("rolename")}, nil
+	}
+	roleName, err := p.getRoleName()
+	assert.Nil(t, err)
+	assert.Equal(t, "rolename", roleName)
+
+	p, err = NewECSRAMRoleCredentialsProviderBuilder().WithRoleName("rolename").Build()
+	assert.Nil(t, err)
+	httpDo = func(req *httputil.Request) (res *httputil.Response, err error) {
+		if req.Path == "/latest/api/token" {
+			return &httputil.Response{StatusCode: 200, Body: []byte("tokenxxxxx")}, nil
+		}
+		if req.Headers["x-aliyun-ecs-metadata-token"] != "" {
+			return &httputil.Response{StatusCode: 404, Body: []byte("not found")}, nil
+		}
+		return &httputil.Response{
+			StatusCode: 200,
+			Body: []byte(`{
+  "AccessKeyId" : "akid",
+  "AccessKeySecret" : "aksecret",
+  "Expiration" : "2200-04-01T05:20:01Z",
+  "SecurityToken" : "token",
+  "Code" : "Success"
+}`),
+		}, nil
+	}
+	creds, err := p.getCredentials()
+	assert.Nil(t, err)
+	assert.Equal(t, "akid", creds.AccessKeyId)
+	assert.Equal(t, "aksecret", creds.AccessKeySecret)
+	assert.Equal(t, "token", creds.SecurityToken)
+
+	p, err = NewECSRAMRoleCredentialsProviderBuilder().WithDisableIMDSv1(true).Build()
+	assert.Nil(t, err)
+	httpDo = func(req *httputil.Request) (res *httputil.Response, err error) {
+		if req.Path == "/latest/api/token" {
+			return &httputil.Response{StatusCode: 200, Body: []byte("tokenxxxxx")}, nil
+		}
+		return &httputil.Response{StatusCode: 500, Body: []byte("v2 failed")}, nil
+	}
+	_, err = p.getRoleName()
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "500")
+}
