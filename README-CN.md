@@ -480,6 +480,10 @@ role_session_name=session_name
 }
 ```
 
+## 常见问题
+
+如遇到使用问题，请参阅 [常见问题 FAQ](FAQ-CN.md)，其中包含了各类常见问题的详细解决方案。
+
 ## 许可证
 
 [Apache-2.0](/LICENSE)
