@@ -164,7 +164,7 @@ func main() {
     SetType("oidc_role_arn").
     // Specify the ARN of the OIDC IdP by specifying the ALIBABA_CLOUD_OIDC_PROVIDER_ARN environment variable.
     SetOIDCProviderArn("OIDCProviderArn").
-    // Specify the OIDC token directly, or with ALIBABA_CLOUD_OIDC_TOKEN. This takes precedence over the token file.
+    // Specify the OIDC token directly. Precedence is SetOIDCToken, then ALIBABA_CLOUD_OIDC_TOKEN, then SetOIDCTokenFilePath, then ALIBABA_CLOUD_OIDC_TOKEN_FILE.
     SetOIDCToken("OIDCToken").
     // Specify the path of the OIDC token file by specifying the ALIBABA_CLOUD_OIDC_TOKEN_FILE environment variable.
     SetOIDCTokenFilePath("OIDCTokenFilePath").
@@ -373,7 +373,7 @@ If no credentials are found in the previous step, the Credentials tool obtains t
 
 `ALIBABA_CLOUD_OIDC_PROVIDER_ARN`: the ARN of the OIDC IdP.
 
-`ALIBABA_CLOUD_OIDC_TOKEN`: the OIDC token. It takes precedence over `ALIBABA_CLOUD_OIDC_TOKEN_FILE`.
+`ALIBABA_CLOUD_OIDC_TOKEN`: the OIDC token. An explicit token is used first, then this variable, then an explicit token file path, then `ALIBABA_CLOUD_OIDC_TOKEN_FILE`.
 
 `ALIBABA_CLOUD_OIDC_TOKEN_FILE`: the path of the OIDC token file. Either this variable or `ALIBABA_CLOUD_OIDC_TOKEN` is required.
 
