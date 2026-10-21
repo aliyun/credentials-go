@@ -199,10 +199,15 @@ func TestOIDCTokenValue(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, "explicit", got)
 
-	p = &OIDCCredentialsProvider{oidcTokenFilePath: "/path/to/invalid/oidc.token"}
+	p = &OIDCCredentialsProvider{oidcTokenFilePath: tokenFile}
 	got, err = p.oidcTokenValue()
 	assert.Nil(t, err)
-	assert.Equal(t, "env-token", got)
+	assert.Equal(t, string(body), got)
+
+	p = &OIDCCredentialsProvider{oidcTokenFilePath: "/path/to/invalid/oidc.token"}
+	_, err = p.oidcTokenValue()
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "/path/to/invalid/oidc.token")
 
 	p = &OIDCCredentialsProvider{}
 	got, err = p.oidcTokenValue()
@@ -243,7 +248,7 @@ func TestOIDCCredentialsProvider_getCredentials(t *testing.T) {
 	assert.Contains(t, err.Error(), "/path/to/invalid/oidc.token")
 	assert.True(t, strings.Contains(err.Error(), "no such file") || strings.Contains(err.Error(), "cannot find the path"))
 
-	// An environment token is used even when an explicit file path does not exist.
+	// An explicit file path is used even when ALIBABA_CLOUD_OIDC_TOKEN is set.
 	rollbackToken := utils.Memory("ALIBABA_CLOUD_OIDC_TOKEN")
 	os.Setenv("ALIBABA_CLOUD_OIDC_TOKEN", "env-token")
 	envProvider, err := NewOIDCCredentialsProviderBuilder().
@@ -252,20 +257,10 @@ func TestOIDCCredentialsProvider_getCredentials(t *testing.T) {
 		WithRoleArn("roleArn").
 		Build()
 	assert.Nil(t, err)
-	var sawEnvToken string
-	httpDo = func(req *httputil.Request) (res *httputil.Response, err error) {
-		sawEnvToken = req.Form["OIDCToken"]
-		res = &httputil.Response{
-			StatusCode: 200,
-			Body:       []byte(`{"Credentials": {"AccessKeyId":"saki","AccessKeySecret":"saks","Expiration":"2021-10-20T04:27:09Z","SecurityToken":"token"}}`),
-		}
-		return
-	}
 	_, err = envProvider.getCredentials()
-	assert.Nil(t, err)
-	assert.Equal(t, "env-token", sawEnvToken)
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "/path/to/invalid/oidc.token")
 	rollbackToken()
-	httpDo = originHttpDo
 
 	// case 1: mock new http request failed
 	wd, _ := os.Getwd()

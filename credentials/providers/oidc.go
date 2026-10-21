@@ -252,15 +252,15 @@ func (provider *OIDCCredentialsProvider) oidcTokenValue() (string, error) {
 	if provider.oidcToken != "" {
 		return provider.oidcToken, nil
 	}
-	if token := os.Getenv("ALIBABA_CLOUD_OIDC_TOKEN"); token != "" {
-		return token, nil
-	}
 	if provider.oidcTokenFilePath != "" {
 		body, err := ioutil.ReadFile(provider.oidcTokenFilePath)
 		if err != nil {
 			return "", err
 		}
 		return string(body), nil
+	}
+	if token := os.Getenv("ALIBABA_CLOUD_OIDC_TOKEN"); token != "" {
+		return token, nil
 	}
 	if path := os.Getenv("ALIBABA_CLOUD_OIDC_TOKEN_FILE"); path != "" {
 		body, err := ioutil.ReadFile(path)
