@@ -15,8 +15,8 @@ this is privatekey`
 
 func TestConfig(t *testing.T) {
 	config := new(Config)
-	assert.Equal(t, "{\n   \"type\": null,\n   \"access_key_id\": null,\n   \"access_key_secret\": null,\n   \"security_token\": null,\n   \"bearer_token\": null,\n   \"oidc_provider_arn\": null,\n   \"oidc_token\": null,\n   \"role_arn\": null,\n   \"role_session_name\": null,\n   \"role_session_expiration\": null,\n   \"policy\": null,\n   \"external_id\": null,\n   \"sts_endpoint\": null,\n   \"role_name\": null,\n   \"enable_imds_v2\": null,\n   \"disable_imds_v1\": null,\n   \"metadata_token_duration\": null,\n   \"url\": null,\n   \"session_expiration\": null,\n   \"public_key_id\": null,\n   \"private_key_file\": null,\n   \"host\": null,\n   \"timeout\": null,\n   \"connect_timeout\": null,\n   \"proxy\": null,\n   \"inAdvanceScale\": null\n}", config.String())
-	assert.Equal(t, "{\n   \"type\": null,\n   \"access_key_id\": null,\n   \"access_key_secret\": null,\n   \"security_token\": null,\n   \"bearer_token\": null,\n   \"oidc_provider_arn\": null,\n   \"oidc_token\": null,\n   \"role_arn\": null,\n   \"role_session_name\": null,\n   \"role_session_expiration\": null,\n   \"policy\": null,\n   \"external_id\": null,\n   \"sts_endpoint\": null,\n   \"role_name\": null,\n   \"enable_imds_v2\": null,\n   \"disable_imds_v1\": null,\n   \"metadata_token_duration\": null,\n   \"url\": null,\n   \"session_expiration\": null,\n   \"public_key_id\": null,\n   \"private_key_file\": null,\n   \"host\": null,\n   \"timeout\": null,\n   \"connect_timeout\": null,\n   \"proxy\": null,\n   \"inAdvanceScale\": null\n}", config.GoString())
+	assert.Equal(t, "{\n   \"type\": null,\n   \"access_key_id\": null,\n   \"access_key_secret\": null,\n   \"security_token\": null,\n   \"bearer_token\": null,\n   \"oidc_provider_arn\": null,\n   \"oidc_token\": null,\n   \"oidcToken\": null,\n   \"role_arn\": null,\n   \"role_session_name\": null,\n   \"role_session_expiration\": null,\n   \"policy\": null,\n   \"external_id\": null,\n   \"sts_endpoint\": null,\n   \"role_name\": null,\n   \"enable_imds_v2\": null,\n   \"disable_imds_v1\": null,\n   \"metadata_token_duration\": null,\n   \"url\": null,\n   \"session_expiration\": null,\n   \"public_key_id\": null,\n   \"private_key_file\": null,\n   \"host\": null,\n   \"timeout\": null,\n   \"connect_timeout\": null,\n   \"proxy\": null,\n   \"inAdvanceScale\": null\n}", config.String())
+	assert.Equal(t, "{\n   \"type\": null,\n   \"access_key_id\": null,\n   \"access_key_secret\": null,\n   \"security_token\": null,\n   \"bearer_token\": null,\n   \"oidc_provider_arn\": null,\n   \"oidc_token\": null,\n   \"oidcToken\": null,\n   \"role_arn\": null,\n   \"role_session_name\": null,\n   \"role_session_expiration\": null,\n   \"policy\": null,\n   \"external_id\": null,\n   \"sts_endpoint\": null,\n   \"role_name\": null,\n   \"enable_imds_v2\": null,\n   \"disable_imds_v1\": null,\n   \"metadata_token_duration\": null,\n   \"url\": null,\n   \"session_expiration\": null,\n   \"public_key_id\": null,\n   \"private_key_file\": null,\n   \"host\": null,\n   \"timeout\": null,\n   \"connect_timeout\": null,\n   \"proxy\": null,\n   \"inAdvanceScale\": null\n}", config.GoString())
 
 	config.SetSTSEndpoint("sts.cn-hangzhou.aliyuncs.com")
 	assert.Equal(t, "sts.cn-hangzhou.aliyuncs.com", *config.STSEndpoint)
@@ -285,6 +285,15 @@ func TestNewCredentialWithOIDC(t *testing.T) {
 	assert.Equal(t, "oidc_provider_arn_test", tea.StringValue(config.OIDCProviderArn))
 	assert.Equal(t, "oidc_token_file_path_test", tea.StringValue(config.OIDCTokenFilePath))
 	assert.Equal(t, "role_arn_test", tea.StringValue(config.RoleArn))
+
+	tokenConfig := new(Config).SetType("oidc_role_arn").
+		SetOIDCToken("header.payload.sig").
+		SetOIDCProviderArn("oidc_provider_arn_test").
+		SetRoleArn("role_arn_test")
+	cred, err = NewCredential(tokenConfig)
+	assert.Nil(t, err)
+	assert.NotNil(t, cred)
+	assert.Equal(t, "header.payload.sig", tea.StringValue(tokenConfig.OIDCToken))
 }
 
 func TestNewCredentialWithCredentialsURI(t *testing.T) {

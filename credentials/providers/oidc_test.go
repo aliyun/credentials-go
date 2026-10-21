@@ -36,10 +36,11 @@ func TestOIDCCredentialsProviderGetCredentialsWithError(t *testing.T) {
 }
 
 func TestNewOIDCCredentialsProvider(t *testing.T) {
-	rollback := utils.Memory("ALIBABA_CLOUD_OIDC_TOKEN_FILE", "ALIBABA_CLOUD_OIDC_PROVIDER_ARN", "ALIBABA_CLOUD_ROLE_ARN", "ALIBABA_CLOUD_STS_REGION", "ALIBABA_CLOUD_VPC_ENDPOINT_ENABLED")
+	rollback := utils.Memory("ALIBABA_CLOUD_OIDC_TOKEN", "ALIBABA_CLOUD_OIDC_TOKEN_FILE", "ALIBABA_CLOUD_OIDC_PROVIDER_ARN", "ALIBABA_CLOUD_ROLE_ARN", "ALIBABA_CLOUD_STS_REGION", "ALIBABA_CLOUD_VPC_ENDPOINT_ENABLED")
 	defer func() {
 		rollback()
 	}()
+	os.Unsetenv("ALIBABA_CLOUD_OIDC_TOKEN")
 
 	_, err := NewOIDCCredentialsProviderBuilder().Build()
 	assert.NotNil(t, err)
@@ -132,6 +133,26 @@ func TestNewOIDCCredentialsProvider(t *testing.T) {
 	assert.Equal(t, "policy", p.policy)
 	assert.Equal(t, 3600, p.durationSeconds)
 	assert.Equal(t, "sts.cn-hangzhou.aliyuncs.com", p.stsEndpoint)
+
+	os.Unsetenv("ALIBABA_CLOUD_OIDC_TOKEN_FILE")
+	p, err = NewOIDCCredentialsProviderBuilder().
+		WithOIDCToken("header.payload.sig").
+		WithOIDCProviderARN("provider-arn").
+		WithRoleArn("roleArn").
+		Build()
+	assert.Nil(t, err)
+	assert.Equal(t, "header.payload.sig", p.oidcToken)
+	assert.Empty(t, p.oidcTokenFilePath)
+
+	os.Setenv("ALIBABA_CLOUD_OIDC_TOKEN", "env-token")
+	p, err = NewOIDCCredentialsProviderBuilder().
+		WithOIDCProviderARN("provider-arn").
+		WithRoleArn("roleArn").
+		Build()
+	assert.Nil(t, err)
+	got, err := p.oidcTokenValue()
+	assert.Nil(t, err)
+	assert.Equal(t, "env-token", got)
 }
 
 func TestOIDCCredentialsProvider_getCredentials(t *testing.T) {
@@ -225,13 +246,26 @@ func TestOIDCCredentialsProvider_getCredentials(t *testing.T) {
 	assert.Equal(t, "refresh RoleArn sts token err, fail to get credentials", err.Error())
 
 	// case 7: mock ok value
+	var sawToken string
 	httpDo = func(req *httputil.Request) (res *httputil.Response, err error) {
+		sawToken = req.Form["OIDCToken"]
 		res = &httputil.Response{
 			StatusCode: 200,
 			Body:       []byte(`{"Credentials": {"AccessKeyId":"saki","AccessKeySecret":"saks","Expiration":"2021-10-20T04:27:09Z","SecurityToken":"token"}}`),
 		}
 		return
 	}
+	direct, err := NewOIDCCredentialsProviderBuilder().
+		WithOIDCToken("direct-token").
+		WithOIDCTokenFilePath("/path/to/invalid/oidc.token").
+		WithOIDCProviderARN("provider-arn").
+		WithRoleArn("roleArn").
+		Build()
+	assert.Nil(t, err)
+	_, err = direct.getCredentials()
+	assert.Nil(t, err)
+	assert.Equal(t, "direct-token", sawToken)
+
 	creds, err := p.getCredentials()
 	assert.Nil(t, err)
 	assert.Equal(t, "saki", creds.AccessKeyId)
