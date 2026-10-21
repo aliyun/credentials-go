@@ -2,6 +2,7 @@ package providers
 
 import (
 	"errors"
+	"io/ioutil"
 	"os"
 	"path"
 	"strings"
@@ -153,6 +154,63 @@ func TestNewOIDCCredentialsProvider(t *testing.T) {
 	got, err := p.oidcTokenValue()
 	assert.Nil(t, err)
 	assert.Equal(t, "env-token", got)
+
+	os.Setenv("ALIBABA_CLOUD_OIDC_TOKEN_FILE", "/path/from/env")
+	p, err = NewOIDCCredentialsProviderBuilder().
+		WithOIDCProviderARN("provider-arn").
+		WithRoleArn("roleArn").
+		Build()
+	assert.Nil(t, err)
+	assert.Empty(t, p.oidcToken)
+	assert.Empty(t, p.oidcTokenFilePath)
+}
+
+func TestOIDCTokenValue(t *testing.T) {
+	rollback := utils.Memory("ALIBABA_CLOUD_OIDC_TOKEN", "ALIBABA_CLOUD_OIDC_TOKEN_FILE")
+	defer func() {
+		rollback()
+	}()
+	os.Unsetenv("ALIBABA_CLOUD_OIDC_TOKEN")
+	os.Unsetenv("ALIBABA_CLOUD_OIDC_TOKEN_FILE")
+
+	wd, _ := os.Getwd()
+	tokenFile := path.Join(wd, "fixtures/mock_oidctoken")
+	body, err := ioutil.ReadFile(tokenFile)
+	assert.Nil(t, err)
+
+	p := &OIDCCredentialsProvider{oidcToken: "explicit", oidcTokenFilePath: tokenFile}
+	got, err := p.oidcTokenValue()
+	assert.Nil(t, err)
+	assert.Equal(t, "explicit", got)
+
+	p = &OIDCCredentialsProvider{oidcTokenFilePath: tokenFile}
+	got, err = p.oidcTokenValue()
+	assert.Nil(t, err)
+	assert.Equal(t, string(body), got)
+
+	p = &OIDCCredentialsProvider{oidcTokenFilePath: "/path/to/invalid/oidc.token"}
+	_, err = p.oidcTokenValue()
+	assert.NotNil(t, err)
+
+	os.Setenv("ALIBABA_CLOUD_OIDC_TOKEN", "env-token")
+	os.Setenv("ALIBABA_CLOUD_OIDC_TOKEN_FILE", tokenFile)
+	p = &OIDCCredentialsProvider{}
+	got, err = p.oidcTokenValue()
+	assert.Nil(t, err)
+	assert.Equal(t, "env-token", got)
+
+	os.Unsetenv("ALIBABA_CLOUD_OIDC_TOKEN")
+	got, err = p.oidcTokenValue()
+	assert.Nil(t, err)
+	assert.Equal(t, string(body), got)
+
+	os.Setenv("ALIBABA_CLOUD_OIDC_TOKEN_FILE", "/path/to/invalid/oidc.token")
+	_, err = p.oidcTokenValue()
+	assert.NotNil(t, err)
+
+	os.Unsetenv("ALIBABA_CLOUD_OIDC_TOKEN_FILE")
+	_, err = p.oidcTokenValue()
+	assert.EqualError(t, err, "the OIDCTokenFilePath is empty")
 }
 
 func TestOIDCCredentialsProvider_getCredentials(t *testing.T) {

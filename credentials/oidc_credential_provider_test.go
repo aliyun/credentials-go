@@ -53,7 +53,7 @@ func TestOidcCredentialsProvider(t *testing.T) {
 	assert.Equal(t, "oidc_role_arn", tea.StringValue(c.Type))
 
 	os.Setenv(ENVOIDCToken, "raw-token")
-	os.Unsetenv(ENVOIDCTokenFile)
+	os.Setenv(ENVOIDCTokenFile, "should-not-be-used")
 	c, err = p.resolve()
 	assert.Nil(t, err)
 	assert.Equal(t, "raw-token", tea.StringValue(c.OIDCToken))

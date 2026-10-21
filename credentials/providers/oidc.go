@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"strconv"
@@ -252,7 +253,7 @@ func (provider *OIDCCredentialsProvider) oidcTokenValue() (string, error) {
 		return provider.oidcToken, nil
 	}
 	if provider.oidcTokenFilePath != "" {
-		body, err := os.ReadFile(provider.oidcTokenFilePath)
+		body, err := ioutil.ReadFile(provider.oidcTokenFilePath)
 		if err != nil {
 			return "", err
 		}
@@ -262,7 +263,7 @@ func (provider *OIDCCredentialsProvider) oidcTokenValue() (string, error) {
 		return token, nil
 	}
 	if path := os.Getenv("ALIBABA_CLOUD_OIDC_TOKEN_FILE"); path != "" {
-		body, err := os.ReadFile(path)
+		body, err := ioutil.ReadFile(path)
 		if err != nil {
 			return "", err
 		}
