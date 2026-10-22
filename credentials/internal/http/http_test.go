@@ -6,6 +6,8 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"net/http/httptest"
+	"net/url"
 	"runtime"
 	"testing"
 	"time"
@@ -43,10 +45,18 @@ func TestRequest(t *testing.T) {
 }
 
 func TestDoGet(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+	parsed, err := url.Parse(server.URL)
+	assert.Nil(t, err)
+
 	req := &Request{
 		Method:   "GET",
-		Protocol: "http",
-		Host:     "www.aliyun.com",
+		Protocol: parsed.Scheme,
+		Host:     parsed.Host,
 		Path:     "/",
 	}
 	res, err := Do(req)
@@ -57,7 +67,7 @@ func TestDoGet(t *testing.T) {
 
 	req = &Request{
 		Method: "GET",
-		URL:    "http://www.aliyun.com",
+		URL:    server.URL,
 	}
 	res, err = Do(req)
 	assert.Nil(t, err)
@@ -67,10 +77,26 @@ func TestDoGet(t *testing.T) {
 }
 
 func TestDoPost(t *testing.T) {
+	var sawForm, sawLanguage, sawBody string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		sawLanguage = r.Header.Get("Accept-Language")
+		body, readErr := ioutil.ReadAll(r.Body)
+		assert.Nil(t, readErr)
+		sawBody = string(body)
+		if values, parseErr := url.ParseQuery(sawBody); parseErr == nil {
+			sawForm = values.Get("URL")
+		}
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+	parsed, err := url.Parse(server.URL)
+	assert.Nil(t, err)
+
 	req := &Request{
 		Method:   "POST",
-		Protocol: "http",
-		Host:     "www.aliyun.com",
+		Protocol: parsed.Scheme,
+		Host:     parsed.Host,
 		Path:     "/",
 		Form: map[string]string{
 			"URL": "HI",
@@ -84,6 +110,8 @@ func TestDoPost(t *testing.T) {
 	assert.NotNil(t, res)
 	assert.Equal(t, 200, res.StatusCode)
 	assert.Contains(t, res.Headers["Content-Type"], "text/html")
+	assert.Equal(t, "zh", sawLanguage)
+	assert.Equal(t, "HI", sawForm)
 	req.Body, err = json.Marshal(map[string]string{
 		"URL": "HI",
 	})
@@ -93,6 +121,7 @@ func TestDoPost(t *testing.T) {
 	assert.NotNil(t, res)
 	assert.Equal(t, 200, res.StatusCode)
 	assert.Contains(t, res.Headers["Content-Type"], "text/html")
+	assert.JSONEq(t, `{"URL":"HI"}`, sawBody)
 }
 
 type errorReader struct {
