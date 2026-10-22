@@ -202,12 +202,12 @@ func TestOIDCTokenValue(t *testing.T) {
 	p = &OIDCCredentialsProvider{oidcTokenFilePath: tokenFile}
 	got, err = p.oidcTokenValue()
 	assert.Nil(t, err)
-	assert.Equal(t, string(body), got)
+	assert.Equal(t, "env-token", got)
 
 	p = &OIDCCredentialsProvider{oidcTokenFilePath: "/path/to/invalid/oidc.token"}
-	_, err = p.oidcTokenValue()
-	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "/path/to/invalid/oidc.token")
+	got, err = p.oidcTokenValue()
+	assert.Nil(t, err)
+	assert.Equal(t, "env-token", got)
 
 	p = &OIDCCredentialsProvider{}
 	got, err = p.oidcTokenValue()
@@ -248,9 +248,18 @@ func TestOIDCCredentialsProvider_getCredentials(t *testing.T) {
 	assert.Contains(t, err.Error(), "/path/to/invalid/oidc.token")
 	assert.True(t, strings.Contains(err.Error(), "no such file") || strings.Contains(err.Error(), "cannot find the path"))
 
-	// An explicit file path is used even when ALIBABA_CLOUD_OIDC_TOKEN is set.
+	// An environment token is used even when the explicit file path does not exist.
 	rollbackToken := utils.Memory("ALIBABA_CLOUD_OIDC_TOKEN")
 	os.Setenv("ALIBABA_CLOUD_OIDC_TOKEN", "env-token")
+	var sawEnvToken string
+	httpDo = func(req *httputil.Request) (res *httputil.Response, err error) {
+		sawEnvToken = req.Form["OIDCToken"]
+		res = &httputil.Response{
+			StatusCode: 200,
+			Body:       []byte(`{"Credentials": {"AccessKeyId":"saki","AccessKeySecret":"saks","Expiration":"2021-10-20T04:27:09Z","SecurityToken":"token"}}`),
+		}
+		return
+	}
 	envProvider, err := NewOIDCCredentialsProviderBuilder().
 		WithOIDCTokenFilePath("/path/to/invalid/oidc.token").
 		WithOIDCProviderARN("provider-arn").
@@ -258,9 +267,10 @@ func TestOIDCCredentialsProvider_getCredentials(t *testing.T) {
 		Build()
 	assert.Nil(t, err)
 	_, err = envProvider.getCredentials()
-	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "/path/to/invalid/oidc.token")
+	assert.Nil(t, err)
+	assert.Equal(t, "env-token", sawEnvToken)
 	rollbackToken()
+	httpDo = originHttpDo
 
 	// case 1: mock new http request failed
 	wd, _ := os.Getwd()

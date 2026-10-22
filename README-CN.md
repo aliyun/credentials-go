@@ -153,7 +153,7 @@ func main() {
     SetType("oidc_role_arn").
     // OIDC提供商ARN，可以通过环境变量ALIBABA_CLOUD_OIDC_PROVIDER_ARN设置OidcProviderArn
     SetOIDCProviderArn("OIDCProviderArn").
-    // 直接传入 OIDC Token。优先级：SetOIDCToken，然后 SetOIDCTokenFilePath，然后 ALIBABA_CLOUD_OIDC_TOKEN，最后 ALIBABA_CLOUD_OIDC_TOKEN_FILE。
+    // 直接传入 OIDC Token。Token 优先于文件路径，不论 Token 来自这里还是 ALIBABA_CLOUD_OIDC_TOKEN。
     SetOIDCToken("OIDCToken").
     // OIDC Token文件路径，可以通过环境变量ALIBABA_CLOUD_OIDC_TOKEN_FILE设置OidcTokenFilePath
     SetOIDCTokenFilePath("OIDCTokenFilePath").
@@ -362,7 +362,7 @@ Credentials工具会优先在环境变量中获取凭据信息。
 
 `ALIBABA_CLOUD_OIDC_PROVIDER_ARN`：OIDC提供商ARN；
 
-`ALIBABA_CLOUD_OIDC_TOKEN`：OIDC Token 原文。仅在没有显式 Token、也没有显式文件路径时使用，并优先于 `ALIBABA_CLOUD_OIDC_TOKEN_FILE`。
+`ALIBABA_CLOUD_OIDC_TOKEN`：OIDC Token 原文。优先级是显式 Token，然后这个环境变量，再然后是显式文件路径，最后是 `ALIBABA_CLOUD_OIDC_TOKEN_FILE`。
 
 `ALIBABA_CLOUD_OIDC_TOKEN_FILE`：OIDC Token文件路径。与 `ALIBABA_CLOUD_OIDC_TOKEN` 至少设置一个。
 
