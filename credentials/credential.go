@@ -49,7 +49,7 @@ type Config struct {
 	// Used when the type is ram_role_arn or oidc_role_arn
 	OIDCProviderArn       *string `json:"oidc_provider_arn"`
 	OIDCTokenFilePath     *string `json:"oidc_token"`
-	OIDCToken             *string `json:"oidcToken"`
+	OIDCToken             *string `json:"oidc_token_raw"`
 	RoleArn               *string `json:"role_arn"`
 	RoleSessionName       *string `json:"role_session_name"`
 	RoleSessionExpiration *int    `json:"role_session_expiration"`
