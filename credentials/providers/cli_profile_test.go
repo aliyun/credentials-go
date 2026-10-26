@@ -137,6 +137,13 @@ func TestCLIProfileCredentialsProvider_getCredentialsProvider(t *testing.T) {
 				Policy:          "policy",
 			},
 			{
+				Mode:            "OIDC",
+				Name:            "OIDCToken",
+				RoleArn:         "role_arn",
+				OIDCToken:       "header.payload.sig",
+				OIDCProviderARN: "provider_arn",
+			},
+			{
 				Mode:          "ChainableRamRoleArn",
 				Name:          "ChainableRamRoleArn",
 				RoleArn:       "arn",
@@ -210,6 +217,12 @@ func TestCLIProfileCredentialsProvider_getCredentialsProvider(t *testing.T) {
 	assert.Nil(t, err)
 	_, ok = cp.(*OIDCCredentialsProvider)
 	assert.True(t, ok)
+	cp, err = provider.getCredentialsProvider(conf, "OIDCToken")
+	assert.Nil(t, err)
+	oidc, ok := cp.(*OIDCCredentialsProvider)
+	assert.True(t, ok)
+	assert.Equal(t, "header.payload.sig", oidc.oidcToken)
+	assert.Empty(t, oidc.oidcTokenFilePath)
 
 	// ChainableRamRoleArn
 	cp, err = provider.getCredentialsProvider(conf, "ChainableRamRoleArn")
