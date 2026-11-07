@@ -273,11 +273,7 @@ func (provider *OIDCCredentialsProvider) oidcTokenValue() (string, error) {
 }
 
 func (provider *OIDCCredentialsProvider) needUpdateCredential() (result bool) {
-	if provider.expirationTimestamp == 0 {
-		return true
-	}
-
-	return provider.expirationTimestamp-time.Now().Unix() <= 180
+	return isSessionCredentialStale(provider.expirationTimestamp)
 }
 
 func (provider *OIDCCredentialsProvider) GetCredentials() (cc *Credentials, err error) {
