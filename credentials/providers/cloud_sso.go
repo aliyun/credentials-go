@@ -17,6 +17,7 @@ type CloudSSOCredentialsProvider struct {
 	accessConfig      string
 	accessToken       string
 	accessTokenExpire int64
+	loadSession       func() (cloudSSOSession, error)
 
 	lastUpdateTimestamp int64
 	expirationTimestamp int64
@@ -83,12 +84,12 @@ func (b *CloudSSOCredentialsProviderBuilder) WithHttpOptions(httpOptions *HttpOp
 }
 
 func (b *CloudSSOCredentialsProviderBuilder) Build() (provider *CloudSSOCredentialsProvider, err error) {
-	if b.provider.accessToken == "" || b.provider.accessTokenExpire == 0 || b.provider.accessTokenExpire-time.Now().Unix() <= 0 {
+	if b.provider.loadSession == nil && (b.provider.accessToken == "" || b.provider.accessTokenExpire <= time.Now().Unix()) {
 		err = errors.New("CloudSSO access token is empty or expired, please re-login with cli")
 		return
 	}
 
-	if b.provider.signInUrl == "" || b.provider.accountId == "" || b.provider.accessConfig == "" {
+	if (b.provider.loadSession == nil && b.provider.signInUrl == "") || b.provider.accountId == "" || b.provider.accessConfig == "" {
 		err = errors.New("CloudSSO sign in url or account id or access config is empty")
 		return
 	}
@@ -98,7 +99,15 @@ func (b *CloudSSOCredentialsProviderBuilder) Build() (provider *CloudSSOCredenti
 }
 
 func (provider *CloudSSOCredentialsProvider) getCredentials() (session *sessionCredentials, err error) {
-	url, err := url.Parse(provider.signInUrl)
+	signInURL, token := provider.signInUrl, provider.accessToken
+	if provider.loadSession != nil {
+		sso, err := provider.loadSession()
+		if err != nil {
+			return nil, err
+		}
+		signInURL, token = sso.SignInURL, sso.AccessToken
+	}
+	url, err := url.Parse(signInURL)
 	if err != nil {
 		return nil, err
 	}
@@ -141,7 +150,7 @@ func (provider *CloudSSOCredentialsProvider) getCredentials() (session *sessionC
 	// set headers
 	req.Headers["Accept"] = "application/json"
 	req.Headers["Content-Type"] = "application/json"
-	req.Headers["Authorization"] = fmt.Sprintf("Bearer %s", provider.accessToken)
+	req.Headers["Authorization"] = fmt.Sprintf("Bearer %s", token)
 	res, err := httpDo(req)
 	if err != nil {
 		return

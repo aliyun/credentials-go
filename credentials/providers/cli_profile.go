@@ -87,6 +87,7 @@ type profile struct {
 	OIDCProviderARN        string `json:"oidc_provider_arn"`
 	Policy                 string `json:"policy"`
 	ExternalId             string `json:"external_id"`
+	SSOSession             string `json:"sso_session"`
 	SignInUrl              string `json:"cloud_sso_sign_in_url"`
 	AccountId              string `json:"cloud_sso_account_id"`
 	AccessConfig           string `json:"cloud_sso_access_config"`
@@ -218,13 +219,23 @@ func (provider *CLIProfileCredentialsProvider) getCredentialsProvider(conf *conf
 			WithExternalId(p.ExternalId).
 			Build()
 	case "CloudSSO":
-		credentialsProvider, err = NewCloudSSOCredentialsProviderBuilder().
+		builder := NewCloudSSOCredentialsProviderBuilder().
 			WithSignInUrl(p.SignInUrl).
 			WithAccountId(p.AccountId).
 			WithAccessConfig(p.AccessConfig).
 			WithAccessToken(p.AccessToken).
-			WithAccessTokenExpire(p.AccessTokenExpire).
-			Build()
+			WithAccessTokenExpire(p.AccessTokenExpire)
+		if p.SSOSession != "" {
+			defaultPath := path.Join(getHomePath(), ".aliyun/config.json")
+			configPath := provider.profileFile
+			if configPath == "" {
+				configPath = defaultPath
+			}
+			builder.provider.loadSession = func() (cloudSSOSession, error) {
+				return readCloudSSOSession(configPath, defaultPath, p.SSOSession)
+			}
+		}
+		credentialsProvider, err = builder.Build()
 	case "OAuth":
 		siteType := strings.ToUpper(p.OauthSiteType)
 		signInUrl := oauthBaseUrlMap[siteType]
