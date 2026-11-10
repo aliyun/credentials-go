@@ -1,6 +1,7 @@
 package providers
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -346,7 +347,7 @@ func (provider *CLIProfileCredentialsProvider) updateOAuthTokens(refreshToken, a
 	defer provider.fileMutex.Unlock()
 
 	cfgPath := provider.profileFile
-	conf, err := newConfigurationFromPath(cfgPath)
+	conf, raw, err := readConfigurationForUpdate(cfgPath)
 	if err != nil {
 		return fmt.Errorf("failed to read config file: %v", err)
 	}
@@ -365,18 +366,15 @@ func (provider *CLIProfileCredentialsProvider) updateOAuthTokens(refreshToken, a
 		return fmt.Errorf("failed to find OAuth source profile: %v", err)
 	}
 
-	// update OAuth tokens
-	sourceProfile.OauthRefreshToken = refreshToken
-	sourceProfile.OauthAccessToken = accessToken
-	sourceProfile.OauthAccessTokenExpire = accessTokenExpire
-	// update STS credentials
-	sourceProfile.AccessKeyID = accessKey
-	sourceProfile.AccessKeySecret = secret
-	sourceProfile.SecurityToken = securityToken
-	sourceProfile.StsExpire = stsExpire
-
-	// write back with file lock
-	return provider.writeConfigurationToFileWithLock(cfgPath, conf)
+	return provider.updateProfileFields(cfgPath, conf, raw, sourceProfile, map[string]interface{}{
+		"oauth_refresh_token":       refreshToken,
+		"oauth_access_token":        accessToken,
+		"oauth_access_token_expire": accessTokenExpire,
+		"access_key_id":             accessKey,
+		"access_key_secret":         secret,
+		"sts_token":                 securityToken,
+		"sts_expiration":            stsExpire,
+	})
 }
 
 // writeConfigurationToFile 将配置写入文件，使用原子写入确保数据完整性
@@ -408,7 +406,7 @@ func (provider *CLIProfileCredentialsProvider) writeConfigurationToFile(cfgPath 
 }
 
 // writeConfigFile 写入配置文件
-func (provider *CLIProfileCredentialsProvider) writeConfigFile(filename string, fileMode os.FileMode, conf *configuration) error {
+func (provider *CLIProfileCredentialsProvider) writeConfigFile(filename string, fileMode os.FileMode, conf interface{}) error {
 	f, err := os.OpenFile(filename, os.O_CREATE|os.O_TRUNC|os.O_RDWR, fileMode)
 	if err != nil {
 		return fmt.Errorf("failed to create config file: %w", err)
@@ -432,7 +430,7 @@ func (provider *CLIProfileCredentialsProvider) writeConfigFile(filename string, 
 }
 
 // writeConfigurationToFileWithLock 使用操作系统级别的文件锁写入配置文件
-func (provider *CLIProfileCredentialsProvider) writeConfigurationToFileWithLock(cfgPath string, conf *configuration) error {
+func (provider *CLIProfileCredentialsProvider) writeConfigurationToFileWithLock(cfgPath string, conf interface{}) error {
 	// 获取原文件权限（如果存在）
 	fileMode := os.FileMode(0644)
 	if stat, err := os.Stat(cfgPath); err == nil {
@@ -495,7 +493,7 @@ func (provider *CLIProfileCredentialsProvider) updateExternalCredentials(accessK
 	defer provider.fileMutex.Unlock()
 
 	cfgPath := provider.profileFile
-	conf, err := newConfigurationFromPath(cfgPath)
+	conf, raw, err := readConfigurationForUpdate(cfgPath)
 	if err != nil {
 		return fmt.Errorf("failed to read config file: %v", err)
 	}
@@ -506,14 +504,52 @@ func (provider *CLIProfileCredentialsProvider) updateExternalCredentials(accessK
 		return fmt.Errorf("failed to get profile %s: %v", profileName, err)
 	}
 
-	// update
-	profile.AccessKeyID = accessKeyId
-	profile.AccessKeySecret = accessKeySecret
-	profile.SecurityToken = securityToken
-	if expiration > 0 {
-		profile.StsExpire = expiration
+	fields := map[string]interface{}{
+		"access_key_id":     accessKeyId,
+		"access_key_secret": accessKeySecret,
+		"sts_token":         securityToken,
 	}
+	if expiration > 0 {
+		fields["sts_expiration"] = expiration
+	}
+	return provider.updateProfileFields(cfgPath, conf, raw, profile, fields)
+}
 
-	// write back with file lock
-	return provider.writeConfigurationToFileWithLock(cfgPath, conf)
+func readConfigurationForUpdate(path string) (*configuration, map[string]interface{}, error) {
+	data, err := ioutil.ReadFile(path)
+	if err != nil {
+		return nil, nil, err
+	}
+	// UseNumber preserves the precision of CLI fields the SDK does not interpret.
+	decoder := json.NewDecoder(bytes.NewReader(data))
+	decoder.UseNumber()
+	var raw map[string]interface{}
+	if err := decoder.Decode(&raw); err != nil {
+		return nil, nil, err
+	}
+	var conf configuration
+	if err := json.Unmarshal(data, &conf); err != nil {
+		return nil, nil, err
+	}
+	if len(conf.Profiles) == 0 {
+		return nil, nil, fmt.Errorf("no any configured profiles in '%s'", path)
+	}
+	return &conf, raw, nil
+}
+
+func (provider *CLIProfileCredentialsProvider) updateProfileFields(path string, conf *configuration, raw map[string]interface{}, target *profile, fields map[string]interface{}) error {
+	profiles, ok := raw["profiles"].([]interface{})
+	if !ok || len(profiles) != len(conf.Profiles) {
+		return fmt.Errorf("invalid profiles in '%s'", path)
+	}
+	for index, entry := range conf.Profiles {
+		if entry == target {
+			profileFields := profiles[index].(map[string]interface{})
+			for key, value := range fields {
+				profileFields[key] = value
+			}
+			break
+		}
+	}
+	return provider.writeConfigurationToFileWithLock(path, raw)
 }
