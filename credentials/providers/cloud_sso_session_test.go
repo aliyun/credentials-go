@@ -63,3 +63,25 @@ func TestCLIProfileSharedCloudSSOSession(t *testing.T) {
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "invalid CloudSSO session name")
 }
+
+func TestCloudSSODefaultSessionAndInvalidJSON(t *testing.T) {
+	root, err := ioutil.TempDir("", "cloud-sso-default")
+	require.NoError(t, err)
+	defer os.RemoveAll(root)
+	config := filepath.Join(root, ".aliyun", "config.json")
+	session := filepath.Join(filepath.Dir(config), "sso", "company.json")
+	require.NoError(t, os.MkdirAll(filepath.Dir(session), 0700))
+	oldHome := getHomePath
+	defer func() { getHomePath = oldHome }()
+	getHomePath = func() string { return root }
+	conf := &configuration{Profiles: []*profile{{
+		Name: "dev", Mode: "CloudSSO", SSOSession: "company", AccountId: "account", AccessConfig: "role",
+	}}}
+	cli := &CLIProfileCredentialsProvider{}
+	provider, err := cli.getCredentialsProvider(conf, "dev")
+	require.NoError(t, err)
+	require.NoError(t, ioutil.WriteFile(session, []byte("{"), 0600))
+	_, err = provider.(*CloudSSOCredentialsProvider).getCredentials()
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "invalid CloudSSO session")
+}
