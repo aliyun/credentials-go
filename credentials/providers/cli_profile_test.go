@@ -1,6 +1,7 @@
 package providers
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -2303,3 +2304,42 @@ func TestCLIProfileUpdateOAuthTokensWithChainable(t *testing.T) {
 	assert.Equal(t, "", chainableProfile.OauthAccessToken)
 }
 
+
+func TestCLIProfileWritebackPreservesSharedSessions(t *testing.T) {
+	for _, mode := range []string{"OAuth", "External"} {
+		t.Run(mode, func(t *testing.T) {
+			dir, err := ioutil.TempDir("", "cli-writeback")
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer os.RemoveAll(dir)
+			configPath := path.Join(dir, "config.json")
+			fixture := `{"current":"writer","future_config":{"empty":{},"large":9007199254740993},"profiles":[{"name":"writer","mode":"` + mode + `","future_writer":null},{"name":"shared","mode":"CloudSSO","sso_session":"company","future_profile":{"empty":{}}}]}`
+			if err := ioutil.WriteFile(configPath, []byte(fixture), 0600); err != nil {
+				t.Fatal(err)
+			}
+			provider := &CLIProfileCredentialsProvider{profileName: "writer", profileFile: configPath}
+			if mode == "OAuth" {
+				err = provider.getOAuthTokenUpdateCallback()("refresh", "access", "new-ak", "secret", "token", 100, 200)
+			} else {
+				err = provider.getExternalCredentialUpdateCallback()("new-ak", "secret", "token", 200)
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			updated, err := ioutil.ReadFile(configPath)
+			if err != nil {
+				t.Fatal(err)
+			}
+			var compact bytes.Buffer
+			if err := json.Compact(&compact, updated); err != nil {
+				t.Fatal(err)
+			}
+			assert.Contains(t, compact.String(), `"sso_session":"company"`)
+			assert.Contains(t, compact.String(), `"future_profile":{"empty":{}}`)
+			assert.Contains(t, compact.String(), `"future_writer":null`)
+			assert.Contains(t, compact.String(), `"future_config":{"empty":{},"large":9007199254740993}`)
+			assert.Contains(t, compact.String(), `"access_key_id":"new-ak"`)
+		})
+	}
+}
