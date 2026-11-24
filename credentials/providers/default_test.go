@@ -196,3 +196,117 @@ func (provider *testErrorProvider) GetCredentials() (cc *Credentials, err error)
 func (provider *testErrorProvider) GetProviderName() string {
 	return "test"
 }
+
+type testToggleProvider struct {
+	fail bool
+}
+
+func (provider *testToggleProvider) GetCredentials() (*Credentials, error) {
+	if provider.fail {
+		return nil, errors.New("temporary failure")
+	}
+	return &Credentials{
+		AccessKeyId:     "ak",
+		AccessKeySecret: "sk",
+	}, nil
+}
+
+func (provider *testToggleProvider) GetProviderName() string {
+	return "toggle"
+}
+
+type testNilProvider struct{}
+
+func (provider *testNilProvider) GetCredentials() (*Credentials, error) {
+	return nil, nil
+}
+
+func (provider *testNilProvider) GetProviderName() string {
+	return "nil"
+}
+
+func TestDefaultCredentialsProvider_LastUsedProviderOnlySetOnSuccess(t *testing.T) {
+	t.Run("RetryDefaultChainAfterAllProvidersFail", func(t *testing.T) {
+		rollback := utils.Memory(
+			"ALIBABA_CLOUD_ACCESS_KEY_ID",
+			"ALIBABA_CLOUD_ACCESS_KEY_SECRET",
+			"ALIBABA_CLOUD_SECURITY_TOKEN",
+			"ALIBABA_CLOUD_ECS_METADATA_DISABLED",
+			"ALIBABA_CLOUD_PROFILE",
+			"ALIBABA_CLOUD_OIDC_TOKEN",
+			"ALIBABA_CLOUD_OIDC_TOKEN_FILE",
+			"ALIBABA_CLOUD_OIDC_PROVIDER_ARN",
+			"ALIBABA_CLOUD_ROLE_ARN",
+			"ALIBABA_CLOUD_CREDENTIALS_URI",
+		)
+		originGetHomePath := getHomePath
+		defer func() {
+			getHomePath = originGetHomePath
+			rollback()
+		}()
+
+		os.Setenv("ALIBABA_CLOUD_ACCESS_KEY_ID", "")
+		os.Setenv("ALIBABA_CLOUD_ACCESS_KEY_SECRET", "")
+		os.Setenv("ALIBABA_CLOUD_SECURITY_TOKEN", "")
+		os.Setenv("ALIBABA_CLOUD_PROFILE", "")
+		os.Setenv("ALIBABA_CLOUD_OIDC_TOKEN", "")
+		os.Setenv("ALIBABA_CLOUD_OIDC_TOKEN_FILE", "")
+		os.Setenv("ALIBABA_CLOUD_OIDC_PROVIDER_ARN", "")
+		os.Setenv("ALIBABA_CLOUD_ROLE_ARN", "")
+		os.Setenv("ALIBABA_CLOUD_CREDENTIALS_URI", "")
+		os.Setenv("ALIBABA_CLOUD_ECS_METADATA_DISABLED", "true")
+		getHomePath = func() string {
+			return ""
+		}
+
+		provider := NewDefaultCredentialsProvider()
+		assert.Len(t, provider.providerChain, 3)
+
+		// First attempt fails across all providers; lastUsedProvider must remain nil.
+		cc, err := provider.GetCredentials()
+		assert.Nil(t, cc)
+		assert.Error(t, err)
+		assert.Nil(t, provider.lastUsedProvider)
+
+		// Once credentials become available, calling GetCredentials on the same
+		// DefaultCredentialsProvider instance retries the chain and succeeds.
+		os.Setenv("ALIBABA_CLOUD_ACCESS_KEY_ID", "akid")
+		os.Setenv("ALIBABA_CLOUD_ACCESS_KEY_SECRET", "aksecret")
+
+		cc, err = provider.GetCredentials()
+		assert.Nil(t, err)
+		assert.Equal(t, &Credentials{
+			AccessKeyId:     "akid",
+			AccessKeySecret: "aksecret",
+			SecurityToken:   "",
+			ProviderName:    "default/env",
+		}, cc)
+		assert.Equal(t, provider.providerChain[0], provider.lastUsedProvider)
+	})
+
+	t.Run("RetryChainAfterTransientFailureAndNilCredentials", func(t *testing.T) {
+		toggle := &testToggleProvider{fail: true}
+		provider := &DefaultCredentialsProvider{
+			providerChain: []CredentialsProvider{
+				toggle,
+				&testNilProvider{},
+				&testErrorProvider{},
+			},
+		}
+
+		cc, err := provider.GetCredentials()
+		assert.Nil(t, cc)
+		assert.Error(t, err)
+		assert.Nil(t, provider.lastUsedProvider)
+
+		toggle.fail = false
+		cc, err = provider.GetCredentials()
+		assert.Nil(t, err)
+		assert.Equal(t, &Credentials{
+			AccessKeyId:     "ak",
+			AccessKeySecret: "sk",
+			ProviderName:    "default/toggle",
+		}, cc)
+		assert.Equal(t, toggle, provider.lastUsedProvider)
+	})
+}
