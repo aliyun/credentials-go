@@ -81,7 +81,6 @@ func (provider *DefaultCredentialsProvider) GetCredentials() (cc *Credentials, e
 
 	errors := []string{}
 	for _, p := range provider.providerChain {
-		provider.lastUsedProvider = p
 		inner, errInLoop := p.GetCredentials()
 		if errInLoop != nil {
 			errors = append(errors, errInLoop.Error())
@@ -90,6 +89,7 @@ func (provider *DefaultCredentialsProvider) GetCredentials() (cc *Credentials, e
 		}
 
 		if inner != nil {
+			provider.lastUsedProvider = p
 			providerName := inner.ProviderName
 			if providerName == "" {
 				providerName = p.GetProviderName()
