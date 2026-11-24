@@ -174,8 +174,8 @@ func (provider *ExternalCredentialsProvider) needUpdateCredential() (result bool
 		return true
 	}
 
-	// 如果凭证即将过期（提前180秒），需要更新
-	return provider.expirationTimestamp-time.Now().Unix() <= 180
+	// External 与其它语言一致：提前 ExternalExpirationSlotSeconds（180s）刷新
+	return provider.expirationTimestamp-time.Now().Unix() <= ExternalExpirationSlotSeconds
 }
 
 func (provider *ExternalCredentialsProvider) GetCredentials() (cc *Credentials, err error) {
@@ -183,7 +183,7 @@ func (provider *ExternalCredentialsProvider) GetCredentials() (cc *Credentials, 
 	provider.mu.RLock()
 	needUpdate := provider.sessionCredentials == nil ||
 		provider.expirationTimestamp == 0 ||
-		provider.expirationTimestamp-time.Now().Unix() <= 180
+		provider.expirationTimestamp-time.Now().Unix() <= ExternalExpirationSlotSeconds
 	provider.mu.RUnlock()
 
 	if needUpdate {
@@ -198,7 +198,7 @@ func (provider *ExternalCredentialsProvider) GetCredentials() (cc *Credentials, 
 		// 双重检查，避免多个 goroutine 同时更新
 		if provider.sessionCredentials == nil ||
 			provider.expirationTimestamp == 0 ||
-			provider.expirationTimestamp-time.Now().Unix() <= 180 {
+			provider.expirationTimestamp-time.Now().Unix() <= ExternalExpirationSlotSeconds {
 			provider.sessionCredentials = sessionCredentials
 
 			// 如果返回了过期时间，解析并缓存

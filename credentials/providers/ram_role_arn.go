@@ -331,11 +331,7 @@ func (provider *RAMRoleARNCredentialsProvider) getCredentials(cc *Credentials) (
 }
 
 func (provider *RAMRoleARNCredentialsProvider) needUpdateCredential() (result bool) {
-	if provider.expirationTimestamp == 0 {
-		return true
-	}
-
-	return provider.expirationTimestamp-time.Now().Unix() <= 180
+	return isSessionCredentialStale(provider.expirationTimestamp)
 }
 
 func (provider *RAMRoleARNCredentialsProvider) GetCredentials() (cc *Credentials, err error) {

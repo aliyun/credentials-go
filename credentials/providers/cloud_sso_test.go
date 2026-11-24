@@ -152,7 +152,7 @@ func TestCloudSSOCredentialsProvider_getCredentials(t *testing.T) {
 	p.expirationTimestamp = time.Now().Unix()
 	assert.True(t, p.needUpdateCredential())
 
-	p.expirationTimestamp = time.Now().Unix() + 300
+	p.expirationTimestamp = time.Now().Unix() + 1000
 	assert.False(t, p.needUpdateCredential())
 }
 
